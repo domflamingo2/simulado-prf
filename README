@@ -1,0 +1,40 @@
+# 🚔 Simulado PRF - Plataforma de Estudos
+
+Plataforma de simulados para preparação do concurso da Polícia Rodoviária Federal (PRF).
+
+---
+
+## 📥 O que precisa instalar (apenas uma vez)
+
+### 1. Node.js (executar o projeto)
+- Acesse: https://nodejs.org/
+- Baixe a versão **LTS** (botão verde)
+- Instale com "Next" até o final
+
+### 2. VS Code (editor de código)
+- Acesse: https://code.visualstudio.com/
+- Baixe e instale
+
+### 3. Git (baixar o projeto)
+- Acesse: https://git-scm.com/
+- Baixe e instale com as opções padrão
+
+&gt; ✅ **Verifique se deu certo:**
+&gt; Abra o terminal (Prompt de Comando no Windows) e digite:
+&gt; ```bash
+&gt; node --version
+&gt; ```
+&gt; Deve aparecer algo como `v20.x.x`
+
+---
+
+## 🚀 Como baixar e rodar o projeto
+
+### Passo 1: Baixar o projeto
+
+Abra o **Prompt de Comando** (Windows) ou **Terminal** (Mac/Linux) e cole:
+
+```bash
+git clone https://github.com/domflamingo2/simulado-prf.git
+cd simulado-prf
+code .
