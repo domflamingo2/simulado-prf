@@ -384,7 +384,7 @@ export default function ErrosPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-        >1
+        >
           <GlassCard className="p-6" glow="pink">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <div>

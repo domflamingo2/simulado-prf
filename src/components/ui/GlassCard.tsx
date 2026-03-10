@@ -2,7 +2,7 @@
 
 import { cva, type VariantProps } from "class-variance-authority";
 import { HTMLMotionProps, motion } from "framer-motion";
-import { ReactNode, useState } from "react";
+import { forwardRef, ReactNode, useState } from "react";
 
 // ═══════════════════════════════════════════════════════════
 // VARIANTES COM CVA (Class Variance Authority)
@@ -107,7 +107,7 @@ type GlowColor =
   | "white";
 
 interface GlassCardProps extends VariantProps<typeof glassCardVariants> {
-  children: ReactNode;
+  children: React.ReactNode;
   className?: string;
   onClick?: () => void;
   header?: ReactNode;
@@ -134,147 +134,157 @@ interface GlassCardProps extends VariantProps<typeof glassCardVariants> {
 }
 
 // ═══════════════════════════════════════════════════════════
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL COM FORWARDREF
 // ═══════════════════════════════════════════════════════════
 
-export default function GlassCard({
-  children,
-  className,
-  variant,
-  glow = "none",
-  glowIntensity,
-  border,
-  interactive,
-  selected,
-  onClick,
-  header,
-  footer,
-  gradientBorder = false,
-  gradientBorderColors = ["#3b82f6", "#8b5cf6"],
-  animated = false,
-  loading = false,
-  disabled = false,
-  badge,
-  badgeColor = "blue",
-  hoverLift = true,
-}: GlassCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
+const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
+  (
+    {
+      children,
+      className,
+      variant,
+      glow = "none",
+      glowIntensity,
+      border,
+      interactive,
+      selected,
+      onClick,
+      header,
+      footer,
+      gradientBorder = false,
+      gradientBorderColors = ["#3b82f6", "#8b5cf6"],
+      animated = false,
+      loading = false,
+      disabled = false,
+      badge,
+      badgeColor = "blue",
+      hoverLift = true,
+    },
+    ref,
+  ) => {
+    const [isHovered, setIsHovered] = useState(false);
 
-  const handleClick = () => {
-    if (!disabled && !loading && onClick) {
-      onClick();
-    }
-  };
-
-  // Configurações de badge
-  const badgeColors = {
-    blue: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    green: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-    red: "bg-rose-500/20 text-rose-300 border-rose-500/30",
-    amber: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    purple: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  };
-
-  const Component = animated ? motion.div : motion.div;
-  const motionProps = animated
-    ? {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
-        whileHover: hoverLift && !disabled ? { y: -4 } : undefined,
-        transition: { duration: 0.3, ease: "easeOut" },
+    const handleClick = () => {
+      if (!disabled && !loading && onClick) {
+        onClick();
       }
-    : {};
+    };
 
-  return (
-    <Component
-      className={cn(
-        glassCardVariants({
-          variant,
-          glow,
-          glowIntensity,
-          border,
-          interactive: interactive || !!onClick,
-          selected,
-        }),
-        disabled && "opacity-50 cursor-not-allowed",
-        loading && "animate-pulse",
-        className,
-      )}
-      onClick={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      {...(motionProps as HTMLMotionProps<"div">)}
-    >
-      {/* Gradient Border Effect */}
-      {gradientBorder && (
-        <div
-          className="absolute inset-0 rounded-xl p-[1px] pointer-events-none"
-          style={{
-            background: `linear-gradient(135deg, ${gradientBorderColors[0]}, ${gradientBorderColors[1]})`,
-            mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-            maskComposite: "exclude",
-            WebkitMaskComposite: "xor",
-            padding: "1px",
-          }}
-        />
-      )}
+    // Configurações de badge
+    const badgeColors = {
+      blue: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+      green: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+      red: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+      amber: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+      purple: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    };
 
-      {/* Shine effect on hover */}
-      {hoverLift && !disabled && (
+    const Component = animated ? motion.div : motion.div;
+    const motionProps = animated
+      ? {
+          initial: { opacity: 0, y: 20 },
+          animate: { opacity: 1, y: 0 },
+          whileHover: hoverLift && !disabled ? { y: -4 } : undefined,
+          transition: { duration: 0.3, ease: "easeOut" },
+        }
+      : {};
+
+    return (
+      <Component
+        ref={ref}
+        className={cn(
+          glassCardVariants({
+            variant,
+            glow,
+            glowIntensity,
+            border,
+            interactive: interactive || !!onClick,
+            selected,
+          }),
+          disabled && "opacity-50 cursor-not-allowed",
+          loading && "animate-pulse",
+          className,
+        )}
+        onClick={handleClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        {...(motionProps as HTMLMotionProps<"div">)}
+      >
+        {/* Gradient Border Effect */}
+        {gradientBorder && (
+          <div
+            className="absolute inset-0 rounded-xl p-[1px] pointer-events-none"
+            style={{
+              background: `linear-gradient(135deg, ${gradientBorderColors[0]}, ${gradientBorderColors[1]})`,
+              mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+              maskComposite: "exclude",
+              WebkitMaskComposite: "xor",
+              padding: "1px",
+            }}
+          />
+        )}
+
+        {/* Shine effect on hover */}
+        {hoverLift && !disabled && (
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none",
+              isHovered && "opacity-100",
+            )}
+          />
+        )}
+
+        {/* Badge */}
+        {badge !== undefined && (
+          <div
+            className={cn(
+              "absolute -top-2 -right-2 px-2.5 py-1 rounded-full text-xs font-bold border",
+              badgeColors[badgeColor],
+            )}
+          >
+            {badge}
+          </div>
+        )}
+
+        {/* Loading overlay */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 backdrop-blur-sm rounded-xl">
+            <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Header */}
+        {header && (
+          <div className="px-5 py-4 border-b border-white/5">{header}</div>
+        )}
+
+        {/* Content */}
         <div
           className={cn(
-            "absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none",
-            isHovered && "opacity-100",
-          )}
-        />
-      )}
-
-      {/* Badge */}
-      {badge !== undefined && (
-        <div
-          className={cn(
-            "absolute -top-2 -right-2 px-2.5 py-1 rounded-full text-xs font-bold border",
-            badgeColors[badgeColor],
+            "relative z-10",
+            !header && !footer ? "p-5" : null,
+            header && !footer ? "px-5 py-4" : null,
+            !header && footer ? "px-5 py-4" : null,
+            header && footer ? "px-5 py-4" : null,
           )}
         >
-          {badge}
+          {children}
         </div>
-      )}
 
-      {/* Loading overlay */}
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 backdrop-blur-sm rounded-xl">
-          <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin" />
-        </div>
-      )}
-
-      {/* Header */}
-      {header && (
-        <div className="px-5 py-4 border-b border-white/5">{header}</div>
-      )}
-
-      {/* Content */}
-      <div
-        className={cn(
-          "relative z-10",
-          !header && !footer ? "p-5" : null,
-          header && !footer ? "px-5 py-4" : null,
-          !header && footer ? "px-5 py-4" : null,
-          header && footer ? "px-5 py-4" : null,
+        {/* Footer */}
+        {footer && (
+          <div className="px-5 py-4 border-t border-white/5 bg-black/20">
+            {footer}
+          </div>
         )}
-      >
-        {children}
-      </div>
+      </Component>
+    );
+  },
+);
 
-      {/* Footer */}
-      {footer && (
-        <div className="px-5 py-4 border-t border-white/5 bg-black/20">
-          {footer}
-        </div>
-      )}
-    </Component>
-  );
-}
+GlassCard.displayName = "GlassCard";
+
+export default GlassCard;
 
 // ═══════════════════════════════════════════════════════════
 // COMPONENTES ESPECIALIZADOS
