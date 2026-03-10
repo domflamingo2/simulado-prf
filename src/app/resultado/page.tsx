@@ -25,7 +25,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import GlassCard from "@/components/ui/GlassCard";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { HistoricoSimulado } from "@/data/types";
 import {
   classificarDesempenho,

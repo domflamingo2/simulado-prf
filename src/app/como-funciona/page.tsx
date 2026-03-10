@@ -40,7 +40,7 @@ import {
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
-import GlassCard from "@/components/ui/GlassCard";
+import { GlassCard } from "@/components/ui/GlassCard";
 
 // ═══════════════════════════════════════════════════════════
 // ANIMAÇÕES

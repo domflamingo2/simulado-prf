@@ -5,11 +5,10 @@ import { HTMLMotionProps, motion } from "framer-motion";
 import { forwardRef, ReactNode, useState } from "react";
 
 // ═══════════════════════════════════════════════════════════
-// VARIANTES COM CVA (Class Variance Authority)
+// VARIANTES COM CVA
 // ═══════════════════════════════════════════════════════════
 
 const glassCardVariants = cva(
-  // Base styles
   "relative overflow-hidden rounded-xl backdrop-blur-xl transition-all duration-300",
   {
     variants: {
@@ -106,7 +105,7 @@ type GlowColor =
   | "pink"
   | "white";
 
-interface GlassCardProps extends VariantProps<typeof glassCardVariants> {
+export interface GlassCardProps extends VariantProps<typeof glassCardVariants> {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
@@ -120,21 +119,12 @@ interface GlassCardProps extends VariantProps<typeof glassCardVariants> {
   badge?: string | number;
   badgeColor?: "blue" | "green" | "red" | "amber" | "purple";
   hoverLift?: boolean;
-  glow?:
-    | "blue"
-    | "purple"
-    | "cyan"
-    | "none"
-    | "green"
-    | "yellow"
-    | "red"
-    | "pink"
-    | "white";
+  glow?: GlowColor;
   intensity?: "subtle" | "medium" | "strong";
 }
 
 // ═══════════════════════════════════════════════════════════
-// COMPONENTE PRINCIPAL COM FORWARDREF
+// COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════
 
 const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -170,7 +160,6 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       }
     };
 
-    // Configurações de badge
     const badgeColors = {
       blue: "bg-blue-500/20 text-blue-300 border-blue-500/30",
       green: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
@@ -284,132 +273,10 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
 
 GlassCard.displayName = "GlassCard";
 
-export default GlassCard;
+export { GlassCard };
 
 // ═══════════════════════════════════════════════════════════
-// COMPONENTES ESPECIALIZADOS
-// ═══════════════════════════════════════════════════════════
-
-interface StatCardProps {
-  label: string;
-  value: string | number;
-  trend?: "up" | "down" | "neutral";
-  trendValue?: string;
-  icon?: ReactNode;
-  glow?: GlowColor;
-}
-
-export function StatCard({
-  label,
-  value,
-  trend,
-  trendValue,
-  icon,
-  glow = "blue",
-}: StatCardProps) {
-  const trendColors = {
-    up: "text-emerald-400",
-    down: "text-rose-400",
-    neutral: "text-slate-400",
-  };
-
-  const trendIcons = {
-    up: "↑",
-    down: "↓",
-    neutral: "→",
-  };
-
-  return (
-    <GlassCard glow={glow} className="p-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-slate-400 mb-1">{label}</p>
-          <p className="text-2xl font-bold text-white">{value}</p>
-          {trend && (
-            <p
-              className={cn(
-                "text-xs mt-1 flex items-center gap-1",
-                trendColors[trend],
-              )}
-            >
-              <span>{trendIcons[trend]}</span>
-              {trendValue}
-            </p>
-          )}
-        </div>
-        {icon && (
-          <div
-            className={cn(
-              "p-3 rounded-xl",
-              glow === "blue" && "bg-blue-500/10 text-blue-400",
-              glow === "green" && "bg-emerald-500/10 text-emerald-400",
-              glow === "purple" && "bg-purple-500/10 text-purple-400",
-              glow === "yellow" && "bg-amber-500/10 text-amber-400",
-              glow === "red" && "bg-rose-500/10 text-rose-400",
-            )}
-          >
-            {icon}
-          </div>
-        )}
-      </div>
-    </GlassCard>
-  );
-}
-
-interface FeatureCardProps {
-  title: string;
-  description: string;
-  icon: ReactNode;
-  onClick?: () => void;
-  glow?: GlowColor;
-  disabled?: boolean;
-}
-
-export function FeatureCard({
-  title,
-  description,
-  icon,
-  onClick,
-  glow = "blue",
-  disabled,
-}: FeatureCardProps) {
-  return (
-    <GlassCard
-      glow={glow}
-      interactive={!disabled}
-      onClick={onClick}
-      disabled={disabled}
-      className="group"
-    >
-      <div className="flex items-start gap-4 p-5">
-        <div
-          className={cn(
-            "p-3 rounded-xl transition-transform group-hover:scale-110",
-            glow === "blue" && "bg-blue-500/10 text-blue-400",
-            glow === "green" && "bg-emerald-500/10 text-emerald-400",
-            glow === "purple" && "bg-purple-500/10 text-purple-400",
-            glow === "yellow" && "bg-amber-500/10 text-amber-400",
-            glow === "cyan" && "bg-cyan-500/10 text-cyan-400",
-            glow === "red" && "bg-rose-500/10 text-rose-400",
-          )}
-        >
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-200 group-hover:text-white transition-colors">
-            {title}
-          </h3>
-          <p className="text-sm text-slate-400 mt-1 line-clamp-2">
-            {description}
-          </p>
-        </div>
-      </div>
-    </GlassCard>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════
-// UTILITÁRIO DE CLASSES (se não tiver no projeto)
+// UTILITÁRIO
 // ═══════════════════════════════════════════════════════════
 
 function cn(...inputs: (string | undefined | null | false)[]) {

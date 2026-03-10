@@ -22,7 +22,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import QuestaoCard from "@/components/QuestaoCard";
-import GlassCard from "@/components/ui/GlassCard";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { HistoricoSimulado, QuestaoRespondida } from "@/data/types";
 import { classificarDesempenho } from "@/lib/simulado-logic";
 

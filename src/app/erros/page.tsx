@@ -17,7 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import GlassCard from "@/components/ui/GlassCard";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { HistoricoSimulado, Questao } from "@/data/types";
 
 // ═══════════════════════════════════════════════════════════
@@ -47,7 +47,8 @@ const DISCIPLINAS_COR: Record<string, string> = {
   ETICA: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   RACIOCINIO_LOGICO: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   DIREITO_CONSTITUCIONAL: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  DIREITO_ADMINISTRATIVO: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  DIREITO_ADMINISTRATIVO:
+    "bg-orange-500/20 text-orange-400 border-orange-500/30",
   ADMINISTRACAO: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   ARQUIVOLOGIA: "bg-pink-500/20 text-pink-400 border-pink-500/30",
   INFORMATICA: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
@@ -63,14 +64,20 @@ function EmptyState({ tipo }: { tipo: "sem-simulados" | "sem-erros" }) {
     "sem-simulados": {
       icon: AlertCircle,
       titulo: "Nenhum simulado encontrado",
-      descricao: "Faça pelo menos um simulado completo para gerar um histórico de erros.",
+      descricao:
+        "Faça pelo menos um simulado completo para gerar um histórico de erros.",
       acao: { href: "/simulado", label: "Iniciar Simulado", icon: Play },
     },
     "sem-erros": {
       icon: CheckCircle2,
       titulo: "Parabéns!",
-      descricao: "Você não tem erros registrados. Seu desempenho está excelente!",
-      acao: { href: "/estatisticas", label: "Ver Estatísticas", icon: TrendingUp },
+      descricao:
+        "Você não tem erros registrados. Seu desempenho está excelente!",
+      acao: {
+        href: "/estatisticas",
+        label: "Ver Estatísticas",
+        icon: TrendingUp,
+      },
     },
   };
 
@@ -91,7 +98,9 @@ function EmptyState({ tipo }: { tipo: "sem-simulados" | "sem-erros" }) {
           <config.icon className="w-20 h-20 text-slate-500 mx-auto mb-6" />
         </motion.div>
         <h2 className="text-2xl font-bold text-white mb-3">{config.titulo}</h2>
-        <p className="text-slate-400 mb-8 leading-relaxed">{config.descricao}</p>
+        <p className="text-slate-400 mb-8 leading-relaxed">
+          {config.descricao}
+        </p>
         <Link
           href={config.acao.href}
           className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-all hover:scale-105"
@@ -129,7 +138,9 @@ function CardErro({
           <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="flex items-center gap-3 mb-3 flex-wrap">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${DISCIPLINAS_COR[erro.disciplina] || "bg-slate-700 text-slate-300"}`}>
+              <span
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border ${DISCIPLINAS_COR[erro.disciplina] || "bg-slate-700 text-slate-300"}`}
+              >
                 {erro.disciplinaFormatada}
               </span>
               {erro.vezesErrada > 1 && (
@@ -144,7 +155,9 @@ function CardErro({
             </div>
 
             {/* Enunciado */}
-            <p className={`text-slate-200 text-sm leading-relaxed ${expandido ? "" : "line-clamp-2"}`}>
+            <p
+              className={`text-slate-200 text-sm leading-relaxed ${expandido ? "" : "line-clamp-2"}`}
+            >
               {erro.enunciado}
             </p>
 
@@ -169,7 +182,9 @@ function CardErro({
           {/* Indicador de resposta */}
           <div className="flex flex-col items-end gap-1">
             <span className="text-xs text-slate-500">Resposta</span>
-            <span className={`px-3 py-1 rounded-lg text-sm font-bold ${erro.resposta === "CERTO" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}>
+            <span
+              className={`px-3 py-1 rounded-lg text-sm font-bold ${erro.resposta === "CERTO" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
+            >
               {erro.resposta === "CERTO" ? "CERTO" : "ERRADO"}
             </span>
           </div>
@@ -222,7 +237,10 @@ export default function ErrosPage() {
                 errosMap.set(q.id, {
                   ...existente,
                   vezesErrada: existente.vezesErrada + 1,
-                  ultimaData: dataSimulado > existente.ultimaData ? dataSimulado : existente.ultimaData,
+                  ultimaData:
+                    dataSimulado > existente.ultimaData
+                      ? dataSimulado
+                      : existente.ultimaData,
                 });
               } else {
                 // Cria novo registro
@@ -230,7 +248,9 @@ export default function ErrosPage() {
                   ...q,
                   vezesErrada: 1,
                   ultimaData: dataSimulado,
-                  disciplinaFormatada: DISCIPLINAS_NOME[q.disciplina] || q.disciplina.replace(/_/g, " "),
+                  disciplinaFormatada:
+                    DISCIPLINAS_NOME[q.disciplina] ||
+                    q.disciplina.replace(/_/g, " "),
                 });
               }
             }
@@ -239,8 +259,11 @@ export default function ErrosPage() {
 
         // Ordena por: mais vezes errada primeiro, depois por data mais recente
         const errosOrdenados = Array.from(errosMap.values()).sort((a, b) => {
-          if (b.vezesErrada !== a.vezesErrada) return b.vezesErrada - a.vezesErrada;
-          return new Date(b.ultimaData).getTime() - new Date(a.ultimaData).getTime();
+          if (b.vezesErrada !== a.vezesErrada)
+            return b.vezesErrada - a.vezesErrada;
+          return (
+            new Date(b.ultimaData).getTime() - new Date(a.ultimaData).getTime()
+          );
         });
 
         setErros(errosOrdenados);
@@ -258,9 +281,11 @@ export default function ErrosPage() {
   // Filtragem memoizada
   const errosFiltrados = useMemo(() => {
     return erros.filter((erro) => {
-      const matchBusca = erro.enunciado.toLowerCase().includes(busca.toLowerCase()) ||
-                        erro.disciplinaFormatada.toLowerCase().includes(busca.toLowerCase());
-      const matchDisciplina = filtroDisciplina === "todas" || erro.disciplina === filtroDisciplina;
+      const matchBusca =
+        erro.enunciado.toLowerCase().includes(busca.toLowerCase()) ||
+        erro.disciplinaFormatada.toLowerCase().includes(busca.toLowerCase());
+      const matchDisciplina =
+        filtroDisciplina === "todas" || erro.disciplina === filtroDisciplina;
       return matchBusca && matchDisciplina;
     });
   }, [erros, busca, filtroDisciplina]);
@@ -273,12 +298,20 @@ export default function ErrosPage() {
     });
     return Array.from(stats.entries())
       .sort(([, a], [, b]) => b - a)
-      .map(([disc, count]) => ({ disciplina: disc, count, nome: DISCIPLINAS_NOME[disc] }));
+      .map(([disc, count]) => ({
+        disciplina: disc,
+        count,
+        nome: DISCIPLINAS_NOME[disc],
+      }));
   }, [erros]);
 
   // Handlers
   const limparErros = () => {
-    if (confirm("Tem certeza que deseja limpar TODO o histórico de simulados?\n\nIsso apagará todos os dados de desempenho e estatísticas.")) {
+    if (
+      confirm(
+        "Tem certeza que deseja limpar TODO o histórico de simulados?\n\nIsso apagará todos os dados de desempenho e estatísticas.",
+      )
+    ) {
       localStorage.removeItem("prf_historico");
       setErros([]);
       setTotalSimulados(0);
@@ -400,7 +433,12 @@ export default function ErrosPage() {
                 <div className="flex items-center gap-4 text-sm text-slate-500">
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    Último erro: {erros[0] ? new Date(erros[0].ultimaData).toLocaleDateString("pt-BR") : "-"}
+                    Último erro:{" "}
+                    {erros[0]
+                      ? new Date(erros[0].ultimaData).toLocaleDateString(
+                          "pt-BR",
+                        )
+                      : "-"}
                   </span>
                 </div>
               </div>
@@ -411,7 +449,9 @@ export default function ErrosPage() {
                 className="flex items-center gap-2 px-8 py-4 bg-rose-500 hover:bg-rose-600 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all hover:scale-105 shadow-lg shadow-rose-500/25 disabled:shadow-none disabled:cursor-not-allowed"
               >
                 <Play className="w-5 h-5" />
-                Treinar {errosFiltrados.length > 30 ? "30" : errosFiltrados.length} Erros
+                Treinar{" "}
+                {errosFiltrados.length > 30 ? "30" : errosFiltrados.length}{" "}
+                Erros
               </button>
             </div>
           </GlassCard>
@@ -443,7 +483,8 @@ export default function ErrosPage() {
             <option value="todas">Todas as disciplinas</option>
             {statsPorDisciplina.map(({ disciplina, nome }) => (
               <option key={disciplina} value={disciplina}>
-                {nome} ({erros.filter(e => e.disciplina === disciplina).length})
+                {nome} (
+                {erros.filter((e) => e.disciplina === disciplina).length})
               </option>
             ))}
           </select>
@@ -457,18 +498,26 @@ export default function ErrosPage() {
             transition={{ delay: 0.3 }}
             className="flex flex-wrap gap-2"
           >
-            {statsPorDisciplina.slice(0, 5).map(({ disciplina, count, nome }) => (
-              <button
-                key={disciplina}
-                onClick={() => setFiltroDisciplina(filtroDisciplina === disciplina ? "todas" : disciplina)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
-                  ${filtroDisciplina === disciplina 
-                    ? DISCIPLINAS_COR[disciplina] 
-                    : "bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600"}`}
-              >
-                {nome}: {count}
-              </button>
-            ))}
+            {statsPorDisciplina
+              .slice(0, 5)
+              .map(({ disciplina, count, nome }) => (
+                <button
+                  key={disciplina}
+                  onClick={() =>
+                    setFiltroDisciplina(
+                      filtroDisciplina === disciplina ? "todas" : disciplina,
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                  ${
+                    filtroDisciplina === disciplina
+                      ? DISCIPLINAS_COR[disciplina]
+                      : "bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600"
+                  }`}
+                >
+                  {nome}: {count}
+                </button>
+              ))}
           </motion.div>
         )}
 
@@ -490,7 +539,10 @@ export default function ErrosPage() {
                 <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>Nenhum erro encontrado com os filtros atuais.</p>
                 <button
-                  onClick={() => { setBusca(""); setFiltroDisciplina("todas"); }}
+                  onClick={() => {
+                    setBusca("");
+                    setFiltroDisciplina("todas");
+                  }}
                   className="mt-2 text-blue-400 hover:underline text-sm"
                 >
                   Limpar filtros
@@ -518,7 +570,8 @@ export default function ErrosPage() {
             className="text-center text-xs text-slate-600 pt-8"
           >
             Mostrando {errosFiltrados.length} de {erros.length} erros únicos
-            {errosFiltrados.length > 30 && " • Treino limitado a 30 questões por sessão"}
+            {errosFiltrados.length > 30 &&
+              " • Treino limitado a 30 questões por sessão"}
           </motion.p>
         )}
       </main>

@@ -24,7 +24,11 @@ import {
 // Lazy load componentes pesados
 const Cronometro = lazy(() => import("@/components/Cronometro"));
 const QuestaoCard = lazy(() => import("@/components/QuestaoCard"));
-const GlassCard = lazy(() => import("@/components/ui/GlassCard"));
+const GlassCard = lazy(() =>
+  import("@/components/ui/GlassCard").then((module) => ({
+    default: module.GlassCard,
+  })),
+);
 
 // Imports síncronos de hooks/utilitários
 import { questoes, TEMPO_PROVA_MINUTOS } from "@/data/questoes";

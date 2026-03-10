@@ -37,7 +37,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import GlassCard from "@/components/ui/GlassCard";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { HistoricoSimulado } from "@/data/types";
 import { gerarAnaliseAdaptativa } from "@/lib/adaptativo";
 
