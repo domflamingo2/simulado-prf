@@ -56,6 +56,12 @@ export interface Questao {
   ano?: number;
   /** Banca original, se diferente de CEBRASPE (opcional) */
   banca?: string;
+  // Array de artigos/leis
+  fonte_legal?: string[];
+  // "CEBRASPE", "FCC", "FGV", "VUNESP"
+  banca_referencia?: string;
+  // Subdivisão do edital
+  assunto?: string;
 }
 
 /** Questão com resposta do usuário (usado durante simulado) */
