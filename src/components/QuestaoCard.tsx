@@ -1,9 +1,11 @@
+// src/components/exam/QuestaoCard.tsx
 "use client";
 
 import { QuestaoRespondida } from "@/data/types";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
+  ArrowRightToLine,
   BookOpen,
   CheckCircle2,
   ChevronLeft,
@@ -28,17 +30,18 @@ import {
 // TYPES & CONFIGS
 // ============================================================================
 
-interface QuestaoCardProps {
+export interface QuestaoCardProps {
   questao: QuestaoRespondida;
   numero: number;
   total: number;
   onResposta: (resposta: "CERTO" | "ERRADO" | null) => void;
-  onNavegar?: (direcao: "anterior" | "proxima") => void;
+  onNavegar?: (direcao: "anterior" | "proxima" | "finalizar") => void; // Adicionado 'finalizar'
   mostrarCorrecao?: boolean;
   tempoRestante?: string;
   marcadasParaRevisao?: number[];
   onMarcarRevisao?: (numero: number) => void;
   isLoading?: boolean;
+  showKeyboardHints?: boolean;
 }
 
 type RespostaTipo = "CERTO" | "ERRADO";
@@ -46,12 +49,12 @@ type RespostaTipo = "CERTO" | "ERRADO";
 interface DisciplinaStyle {
   nome: string;
   cor: string;
-  icone: string;
   bg: string;
+  icone: string;
 }
 
-// Configurações estáticas (fora do componente para referência estável)
-const DISCIPLINAS_CONFIG: Record<string, DisciplinaStyle> = {
+// Configurações estáticas das disciplinas (fora do componente para performance)
+export const DISCIPLINAS_CONFIG: Record<string, DisciplinaStyle> = {
   PORTUGUES: {
     nome: "Língua Portuguesa",
     cor: "from-pink-500 to-rose-500",
@@ -108,7 +111,7 @@ const DISCIPLINAS_CONFIG: Record<string, DisciplinaStyle> = {
   },
 } as const;
 
-const DIFICULDADE_CONFIG = {
+export const DIFICULDADE_CONFIG = {
   1: {
     cor: "text-emerald-400",
     bg: "bg-emerald-500/10",
@@ -130,7 +133,7 @@ const DIFICULDADE_CONFIG = {
 } as const;
 
 // ============================================================================
-// SUB-COMPONENTES (memoizados separadamente para granularidade)
+// SUB-COMPONENTE: Botão de Resposta (Memoizado)
 // ============================================================================
 
 interface BotaoRespostaProps {
@@ -155,6 +158,7 @@ const BotaoResposta = memo(function BotaoResposta({
   const isCerto = tipo === "CERTO";
 
   const { classe, icone } = useMemo(() => {
+    // Estado normal (durante a prova)
     if (!mostrarCorrecao) {
       const baseClasse = isSelecionado
         ? isCerto
@@ -174,6 +178,7 @@ const BotaoResposta = memo(function BotaoResposta({
       };
     }
 
+    // Estado de correção (após finalizar)
     if (isCorreta) {
       return {
         classe:
@@ -190,6 +195,7 @@ const BotaoResposta = memo(function BotaoResposta({
       };
     }
 
+    // Não respondida na correção
     return {
       classe: "bg-slate-800/30 text-slate-600 border-slate-800 opacity-50",
       icone: null,
@@ -204,7 +210,7 @@ const BotaoResposta = memo(function BotaoResposta({
 
   return (
     <motion.button
-      whileHover={!mostrarCorrecao ? { scale: 1.03, y: -2 } : undefined}
+      whileHover={!mostrarCorrecao ? { scale: 1.02, y: -2 } : undefined}
       whileTap={!mostrarCorrecao ? { scale: 0.97 } : undefined}
       onClick={handleClick}
       disabled={mostrarCorrecao || isLoading}
@@ -219,6 +225,7 @@ const BotaoResposta = memo(function BotaoResposta({
       aria-label={`Marcar como ${tipo} (Atalho: ${isCerto ? "1 ou C" : "2 ou E"})`}
       role="button"
     >
+      {/* Efeito de background ao selecionar */}
       <AnimatePresence mode="wait">
         {!mostrarCorrecao && isSelecionado && (
           <motion.div
@@ -233,6 +240,8 @@ const BotaoResposta = memo(function BotaoResposta({
 
       {icone}
       <span>{tipo}</span>
+
+      {/* Hint de atalho (desktop) */}
       {!mostrarCorrecao && (
         <kbd className="absolute top-2 right-2 text-[10px] opacity-50 font-normal hidden sm:block px-1.5 py-0.5 bg-black/20 rounded">
           {isCerto ? "1" : "2"}
@@ -241,6 +250,10 @@ const BotaoResposta = memo(function BotaoResposta({
     </motion.button>
   );
 });
+
+// ============================================================================
+// SUB-COMPONENTE: Indicador de Progresso (Memoizado)
+// ============================================================================
 
 interface IndicadorProgressoProps {
   total: number;
@@ -251,7 +264,6 @@ const IndicadorProgresso = memo(function IndicadorProgresso({
   total,
   current,
 }: IndicadorProgressoProps) {
-  // Limita visualização para performance
   const visibleDots = Math.min(total, 20);
   const showEllipsis = total > 20;
 
@@ -261,6 +273,7 @@ const IndicadorProgresso = memo(function IndicadorProgresso({
       role="progressbar"
       aria-valuenow={current}
       aria-valuemax={total}
+      aria-label={`Progresso: questão ${current} de ${total}`}
     >
       {Array.from({ length: visibleDots }, (_, i) => {
         const questNum = i + 1;
@@ -279,17 +292,24 @@ const IndicadorProgresso = memo(function IndicadorProgresso({
                   ? "#475569"
                   : "#1e293b",
             }}
+            transition={{ duration: 0.15 }}
             className={`w-2 h-2 rounded-full transition-colors ${isCurrent ? "ring-2 ring-white/30" : ""}`}
             aria-current={isCurrent ? "step" : undefined}
           />
         );
       })}
       {showEllipsis && (
-        <span className="text-slate-600 text-xs ml-1">+{total - 20}</span>
+        <span className="text-slate-600 text-xs ml-1" aria-hidden="true">
+          +{total - 20}
+        </span>
       )}
     </div>
   );
 });
+
+// ============================================================================
+// SUB-COMPONENTE: Painel de Correção (Memoizado)
+// ============================================================================
 
 interface CorrecaoPanelProps {
   questao: QuestaoRespondida;
@@ -339,11 +359,13 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
       exit={{ opacity: 0, height: 0, y: -20 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="overflow-hidden"
+      role="region"
+      aria-label="Correção da questão"
     >
       <div
         className={`p-5 sm:p-6 rounded-2xl border-2 ${statusConfig.bgCard} ${statusConfig.border}`}
       >
-        {/* Status */}
+        {/* Header com status */}
         <div className="flex items-center gap-3 mb-4">
           <div className={`p-2 rounded-full ${statusConfig.bgHeader}`}>
             {statusConfig.icone}
@@ -353,7 +375,7 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
           </span>
         </div>
 
-        {/* Comparação */}
+        {/* Comparação: Sua resposta vs Correta */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
           <div
             className={`p-4 rounded-xl border ${statusConfig.bgCard} ${statusConfig.border}`}
@@ -375,17 +397,17 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
           </div>
         </div>
 
-        {/* Explicação */}
+        {/* Explicação detalhada */}
         <div className="flex items-start gap-4 bg-slate-950/30 p-4 rounded-xl">
           <div className="p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
-            <BookOpen className="w-5 h-5 text-blue-400" />
+            <BookOpen className="w-5 h-5 text-blue-400" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-slate-200 mb-2 text-sm uppercase tracking-wider">
               Explicação
             </h4>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed break-words">
-              {questao.explicacao}
+              {questao.explicacao || "Sem explicação disponível."}
             </p>
           </div>
         </div>
@@ -395,10 +417,10 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
 });
 
 // ============================================================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL: QuestaoCard
 // ============================================================================
 
-const QuestaoCard = memo(function QuestaoCard({
+export default memo(function QuestaoCard({
   questao,
   numero,
   total,
@@ -409,16 +431,18 @@ const QuestaoCard = memo(function QuestaoCard({
   marcadasParaRevisao = [],
   onMarcarRevisao,
   isLoading = false,
+  showKeyboardHints = true,
 }: QuestaoCardProps) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const keyboardEnabled = useRef(true);
-
-  // Previne múltiplos triggers de teclado
   const lastKeyTime = useRef<number>(0);
   const KEY_DEBOUNCE_MS = 150;
 
-  // Memoizações de dados
+  // ============================================================================
+  // MEMOIZAÇÕES DE DADOS
+  // ============================================================================
+
   const disciplina = useMemo(() => {
     return (
       DISCIPLINAS_CONFIG[questao.disciplina] ?? {
@@ -444,8 +468,9 @@ const QuestaoCard = memo(function QuestaoCard({
   );
 
   const emBranco = !questao.respostaUsuario && !mostrarCorrecao;
+  const isLastQuestion = numero === total;
 
-  // Estados de resposta memoizados
+  // Estados de resposta para os botões
   const estadosResposta = useMemo(
     () => ({
       certo: {
@@ -464,7 +489,10 @@ const QuestaoCard = memo(function QuestaoCard({
     [questao.respostaUsuario, questao.resposta],
   );
 
-  // Callbacks estáveis
+  // ============================================================================
+  // HANDLERS ESTÁVEIS
+  // ============================================================================
+
   const handleResposta = useCallback(
     (tipo: RespostaTipo) => {
       onResposta(tipo);
@@ -483,9 +511,17 @@ const QuestaoCard = memo(function QuestaoCard({
     [onNavegar],
   );
 
-  // Keyboard handler otimizado com debounce interno
+  const handleFinalizar = useCallback(() => {
+    onNavegar?.("finalizar");
+  }, [onNavegar]);
+
+  // ============================================================================
+  // KEYBOARD HANDLER OTIMIZADO
+  // ============================================================================
+
   useEffect(() => {
-    if (mostrarCorrecao || isLoading) {
+    // Desabilita teclado se estiver carregando, em correção ou se a função navegar não existir
+    if (mostrarCorrecao || isLoading || !onNavegar) {
       keyboardEnabled.current = false;
       return;
     }
@@ -495,11 +531,11 @@ const QuestaoCard = memo(function QuestaoCard({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!keyboardEnabled.current) return;
 
-      // Debounce básico
+      // Debounce básico para evitar repetição
       const now = Date.now();
       if (now - lastKeyTime.current < KEY_DEBOUNCE_MS) return;
 
-      // Ignora se estiver em input/textarea
+      // Ignora se estiver em input/textarea/contenteditable
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -525,18 +561,19 @@ const QuestaoCard = memo(function QuestaoCard({
           onResposta("ERRADO");
           break;
         case "ArrowLeft":
-          if (onNavegar && numero > 1) {
+          if (numero > 1) {
             e.preventDefault();
             lastKeyTime.current = now;
-            onNavegar("anterior");
+            handleNavegar("anterior");
           }
           break;
         case "ArrowRight":
-        case " ":
-          if (onNavegar && numero < total) {
+        case " ": // Espaço
+          // Se for a última questão, Espaço não deve navegar (evita finalizar acidental)
+          if (numero < total) {
             e.preventDefault();
             lastKeyTime.current = now;
-            onNavegar("proxima");
+            handleNavegar("proxima");
           }
           break;
         case "m":
@@ -545,29 +582,43 @@ const QuestaoCard = memo(function QuestaoCard({
           lastKeyTime.current = now;
           onMarcarRevisao?.(numero);
           break;
+        case "?":
+          e.preventDefault();
+          setShowShortcuts((prev) => !prev);
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    // Cleanup ao desmontar
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      keyboardEnabled.current = false;
+    };
   }, [
     mostrarCorrecao,
     isLoading,
-    onResposta,
     onNavegar,
     numero,
     total,
+    onResposta,
     onMarcarRevisao,
+    handleNavegar,
   ]);
 
-  // Focus management para acessibilidade
+  // Focus management para acessibilidade ao mudar de questão
   useLayoutEffect(() => {
     if (containerRef.current && !isLoading) {
       containerRef.current.focus({ preventScroll: true });
     }
   }, [numero, isLoading]);
 
-  // Early return para loading
+  // ============================================================================
+  // RENDERIZAÇÃO
+  // ============================================================================
+
+  // Skeleton loading
   if (isLoading) {
     return (
       <div
@@ -579,7 +630,9 @@ const QuestaoCard = memo(function QuestaoCard({
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           className="w-8 h-8 border-2 border-slate-600 border-t-white rounded-full"
+          aria-hidden="true"
         />
+        <span className="sr-only">Carregando...</span>
       </div>
     );
   }
@@ -599,13 +652,15 @@ const QuestaoCard = memo(function QuestaoCard({
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="w-full"
       >
+        {/* Card principal */}
         <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-          {/* Progress bar */}
+          {/* Barra de progresso superior */}
           <div
             className="absolute top-0 left-0 right-0 h-1.5 bg-slate-800"
             role="progressbar"
             aria-valuenow={numero}
             aria-valuemax={total}
+            aria-label={`Progresso: ${numero} de ${total} questões`}
           >
             <motion.div
               className={`h-full bg-gradient-to-r ${disciplina.cor}`}
@@ -618,6 +673,7 @@ const QuestaoCard = memo(function QuestaoCard({
           {/* Header */}
           <header className="p-5 sm:p-8 border-b border-white/5">
             <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Badge da disciplina */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r ${disciplina.cor} bg-opacity-10 border border-white/10 shadow-lg`}
@@ -630,25 +686,31 @@ const QuestaoCard = memo(function QuestaoCard({
                 </span>
               </motion.div>
 
+              {/* Controles */}
               <div className="flex items-center gap-3">
+                {/* Dificuldade */}
                 {dificuldade && (
                   <span
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold ${dificuldade.bg} ${dificuldade.cor} border ${dificuldade.border}`}
+                    title={`Dificuldade: ${dificuldade.label}`}
                   >
                     {dificuldade.label}
                   </span>
                 )}
 
+                {/* Timer */}
                 {tempoRestante && (
                   <div
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700"
                     role="timer"
+                    aria-label={`Tempo restante: ${tempoRestante}`}
                   >
                     <Clock className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>{tempoRestante}</span>
                   </div>
                 )}
 
+                {/* Marcar para revisão */}
                 <button
                   onClick={handleMarcarRevisao}
                   className={`p-2 rounded-lg transition-all duration-200 border ${
@@ -676,7 +738,7 @@ const QuestaoCard = memo(function QuestaoCard({
               </div>
             </div>
 
-            {/* Progresso numérico */}
+            {/* Progresso numérico + dots */}
             <div className="mt-6 flex items-center justify-between">
               <span className="text-slate-400 text-sm sm:text-base">
                 Questão{" "}
@@ -687,9 +749,9 @@ const QuestaoCard = memo(function QuestaoCard({
             </div>
           </header>
 
-          {/* Conteúdo */}
+          {/* Conteúdo da questão */}
           <article className="p-5 sm:p-8 space-y-6">
-            {/* Tags */}
+            {/* Tags da questão */}
             {questao.tags && questao.tags.length > 0 && (
               <div
                 className="flex flex-wrap gap-2"
@@ -737,7 +799,7 @@ const QuestaoCard = memo(function QuestaoCard({
               />
             </div>
 
-            {/* Indicador em branco */}
+            {/* Indicador de questão em branco */}
             <AnimatePresence>
               {emBranco && (
                 <motion.div
@@ -746,6 +808,7 @@ const QuestaoCard = memo(function QuestaoCard({
                   exit={{ opacity: 0, y: -10 }}
                   className="flex items-center justify-center gap-2 text-slate-500 text-sm bg-slate-800/30 py-2 px-4 rounded-full w-fit mx-auto"
                   role="status"
+                  aria-live="polite"
                 >
                   <HelpCircle className="w-4 h-4" aria-hidden="true" />
                   <span>Questão não respondida</span>
@@ -753,12 +816,12 @@ const QuestaoCard = memo(function QuestaoCard({
               )}
             </AnimatePresence>
 
-            {/* Atalhos */}
-            {!mostrarCorrecao && (
+            {/* Atalhos de teclado (toggle) */}
+            {!mostrarCorrecao && showKeyboardHints && (
               <div className="flex flex-col items-center gap-2">
                 <button
                   onClick={() => setShowShortcuts((p) => !p)}
-                  className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-400 transition-colors"
+                  className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
                   aria-expanded={showShortcuts}
                   aria-controls="shortcuts-panel"
                 >
@@ -775,27 +838,47 @@ const QuestaoCard = memo(function QuestaoCard({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden w-full"
                     >
-                      <div className="flex flex-wrap justify-center gap-2 text-xs text-slate-500 bg-slate-800/30 p-3 rounded-lg">
-                        <kbd className="px-2 py-1 bg-slate-800 rounded">
-                          1/C
-                        </kbd>{" "}
-                        Certo
-                        <kbd className="px-2 py-1 bg-slate-800 rounded">
-                          2/E
-                        </kbd>{" "}
-                        Errado
-                        <kbd className="px-2 py-1 bg-slate-800 rounded">
-                          ←
-                        </kbd>{" "}
-                        Anterior
-                        <kbd className="px-2 py-1 bg-slate-800 rounded">
-                          →/Espaço
-                        </kbd>{" "}
-                        Próxima
-                        <kbd className="px-2 py-1 bg-slate-800 rounded">
-                          M
-                        </kbd>{" "}
-                        Marcar
+                      <div
+                        className="flex flex-wrap justify-center gap-2 text-xs text-slate-500 bg-slate-800/30 p-3 rounded-lg"
+                        role="list"
+                        aria-label="Lista de atalhos de teclado"
+                      >
+                        <span role="listitem">
+                          <kbd className="px-2 py-1 bg-slate-800 rounded">
+                            1/C
+                          </kbd>{" "}
+                          Certo
+                        </span>
+                        <span role="listitem">
+                          <kbd className="px-2 py-1 bg-slate-800 rounded">
+                            2/E
+                          </kbd>{" "}
+                          Errado
+                        </span>
+                        <span role="listitem">
+                          <kbd className="px-2 py-1 bg-slate-800 rounded">
+                            ←
+                          </kbd>{" "}
+                          Anterior
+                        </span>
+                        <span role="listitem">
+                          <kbd className="px-2 py-1 bg-slate-800 rounded">
+                            →/Espaço
+                          </kbd>{" "}
+                          Próxima
+                        </span>
+                        <span role="listitem">
+                          <kbd className="px-2 py-1 bg-slate-800 rounded">
+                            M
+                          </kbd>{" "}
+                          Marcar
+                        </span>
+                        <span role="listitem">
+                          <kbd className="px-2 py-1 bg-slate-800 rounded">
+                            ?
+                          </kbd>{" "}
+                          Ajuda
+                        </span>
                       </div>
                     </motion.div>
                   )}
@@ -803,30 +886,32 @@ const QuestaoCard = memo(function QuestaoCard({
               </div>
             )}
 
-            {/* Correção */}
+            {/* Painel de correção (após finalizar) */}
             <AnimatePresence mode="wait">
               {mostrarCorrecao && <CorrecaoPanel questao={questao} />}
             </AnimatePresence>
           </article>
 
-          {/* Navegação */}
+          {/* Navegação entre questões */}
           {onNavegar && (
             <nav
               className="p-5 sm:p-6 border-t border-white/5 flex items-center justify-between bg-slate-950/30"
               aria-label="Navegação entre questões"
             >
+              {/* Botão Anterior */}
               <motion.button
                 whileHover={numero > 1 ? { x: -4 } : undefined}
                 whileTap={numero > 1 ? { scale: 0.95 } : undefined}
                 onClick={() => handleNavegar("anterior")}
                 disabled={numero === 1}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all border border-transparent hover:border-slate-700"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all border border-transparent hover:border-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Questão anterior"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                 <span className="hidden sm:inline">Anterior</span>
               </motion.button>
 
+              {/* Indicador central */}
               <div className="flex flex-col items-center">
                 <span
                   className="text-xs text-slate-500 font-medium"
@@ -838,20 +923,44 @@ const QuestaoCard = memo(function QuestaoCard({
                   <div
                     className="h-full bg-slate-600 rounded-full transition-all duration-300"
                     style={{ width: `${(numero / total) * 100}%` }}
+                    aria-hidden="true"
                   />
                 </div>
               </div>
 
+              {/* Botão Próxima ou Finalizar */}
               <motion.button
-                whileHover={numero < total ? { x: 4 } : undefined}
-                whileTap={numero < total ? { scale: 0.95 } : undefined}
-                onClick={() => handleNavegar("proxima")}
-                disabled={numero === total}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all border border-transparent hover:border-slate-700"
-                aria-label="Próxima questão"
+                whileHover={!isLastQuestion ? { x: 4 } : { scale: 1.05 }}
+                whileTap={!isLastQuestion ? { scale: 0.95 } : { scale: 0.95 }}
+                onClick={
+                  isLastQuestion
+                    ? handleFinalizar
+                    : () => handleNavegar("proxima")
+                }
+                disabled={false} // Última questão tem ação de finalizar
+                className={`
+                  flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
+                  ${
+                    isLastQuestion
+                      ? "text-white bg-blue-600 hover:bg-blue-500 border-blue-500 shadow-lg shadow-blue-900/50"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800 border-transparent hover:border-slate-700"
+                  }
+                `}
+                aria-label={
+                  isLastQuestion ? "Finalizar simulado" : "Próxima questão"
+                }
               >
-                <span className="hidden sm:inline">Próxima</span>
-                <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                {isLastQuestion ? (
+                  <>
+                    <span className="hidden sm:inline">Finalizar</span>
+                    <ArrowRightToLine className="w-5 h-5" aria-hidden="true" />
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Próxima</span>
+                    <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                  </>
+                )}
               </motion.button>
             </nav>
           )}
@@ -860,5 +969,3 @@ const QuestaoCard = memo(function QuestaoCard({
     </div>
   );
 });
-
-export default QuestaoCard;

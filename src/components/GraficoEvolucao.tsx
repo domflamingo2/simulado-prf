@@ -15,10 +15,10 @@ import {
 } from "chart.js";
 import { motion } from "framer-motion";
 import { Award, Target, TrendingUp } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
 
-// Registro único global (evita duplicação em hot reload)
+// Registro único global (evita duplicação em hot reload ou múltiplas instâncias)
 if (typeof window !== "undefined" && !(ChartJS as any).registered) {
   ChartJS.register(
     CategoryScale,
@@ -38,7 +38,7 @@ if (typeof window !== "undefined" && !(ChartJS as any).registered) {
 // ============================================================================
 
 interface HistoricoItem {
-  data: string;
+  data: string; // ISO String
   pontuacao: number;
   percentual: number;
 }
@@ -53,7 +53,7 @@ interface GraficoEvolucaoProps {
 
 type Tendencia = "up" | "down" | "neutral";
 
-// Guard de tipo strict
+// Guard de tipo strict para segurança de dados
 const isValidHistorico = (item: unknown): item is HistoricoItem => {
   if (!item || typeof item !== "object") return false;
   const h = item as Record<string, unknown>;
@@ -66,7 +66,7 @@ const isValidHistorico = (item: unknown): item is HistoricoItem => {
   );
 };
 
-// Constantes de tema (evita recriação)
+// Constantes de tema (evita recriação a cada render)
 const THEME_COLORS = {
   dark: {
     pontuacao: "#3b82f6",
@@ -187,34 +187,49 @@ const SingleDataState = memo(function SingleDataState({
 });
 
 // ============================================================================
-// HOOK CUSTOMIZADO: useChartTheme
+// HOOK CUSTOMIZADO: useChartTheme (Otimizado)
 // ============================================================================
 
 function useChartTheme() {
-  const [isDark, setIsDark] = useState(false);
+  // Usa matchMedia para detecção mais performática de tema do que MutationObserver
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const root = document.documentElement;
 
-    const updateTheme = () => {
-      setIsDark(root.classList.contains("dark"));
+    // Verifica classe 'dark' no html
+    const checkTheme = () => {
+      const hasDarkClass = document.documentElement.classList.contains("dark");
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+      setIsDark(hasDarkClass || prefersDark);
     };
 
-    updateTheme();
+    // Listener para mudanças de mídia (sistema)
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaQuery.addEventListener("change", checkTheme);
 
+    // Listener para mudanças manuais (toggle botão) - usando MutationObserver otimizado
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === "class") {
-          updateTheme();
+          checkTheme();
         }
       });
     });
 
-    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.documentElement, { attributes: true });
 
-    return () => observer.disconnect();
+    return () => {
+      mediaQuery.removeEventListener("change", checkTheme);
+      observer.disconnect();
+    };
   }, []);
 
   return { isDark, mounted };
@@ -232,24 +247,11 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
   titulo = "Evolução do Desempenho",
 }: GraficoEvolucaoProps) {
   const { isDark, mounted } = useChartTheme();
-  const chartRef = useRef<ChartJS<"line"> | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Refs para evitar re-renders desnecessários
-  const hoveredIndexRef = useRef<number | null>(null);
+  // Estado para hover (para destacar pontos)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // Cleanup rigoroso do Chart.js
-  useEffect(() => {
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.destroy();
-        chartRef.current = null;
-      }
-    };
-  }, []);
-
-  // Validação de dados
+  // Validação e ordenação de dados
   const dadosValidos = useMemo(() => {
     if (!Array.isArray(historico)) return [];
     return historico.filter(isValidHistorico);
@@ -261,7 +263,7 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
     );
   }, [dadosValidos]);
 
-  // Cálculos estatísticos otimizados
+  // Cálculos estatísticos robustos
   const estatisticas = useMemo(() => {
     if (dados.length === 0) return null;
 
@@ -269,7 +271,7 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
     const total = pontuacoes.length;
     const soma = pontuacoes.reduce((a, b) => a + b, 0);
 
-    // Cálculo eficiente de min/max em uma passada
+    // Cálculo Min/Max em um único loop
     let min = pontuacoes[0];
     let max = pontuacoes[0];
     for (let i = 1; i < total; i++) {
@@ -280,7 +282,7 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
     const media = Math.round(soma / total);
     const evolucao = pontuacoes[total - 1] - pontuacoes[0];
 
-    // Tendência com verificação de bounds
+    // Cálculo de tendência (média móvel simples)
     let tendencia: Tendencia = "neutral";
     if (total >= 6) {
       const recente =
@@ -293,7 +295,10 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           pontuacoes[total - 5] +
           pontuacoes[total - 6]) /
         3;
-      tendencia = recente > anterior ? "up" : "down";
+      tendencia =
+        recente > anterior ? "up" : recente < anterior ? "down" : "neutral";
+    } else if (total >= 2) {
+      tendencia = evolucao > 0 ? "up" : evolucao < 0 ? "down" : "neutral";
     }
 
     return {
@@ -304,26 +309,24 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
       total,
       min,
       max,
-      padding: Math.max(5, (max - min) * 0.1),
+      padding: Math.max(5, (max - min) * 0.15), // Padding visual
     };
   }, [dados]);
 
-  // Handler de hover otimizado (throttled via ref)
+  // Handler de Hover com otimização
   const handleHover = useCallback((_: unknown, elements: unknown[]) => {
     const index =
       Array.isArray(elements) && elements.length > 0
         ? (elements[0] as { index: number }).index
         : null;
 
-    // Só atualiza estado se mudou (evita re-renders)
-    if (hoveredIndexRef.current !== index) {
-      hoveredIndexRef.current = index;
-      setHoveredIndex(index);
-    }
+    setHoveredIndex(index);
   }, []);
 
-  // Configuração do gráfico - separada em dados e options para memoização eficiente
+  // Configuração de Dados do Gráfico (Memoizado)
   const chartData: ChartData<"line"> = useMemo(() => {
+    if (!estatisticas) return { labels: [], datasets: [] };
+
     const theme = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
 
     const labels = dados.map((h) =>
@@ -343,16 +346,25 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           label: "Pontuação CEBRASPE",
           data: pontuacoes,
           borderColor: theme.pontuacao,
-          backgroundColor: (context: {
-            chart: { ctx: CanvasRenderingContext2D };
-          }) => {
-            const ctx = context.chart.ctx;
-            const gradient = ctx.createLinearGradient(0, 0, 0, altura);
+          // Gradiente de fundo criado sob demanda
+          backgroundColor: (context: any) => {
+            const { ctx, chartArea } = context.chart;
+            if (!chartArea) return null;
+
+            const gradient = ctx.createLinearGradient(
+              0,
+              chartArea.bottom,
+              0,
+              chartArea.top,
+            );
             gradient.addColorStop(
               0,
-              isDark ? "rgba(59, 130, 246, 0.3)" : "rgba(59, 130, 246, 0.2)",
+              isDark ? "rgba(59, 130, 246, 0.05)" : "rgba(59, 130, 246, 0.0)",
             );
-            gradient.addColorStop(1, "rgba(59, 130, 246, 0.0)");
+            gradient.addColorStop(
+              1,
+              isDark ? "rgba(59, 130, 246, 0.4)" : "rgba(59, 130, 246, 0.2)",
+            );
             return gradient;
           },
           tension: 0.4,
@@ -402,8 +414,9 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           : []),
       ],
     };
-  }, [dados, altura, isDark, hoveredIndex, mostrarMeta, metaAprovacao]);
+  }, [dados, isDark, hoveredIndex, mostrarMeta, metaAprovacao, estatisticas]);
 
+  // Configuração de Opções do Gráfico (Memoizado)
   const options: ChartOptions<"line"> = useMemo(() => {
     if (!estatisticas) return {};
 
@@ -509,6 +522,7 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
             font: { size: 11 },
             callback: (value) => `${value} pts`,
           },
+          // Padding visual dinâmico
           suggestedMin: Math.max(0, estatisticas.min - estatisticas.padding),
           suggestedMax: estatisticas.max + estatisticas.padding,
         },
@@ -522,7 +536,7 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
             color: theme.percentual,
             font: { size: 11, weight: "bold" },
           },
-          grid: { drawOnChartArea: false },
+          grid: { drawOnChartArea: false }, // Remove grid duplicado
           ticks: {
             color: theme.percentual,
             font: { size: 11 },
@@ -539,8 +553,8 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
     };
   }, [estatisticas, isDark, dados, handleHover]);
 
-  // Early returns
-  if (!mounted) {
+  // Guarda de hidratação e dados válidos
+  if (!mounted || !estatisticas) {
     return (
       <div
         className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 animate-pulse"
@@ -559,8 +573,6 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
   if (dadosValidos.length === 1) {
     return <SingleDataState item={dados[0]} altura={altura} />;
   }
-
-  if (!estatisticas) return null;
 
   const { media, melhor, evolucao, tendencia, total } = estatisticas;
 
@@ -631,25 +643,29 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
         </div>
       </div>
 
-      {/* Gráfico */}
+      {/* Container do Gráfico */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
         className="relative rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900/50 p-4 shadow-sm dark:shadow-none"
         style={{ height: altura }}
-        ref={containerRef}
       >
+        {/* 
+           CHAVE: Usar 'key' força o remount do canvas quando o histórico muda.
+           Isso corrige bugs visuais e vazamentos de memória do Chart.js 
+           ao atualizar dados dinamicamente.
+        */}
         <Line
-          ref={chartRef as any}
+          key={dados.length} // Força limpeza do canvas se a quantidade de pontos mudar
           data={chartData}
           options={options}
           aria-label="Gráfico de evolução de desempenho"
         />
 
-        {/* Badges */}
+        {/* Badges flutuantes */}
         {mostrarMeta && (
-          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm backdrop-blur-sm">
             <Target
               className="w-3 h-3 text-amber-600 dark:text-amber-400"
               aria-hidden="true"
@@ -660,7 +676,7 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           </div>
         )}
 
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm backdrop-blur-sm">
           <span className="text-xs" aria-hidden="true">
             {tendenciaInfo.icone}
           </span>

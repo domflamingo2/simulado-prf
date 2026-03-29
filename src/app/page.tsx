@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -34,34 +35,46 @@ import {
   useState,
 } from "react";
 
-// Componentes UI
+// ============================================================================
+// IMPORTS DE COMPONENTES UI
+// ============================================================================
 import AlertaDesempenho from "@/components/ui/AlertaDesempenho";
 import Badge, { NewBadgeNotification } from "@/components/ui/Badge";
-import { GlassCard } from "@/components/ui/GlassCard"; // CORREÇÃO: Named Import
+import { GlassCard } from "@/components/ui/GlassCard";
 import ModoCard from "@/components/ui/ModoCard";
 import ProgressRing from "@/components/ui/ProgressRing";
 import StatCard from "@/components/ui/StatCard";
 
-// Componentes Dashboard
+// ============================================================================
+// IMPORTS DE COMPONENTES DO DASHBOARD
+// ============================================================================
 import EmptyStateDashboard from "@/components/dashboard/EmptyStateDashboard";
 import SecaoGraficoEvolucao from "@/components/dashboard/SecaoGraficoEvolucao";
 
-// Dados e Hooks
+// ============================================================================
+// IMPORTS DE DADOS E HOOKS
+// ============================================================================
 import { NIVEIS } from "@/data/gamificacao";
 import { HistoricoSimulado } from "@/data/types";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { classificarDesempenho } from "@/lib/simulado-logic";
+import { mapHistoricoParaGrafico } from "@/utils/mapHistoricoParaGrafico";
 
-// Lazy Load de componentes pesados
+// ============================================================================
+// LAZY LOAD DE COMPONENTES PESADOS
+// ============================================================================
 const Confetti = lazy(() =>
   import("@/components/ui/Confetti").catch(() => ({ default: () => null })),
 );
 
-// Definição de Tipo para garantir que o variant esteja correto
+// ============================================================================
+// TYPES
+// ============================================================================
+
 type ModoEstudoItem = {
   href: string;
-  icon: LucideIcon; // Usa o mesmo tipo que o ModoCard espera
+  icon: LucideIcon;
   variant: "blue" | "amber" | "emerald" | "rose" | "purple" | "slate" | "cyan";
   title: string;
   description: string;
@@ -71,11 +84,24 @@ type ModoEstudoItem = {
   badge?: string;
 };
 
-// Constantes
+type PeriodoFiltro = "7" | "30" | "90" | "todos";
+
+type BadgeType =
+  | "primeiro"
+  | "streak-7"
+  | "velocista"
+  | "cebraspe-master"
+  | "polivalente"
+  | "nivel-5";
+
+// ============================================================================
+// CONSTANTES E CONFIGURAÇÕES
+// ============================================================================
+
 const MODOS_ESTUDO: ModoEstudoItem[] = [
   {
     href: "/simulado?modo=completo",
-    icon: Play, // Agora é o componente correto, não require
+    icon: Play,
     variant: "blue",
     title: "Simulado Completo",
     description: "60 questões • 4 horas • Ambiente real CEBRASPE",
@@ -85,7 +111,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/simulado?modo=turbo",
-    icon: Zap, // Corrigido
+    icon: Zap,
     variant: "amber",
     title: "Modo Turbo",
     description: "50 questões • 40 min • Revisão rápida",
@@ -95,7 +121,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/treino",
-    icon: BookOpen, // Corrigido
+    icon: BookOpen,
     variant: "emerald",
     title: "Treino Específico",
     description: "Foque na sua disciplina mais fraca",
@@ -104,7 +130,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/erros",
-    icon: XCircle, // Corrigido
+    icon: XCircle,
     variant: "rose",
     title: "Revisar Erros",
     description: "Banco de questões que você errou",
@@ -114,7 +140,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/simulado?modo=adaptativo",
-    icon: Target, // Corrigido
+    icon: Target,
     variant: "purple",
     title: "Adaptativo IA",
     description: "IA seleciona suas maiores dificuldades",
@@ -124,7 +150,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/estatisticas",
-    icon: BarChart3, // Corrigido
+    icon: BarChart3,
     variant: "cyan",
     title: "Estatísticas",
     description: "Análise profunda por disciplina",
@@ -133,7 +159,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
 ];
 
-const BADGES_DISPLAY = [
+const BADGES_DISPLAY: readonly BadgeType[] = [
   "primeiro",
   "streak-7",
   "velocista",
@@ -141,6 +167,7 @@ const BADGES_DISPLAY = [
   "polivalente",
   "nivel-5",
 ] as const;
+
 const DISCIPLINAS_NOME: Record<string, string> = {
   PORTUGUES: "Português",
   ETICA: "Ética",
@@ -153,16 +180,21 @@ const DISCIPLINAS_NOME: Record<string, string> = {
   LEGISLACAO_PRF: "Legislação PRF",
 };
 
+const BADGE_LABELS: Record<BadgeType, string> = {
+  primeiro: "Primeiro Passo",
+  "streak-7": "7 Dias Seguidos",
+  velocista: "Velocista",
+  "cebraspe-master": "Mestre CEBRASPE",
+  polivalente: "Polivalente",
+  "nivel-5": "Nível 5",
+};
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
 const getBadgeLabel = (badgeId: string): string => {
-  const labels: Record<string, string> = {
-    primeiro: "Primeiro Passo",
-    "streak-7": "7 Dias Seguidos",
-    velocista: "Velocista",
-    "cebraspe-master": "Mestre CEBRASPE",
-    polivalente: "Polivalente",
-    "nivel-5": "Nível 5",
-  };
-  return labels[badgeId] || badgeId;
+  return BADGE_LABELS[badgeId as BadgeType] || badgeId;
 };
 
 const useDebouncedCallback = <T extends (...args: any[]) => void>(
@@ -170,6 +202,7 @@ const useDebouncedCallback = <T extends (...args: any[]) => void>(
   delay: number = 300,
 ) => {
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
   return useCallback(
     (...args: Parameters<T>) => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -179,59 +212,76 @@ const useDebouncedCallback = <T extends (...args: any[]) => void>(
   );
 };
 
+// ============================================================================
+// COMPONENTE PRINCIPAL
+// ============================================================================
+
 export default function Dashboard() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
+
+  // Estados de UI
   const [mounted, setMounted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showNewBadge, setShowNewBadge] = useState<string | null>(null);
-  const [periodoFiltro, setPeriodoFiltro] = useState<
-    "7" | "30" | "90" | "todos"
-  >("todos");
+  const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>("todos");
   const [showExportModal, setShowExportModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isExporting, setIsExporting] = useState(false);
 
+  // Hooks personalizados
   const { progress, novasConquistas, showLevelUp, dismissLevelUp } =
     useGamificacao();
+
   const { value: historicoStorage, setValue: setHistoricoStorage } =
     useLocalStorage<HistoricoSimulado[]>({
       key: "prf_historico",
       defaultValue: [],
     });
 
-  // Refs para sincronização
+  // Refs para controle de sincronização
   const lastSyncRef = useRef<number>(0);
   const isUpdatingRef = useRef(false);
 
-  // --- Effects ---
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
+  // Hydration
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Confetti e Badges
+  // Confetti e Badges via URL params
   useEffect(() => {
     if (!mounted) return;
+
     const params = new URLSearchParams(window.location.search);
     const conquista = params.get("conquista");
+
     if (conquista) {
       setShowNewBadge(conquista);
       setShowConfetti(true);
       window.history.replaceState({}, "", window.location.pathname);
+
       const timer = setTimeout(() => setShowConfetti(false), 4000);
       return () => clearTimeout(timer);
     }
   }, [mounted]);
 
-  // Sincronização de Abas
+  // Sincronização entre abas (LocalStorage)
   useEffect(() => {
     if (!mounted) return;
+
     const handleStorage = (e: StorageEvent) => {
       if (e.key !== "prf_historico" || !e.newValue || isUpdatingRef.current)
         return;
+
       const now = Date.now();
-      if (now - lastSyncRef.current < 1000) return;
+      if (now - lastSyncRef.current < 1000) return; // Debounce de 1s
+
       lastSyncRef.current = now;
+
       try {
         const parsed = JSON.parse(e.newValue);
         if (
@@ -248,27 +298,35 @@ export default function Dashboard() {
         console.error("Erro ao sincronizar storage:", err);
       }
     };
+
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, [mounted, historicoStorage, setHistoricoStorage]);
 
-  // Novas Conquistas do Hook
+  // Novas conquistas do hook de gamificação
   useEffect(() => {
     if (novasConquistas.length > 0 && !showNewBadge && mounted) {
       setShowConfetti(true);
       setShowNewBadge(novasConquistas[0]);
+
       const timer = setTimeout(() => setShowConfetti(false), 4000);
       return () => clearTimeout(timer);
     }
   }, [novasConquistas, showNewBadge, mounted]);
 
-  // --- Memos (Lógica de Negócios) ---
+  // ============================================================================
+  // MEMOS - LÓGICA DE NEGÓCIOS
+  // ============================================================================
+
+  // Histórico filtrado por período
   const historicoFiltrado = useMemo(() => {
     if (!historicoStorage?.length) return [];
     if (periodoFiltro === "todos") return historicoStorage;
+
     const dias = parseInt(periodoFiltro);
     const dataLimite = new Date();
     dataLimite.setDate(dataLimite.getDate() - dias);
+
     return historicoStorage.filter((h) => {
       try {
         return new Date(h.data) >= dataLimite;
@@ -278,45 +336,55 @@ export default function Dashboard() {
     });
   }, [historicoStorage, periodoFiltro]);
 
+  // Estatísticas calculadas
   const estatisticas = useMemo(() => {
     if (!historicoFiltrado?.length) return null;
+
     const ultimos7 = historicoFiltrado.slice(0, 7);
     const total = historicoFiltrado.length;
+
     const calcularMedia = (arr: HistoricoSimulado[]) =>
       !arr.length
         ? 0
         : arr.reduce((acc, h) => acc + (h.estatisticas?.pontuacao ?? 0), 0) /
           arr.length;
+
     const mediaGeral = calcularMedia(historicoFiltrado);
     const media7Dias = calcularMedia(ultimos7);
+
     const tendencia =
       media7Dias > mediaGeral
         ? "up"
         : media7Dias < mediaGeral
           ? "down"
           : "stable";
+
     const pontuacoes = historicoFiltrado
       .map((h) => h.estatisticas?.pontuacao)
       .filter((p): p is number => typeof p === "number" && !isNaN(p));
+
     const melhor = pontuacoes.length ? Math.max(...pontuacoes) : 0;
     const pior = pontuacoes.length ? Math.min(...pontuacoes) : 0;
 
-    // Disciplina Mais Fraca
+    // Cálculo da disciplina mais fraca
     const disciplinaStats = new Map<
       string,
       { acertos: number; total: number }
     >();
+
     historicoFiltrado.forEach((h) => {
       if (!Array.isArray(h.questoes)) return;
       h.questoes.forEach((q) => {
         if (!q?.disciplina) return;
-        if (!disciplinaStats.has(q.disciplina))
+        if (!disciplinaStats.has(q.disciplina)) {
           disciplinaStats.set(q.disciplina, { acertos: 0, total: 0 });
+        }
         const stats = disciplinaStats.get(q.disciplina)!;
         stats.total++;
         if (q.respostaUsuario === q.resposta) stats.acertos++;
       });
     });
+
     const disciplinaMaisFraca = Array.from(disciplinaStats.entries()).sort(
       ([, a], [, b]) => a.acertos / a.total - b.acertos / b.total,
     )[0];
@@ -353,16 +421,19 @@ export default function Dashboard() {
     };
   }, [historicoFiltrado]);
 
+  // Nível e progresso de gamificação
   const nivelAtual = useMemo(
     () => NIVEIS.find((n) => n.nivel === progress?.nivel) || NIVEIS[0],
     [progress?.nivel],
   );
+
   const progressoNivel = useMemo(() => {
     const total =
       (progress?.xpAtual ?? 0) + (progress?.xpParaProximoNivel ?? 100);
     return total > 0 ? ((progress?.xpAtual ?? 0) / total) * 100 : 0;
   }, [progress?.xpAtual, progress?.xpParaProximoNivel]);
 
+  // Filtro de busca dos modos de estudo
   const modosFiltrados = useMemo(() => {
     if (!searchTerm.trim()) return MODOS_ESTUDO;
     const term = searchTerm.toLowerCase().trim();
@@ -374,7 +445,10 @@ export default function Dashboard() {
     );
   }, [searchTerm]);
 
-  // --- Handlers ---
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
   const handleIniciarPrimeiroSimulado = useDebouncedCallback(() => {
     router.push("/simulado?modo=completo");
   }, 500);
@@ -382,6 +456,7 @@ export default function Dashboard() {
   const exportarDados = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
+
     try {
       const dados = {
         historico: localStorage.getItem("prf_historico"),
@@ -392,15 +467,18 @@ export default function Dashboard() {
         versao: "2.0",
         app: "prf-simulado",
       };
+
       const blob = new Blob([JSON.stringify(dados, null, 2)], {
         type: "application/json",
       });
+
+      // File System Access API (moderno) ou fallback
       if (
         "showSaveFilePicker" in window &&
         typeof window.showSaveFilePicker === "function"
       ) {
         try {
-          const handle = await window.showSaveFilePicker({
+          const handle = await (window as any).showSaveFilePicker({
             suggestedName: `prf-backup-${new Date().toISOString().split("T")[0]}.json`,
             types: [
               {
@@ -416,6 +494,7 @@ export default function Dashboard() {
           if (err.name !== "AbortError") throw err;
         }
       } else {
+        // Fallback para navegadores antigos
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -427,6 +506,7 @@ export default function Dashboard() {
           URL.revokeObjectURL(url);
         });
       }
+
       setShowExportModal(false);
     } catch (err) {
       console.error("Erro ao exportar:", err);
@@ -440,41 +520,57 @@ export default function Dashboard() {
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
       try {
-        if (!file.type.includes("json") && !file.name.endsWith(".json"))
+        if (!file.type.includes("json") && !file.name.endsWith(".json")) {
           throw new Error("O arquivo deve ser um JSON válido");
-        if (file.size > 10 * 1024 * 1024)
+        }
+        if (file.size > 10 * 1024 * 1024) {
           throw new Error("Arquivo muito grande (máx. 10MB)");
+        }
+
         const text = await file.text();
         let dados: Record<string, unknown> = JSON.parse(text);
-        if (!dados.versao || typeof dados.versao !== "string")
+
+        if (!dados.versao || typeof dados.versao !== "string") {
           throw new Error("Arquivo inválido: versão não encontrada");
-        if (dados.app !== "prf-simulado")
+        }
+        if (dados.app !== "prf-simulado") {
           throw new Error("Arquivo não pertence a este aplicativo");
-        if (confirm(`Isso substituirá seus dados atuais. Deseja continuar?`)) {
+        }
+
+        if (confirm("Isso substituirá seus dados atuais. Deseja continuar?")) {
           const keysToImport = [
             "prf_historico",
             "prf_user_progress",
             "prf_erros",
             "prf_config",
           ];
+
           keysToImport.forEach((key) => {
             const value = dados[key.replace("prf_", "")] || dados[key];
-            if (value && typeof value === "string")
+            if (value && typeof value === "string") {
               localStorage.setItem(key, value);
+            }
           });
+
           window.location.reload();
         }
       } catch (err) {
         alert(err instanceof Error ? err.message : "Erro ao importar");
       }
+
       e.target.value = "";
     },
     [],
   );
 
-  // --- Render ---
-  if (!mounted)
+  // ============================================================================
+  // RENDERIZAÇÃO
+  // ============================================================================
+
+  // Skeleton loading
+  if (!mounted) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 animate-pulse">
@@ -483,11 +579,13 @@ export default function Dashboard() {
         </div>
       </div>
     );
+  }
 
   const hasData = historicoFiltrado.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white selection:bg-blue-500/30">
+      {/* Confetti */}
       <Suspense fallback={null}>
         <Confetti trigger={showConfetti && !prefersReducedMotion} />
       </Suspense>
@@ -510,6 +608,7 @@ export default function Dashboard() {
                 <p className="text-xs text-slate-400">Banca CEBRASPE</p>
               </div>
             </Link>
+
             <div className="flex items-center gap-2 sm:gap-3">
               {progress?.streakDias > 0 && (
                 <motion.div
@@ -523,6 +622,7 @@ export default function Dashboard() {
                   </span>
                 </motion.div>
               )}
+
               <div
                 className="px-2 sm:px-3 py-1.5 rounded-full border text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all hover:scale-105"
                 style={{
@@ -542,12 +642,13 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {!hasData ? (
           <EmptyStateDashboard onIniciar={handleIniciarPrimeiroSimulado} />
         ) : (
           <>
-            {/* Filtros */}
+            {/* Filtros de Período */}
             <nav
               aria-label="Filtro de período"
               className="flex flex-wrap items-center gap-2"
@@ -565,7 +666,11 @@ export default function Dashboard() {
                   key={p.value}
                   onClick={() => setPeriodoFiltro(p.value)}
                   aria-pressed={periodoFiltro === p.value}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${periodoFiltro === p.value ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25" : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    periodoFiltro === p.value
+                      ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
+                      : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
+                  }`}
                 >
                   {p.label}
                 </button>
@@ -574,6 +679,7 @@ export default function Dashboard() {
 
             {/* Cards Principais */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+              {/* Card de Nível */}
               <GlassCard className="p-5 sm:p-6" glow="purple">
                 <div className="flex items-center gap-5">
                   <ProgressRing
@@ -614,6 +720,7 @@ export default function Dashboard() {
                 </div>
               </GlassCard>
 
+              {/* Stats Cards */}
               {estatisticas ? (
                 <div className="xl:col-span-2 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <StatCard
@@ -679,7 +786,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Alertas */}
+            {/* Alertas de Desempenho */}
             <div
               className="space-y-3"
               role="region"
@@ -729,10 +836,11 @@ export default function Dashboard() {
                   href="/conquistas"
                   className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all"
                 >
-                  Ver todas{" "}
+                  Ver todas
                   <ChevronRightIcon className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
+
               <div className="relative">
                 <div className="flex gap-3 overflow-x-auto pb-3 pt-1 px-1 -mx-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent sm:grid sm:grid-cols-6 sm:overflow-visible sm:pb-0 sm:pt-0 sm:px-0 sm:mx-0">
                   {BADGES_DISPLAY.map((badge, index) => {
@@ -747,7 +855,11 @@ export default function Dashboard() {
                         whileHover={
                           isUnlocked ? { scale: 1.08, y: -3 } : { scale: 1.02 }
                         }
-                        className={`flex-shrink-0 relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-300 ${isUnlocked ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-amber-500/30 shadow-lg shadow-black/20" : "bg-slate-900/30 border border-slate-800/50 opacity-60 grayscale"}`}
+                        className={`flex-shrink-0 relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-300 ${
+                          isUnlocked
+                            ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-amber-500/30 shadow-lg shadow-black/20"
+                            : "bg-slate-900/30 border border-slate-800/50 opacity-60 grayscale"
+                        }`}
                       >
                         <div className="relative">
                           <Badge type={badge} unlocked={isUnlocked} size="md" />
@@ -767,6 +879,7 @@ export default function Dashboard() {
                   })}
                 </div>
               </div>
+
               <div className="mt-5 pt-5 border-t border-slate-800/50">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-slate-400">Progresso geral</span>
@@ -792,15 +905,14 @@ export default function Dashboard() {
               </div>
             </GlassCard>
 
-            {/* Gráfico */}
+            {/* Gráfico de Evolução */}
             {historicoFiltrado.length > 1 && (
               <SecaoGraficoEvolucao
-                historico={historicoFiltrado}
-                maxItens={30}
+                historico={mapHistoricoParaGrafico(historicoFiltrado)}
               />
             )}
 
-            {/* Busca e Modos */}
+            {/* Busca de Modos */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
@@ -813,14 +925,16 @@ export default function Dashboard() {
               />
             </div>
 
+            {/* Modos de Estudo */}
             <section aria-label="Modos de estudo">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-200">
-                <Star className="w-5 h-5 text-amber-400" /> Escolha seu Modo{" "}
+                <Star className="w-5 h-5 text-amber-400" /> Escolha seu Modo
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-500 ml-auto font-mono">
                   <Keyboard className="w-3 h-3" /> Atalhos: Ctrl+N, Ctrl+T,
                   Ctrl+E
                 </span>
               </h2>
+
               {modosFiltrados.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
                   <p className="text-sm">Nenhum modo encontrado</p>
@@ -834,15 +948,15 @@ export default function Dashboard() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {modosFiltrados.map((modo, index) => (
-                    // CORREÇÃO: Usar spread operator (...) para passar as props
                     <ModoCard key={modo.href} {...modo} index={index} />
                   ))}
                 </div>
               )}
             </section>
 
-            {/* Backup */}
+            {/* Cards Inferiores: Regras e Backup */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Regra CEBRASPE */}
               <GlassCard className="p-5" variant="info">
                 <h3 className="font-bold text-base mb-4 flex items-center gap-2 text-slate-200">
                   <Clock className="w-5 h-5 text-blue-400" /> Regra de Pontuação
@@ -892,6 +1006,8 @@ export default function Dashboard() {
                   ))}
                 </div>
               </GlassCard>
+
+              {/* Backup */}
               <GlassCard className="p-5">
                 <h3 className="font-bold text-base mb-4 flex items-center gap-2 text-slate-200">
                   <Settings className="w-5 h-5 text-purple-400" /> Backup e
@@ -907,11 +1023,11 @@ export default function Dashboard() {
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Download className="w-4 h-4" />
-                    )}{" "}
+                    )}
                     {isExporting ? "Exportando..." : "Exportar Dados"}
                   </button>
                   <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-700/50 border border-slate-600 text-slate-300 hover:bg-slate-700 cursor-pointer transition-all text-sm font-medium">
-                    <Upload className="w-4 h-4" /> Importar{" "}
+                    <Upload className="w-4 h-4" /> Importar
                     <input
                       type="file"
                       accept=".json"
@@ -926,7 +1042,7 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* Modal Export */}
+      {/* Modal de Exportação */}
       <AnimatePresence>
         {showExportModal && (
           <motion.div
@@ -974,7 +1090,7 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Modais de Notificação (NewBadge e LevelUp) - Mantidos aqui pois usam estados globais do dashboard */}
+      {/* Notificação de Nova Conquista */}
       <AnimatePresence>
         {showNewBadge && (
           <NewBadgeNotification
@@ -984,6 +1100,7 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
+      {/* Modal de Level Up */}
       <AnimatePresence>
         {showLevelUp && (
           <motion.div

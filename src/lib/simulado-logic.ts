@@ -1,9 +1,9 @@
+// lib/simulado-logic.ts
 import {
   ClassificacaoDesempenho,
   Disciplina,
   EstatisticasDisciplina,
   EstatisticasSimulado,
-  FaseTempo,
   ModoSimulado,
   Questao,
   QuestaoRespondida,
@@ -58,21 +58,34 @@ export class SimuladoError extends Error {
 // ═══════════════════════════════════════════════════════════
 
 /**
- * Embaralha array usando algoritmo Fisher-Yates com seed opcional
- * Permite reproduzir o mesmo embaralhamento para debug
+ * Gera uma nova seed derivada a partir de uma base e um índice.
+ * Garante que o embaralhamento seja único por disciplina/etapa,
+ * mas reprodutível se a seed base for a mesma.
+ */
+function deriveSeed(baseSeed: number, modifier: number): number {
+  // Algoritmo simples de hash para modificar a seed
+  return (baseSeed * 31 + modifier) % 2147483647;
+}
+
+/**
+ * Embaralha array usando algoritmo Fisher-Yates com seed opcional.
+ * Modifica o array in-place para performance, mas retorna a referência.
  */
 export function embaralhar<T>(array: T[], seed?: number): T[] {
-  const novoArray = [...array];
+  let m = array.length;
   let s = seed ?? Math.floor(Math.random() * 1000000);
 
-  for (let i = novoArray.length - 1; i > 0; i--) {
-    // Linear Congruential Generator para seed previsível
+  // Enquanto houver elementos para embaralhar
+  while (m) {
+    // Pega um índice aleatório restante
     s = (s * 9301 + 49297) % 233280;
-    const j = Math.floor((s / 233280) * (i + 1));
-    [novoArray[i], novoArray[j]] = [novoArray[j], novoArray[i]];
+    const i = Math.floor((s / 233280) * m--);
+
+    // Troca com o elemento atual
+    [array[m], array[i]] = [array[i], array[m]];
   }
 
-  return novoArray;
+  return array;
 }
 
 /** Gera seed baseado em data para simulados diários */
@@ -106,6 +119,8 @@ export function selecionarQuestoes(
 
   const selecionadas: Questao[] = [];
   const erros: string[] = [];
+  const baseSeed = seed ?? Date.now();
+  let seedIncremental = 0;
 
   // Helper para processar uma área (básica ou específica)
   const processarArea = (
@@ -114,32 +129,45 @@ export function selecionarQuestoes(
   ) => {
     Object.entries(disciplinas).forEach(([disc, qtdOriginal]) => {
       const qtd = Math.round((qtdOriginal || 0) * proporcao);
-      const questoesDisc = todasQuestoes.filter((q) => q.disciplina === disc);
+      if (qtd === 0) return;
 
-      // Validação
-      if (questoesDisc.length === 0) {
+      // Filtra questões da disciplina atual
+      let questoesDisponiveis = todasQuestoes.filter(
+        (q) => q.disciplina === disc,
+      );
+
+      // Validação de existência
+      if (questoesDisponiveis.length === 0) {
         erros.push(`Disciplina ${disc} não possui questões cadastradas`);
         return;
       }
 
-      if (questoesDisc.length < qtd) {
-        if (garantirCobertura && questoesDisc.length > 0) {
-          // Usa o que tem disponível
+      // Embaralha a lista disponível com uma seed única para esta disciplina
+      // Isso evita que a mesma ordem se repita em todas as matérias
+      const seedDisciplina = deriveSeed(baseSeed, ++seedIncremental);
+      embaralhar(questoesDisponiveis, seedDisciplina);
+
+      // Remove as questões selecionadas do pool disponível para evitar duplicatas
+      // (Se o banco for pequeno e reutilizar questões, o slice abaixo já isola as usadas)
+      // O ideal seria ter um pool global, mas a estrutura atual é por disciplina.
+
+      // Verifica se há quantidade suficiente
+      if (questoesDisponiveis.length < qtd) {
+        if (garantirCobertura) {
           console.warn(
-            `[Simulado] ${disc}: solicitadas ${qtd}, disponíveis ${questoesDisc.length}`,
+            `[Simulado] ${disc}: solicitadas ${qtd}, disponíveis ${questoesDisponiveis.length}. Usando todas.`,
           );
-          const embaralhadas = embaralhar(questoesDisc, seed);
-          selecionadas.push(...embaralhadas);
+          selecionadas.push(...questoesDisponiveis);
         } else {
           erros.push(
-            `${disc}: insuficiente (precisa: ${qtd}, tem: ${questoesDisc.length})`,
+            `${disc}: insuficiente (precisa: ${qtd}, tem: ${questoesDisponiveis.length})`,
           );
         }
         return;
       }
 
-      const embaralhadas = embaralhar(questoesDisc, seed);
-      selecionadas.push(...embaralhadas.slice(0, qtd));
+      // Adiciona as N primeiras questões da lista embaralhada
+      selecionadas.push(...questoesDisponiveis.slice(0, qtd));
     });
   };
 
@@ -150,7 +178,7 @@ export function selecionarQuestoes(
     "Específicos",
   );
 
-  // Lança erro se houver problemas críticos
+  // Lança erro se houver problemas críticos e não estiver em modo cobertura forçada
   if (erros.length > 0 && !garantirCobertura) {
     throw new SimuladoError(
       `Erro ao montar simulado:\n${erros.join("\n")}`,
@@ -158,7 +186,7 @@ export function selecionarQuestoes(
     );
   }
 
-  // Validação final
+  // Validação final de quantidade mínima (80% do esperado)
   const qtdEsperada = isTurbo
     ? CONSTANTES.QUESTOES_TURBO
     : CONSTANTES.QUESTOES_COMPLETO;
@@ -169,17 +197,18 @@ export function selecionarQuestoes(
     );
   }
 
-  // Embaralha final mantendo proporção de áreas misturadas
-  return embaralhar(selecionadas, seed ? seed + 1 : undefined);
+  // Embaralhamento final para misturar Básicos e Específicos
+  // Usa uma nova seed derivada para não repetir a ordem anterior
+  return embaralhar(selecionadas, deriveSeed(baseSeed, 9999));
 }
 
 // ═══════════════════════════════════════════════════════════
 // CÁLCULO DE ESTATÍSTICAS
 // ═══════════════════════════════════════════════════════════
 
-/** Inicializa estatísticas vazias para todas as disciplinas */
+/** Inicializa estatísticas vazias para todas as disciplinas conhecidas */
 function inicializarEstatisticasDisciplina(): Record<
-  Disciplina,
+  string,
   EstatisticasDisciplina
 > {
   return ORDEM_DISCIPLINAS.reduce(
@@ -194,21 +223,31 @@ function inicializarEstatisticasDisciplina(): Record<
       };
       return acc;
     },
-    {} as Record<Disciplina, EstatisticasDisciplina>,
+    {} as Record<string, EstatisticasDisciplina>,
   );
 }
 
-/** Processa uma questão e atualiza estatísticas */
+/** Processa uma questão e atualiza estatísticas de forma segura */
 function processarQuestao(
   questao: QuestaoRespondida,
-  stats: Record<Disciplina, EstatisticasDisciplina>,
+  stats: Record<string, EstatisticasDisciplina>,
   contadores: { acertos: number; erros: number; brancos: number },
 ): void {
-  const disc = questao.disciplina;
+  const disc = questao.disciplina as unknown as string; // Type guard se necessário
 
+  // Garante entrada no objeto de stats mesmo se a disciplina não estiver na lista padrão
   if (!stats[disc]) {
-    console.warn(`[Estatísticas] Disciplina desconhecida: ${disc}`);
-    return;
+    console.warn(
+      `[Estatísticas] Disciplina não mapeada: ${disc}. Inicializando dinamicamente.`,
+    );
+    stats[disc] = {
+      total: 0,
+      acertos: 0,
+      erros: 0,
+      brancos: 0,
+      percentual: 0,
+      pontuacao: 0,
+    };
   }
 
   stats[disc].total++;
@@ -227,15 +266,15 @@ function processarQuestao(
   }
 }
 
-/** Finaliza cálculos por disciplina */
+/** Finaliza cálculos por disciplina (percentuais e pontuações) */
 function finalizarEstatisticasDisciplina(
-  stats: Record<Disciplina, EstatisticasDisciplina>,
+  stats: Record<string, EstatisticasDisciplina>,
 ): void {
-  ORDEM_DISCIPLINAS.forEach((disc) => {
+  Object.keys(stats).forEach((disc) => {
     const s = stats[disc];
     if (s.total > 0) {
       s.percentual = (s.acertos / s.total) * 100;
-      // Regra CEBRASPE por disciplina também
+      // Regra CEBRASPE por disciplina também (útil para análise posterior)
       s.pontuacao = s.acertos - s.erros;
     }
   });
@@ -263,9 +302,13 @@ export function calcularEstatisticas(
 
   // Regra CEBRASPE: pontuação bruta = acertos - erros
   const pontuacao = contadores.acertos - contadores.erros;
-  const percentual = (pontuacao / questoes.length) * 100;
 
-  // Calcula tempo efetivo
+  // Percentual baseado na pontuação possível (pontos / total questões)
+  // Nota: Se a prova vale 60 pontos, e você fez 20, seu % é 33.3%, mesmo que tenha acertado 40 e errado 20.
+  const percentual =
+    questoes.length > 0 ? (pontuacao / questoes.length) * 100 : 0;
+
+  // Calcula tempo efetivo (não pode ser maior que o limite se encerrado automaticamente)
   const tempoEfetivo = Math.min(tempoTotal, tempoLimite ?? Infinity);
   const questoesRespondidas = contadores.acertos + contadores.erros;
 
@@ -274,15 +317,19 @@ export function calcularEstatisticas(
     acertos: contadores.acertos,
     erros: contadores.erros,
     brancos: contadores.brancos,
-    pontuacao, // Pode ser negativa! Não usar Math.max(0, ...)
-    percentual, // Também pode ser negativa
+    pontuacao, // Pode ser negativa!
+    percentual, // Pode ser negativo
     tempoTotal: tempoEfetivo,
     tempoMedioPorQuestao:
       questoesRespondidas > 0
         ? Math.round(tempoEfetivo / questoesRespondidas)
         : 0,
-    desempenhoPorDisciplina,
-    taxaResposta: (questoesRespondidas / questoes.length) * 100,
+    desempenhoPorDisciplina: desempenhoPorDisciplina as Record<
+      Disciplina,
+      EstatisticasDisciplina
+    >,
+    taxaResposta:
+      questoes.length > 0 ? (questoesRespondidas / questoes.length) * 100 : 0,
   };
 }
 
@@ -298,75 +345,66 @@ export function classificarDesempenho(
   pontuacao: number,
   totalQuestoes: number,
 ): ClassificacaoDesempenho {
-  const percentual = (pontuacao / totalQuestoes) * 100;
-  const notaMaxima = totalQuestoes;
-  const notaMinima = -totalQuestoes; // CEBRASPE: -1 por erro
+  // Cálculo do percentual de aproveitamento real da pontuação
+  const percentual = totalQuestoes > 0 ? (pontuacao / totalQuestoes) * 100 : 0;
 
-  // Normaliza para escala 0-100 considerando range negativo
-  const range = notaMaxima - notaMinima;
-  const posicao = (pontuacao - notaMinima) / range;
-  const scoreNormalizado = posicao * 100;
+  // Faixas baseadas na regra de corte e margem de segurança
+  // CEBRASPE: Acerto +1, Erro -1. Range teórico: -60 a +60.
+  // Aprovação geralmente gira em torno de 40-50% da pontuação MÁXIMA possível,
+  // mas para regra CEBRASPE (que anula), o corte costuma ser mais baixo.
+  // Aqui consideramos 60% da pontuação MÁXIMA (ex: 36 pontos em 60) como Excelente.
 
-  if (percentual >= 60) {
+  if (pontuacao >= totalQuestoes * 0.6) {
     return {
       nivel: "excelente",
       mensagem:
-        percentual >= 70
-          ? "🎯 Excelente! Aprovação garantida!"
-          : "✅ Bom! Dentro da média de aprovação",
+        pontuacao >= totalQuestoes * 0.75
+          ? "🎯 Excelente! Aprovação confortável!"
+          : "✅ Muito bom! Dentro da faixa de aprovação.",
       cor: "#10b981",
       icone: "trophy",
-      score: scoreNormalizado,
+      score: percentual,
     };
   }
 
-  if (percentual >= 40) {
+  if (pontuacao >= totalQuestoes * 0.3) {
     return {
       nivel: "bom",
-      mensagem: "📊 Na média, mas precisa melhorar para garantir",
+      mensagem: "📊 Na média, mas precisa garantir mais acertos.",
       cor: "#3b82f6",
-      icone: "chart",
-      score: scoreNormalizado,
+      icone: "chart-line-up",
+      score: percentual,
     };
   }
 
-  if (percentual >= 20 || pontuacao >= 0) {
+  if (pontuacao >= 0) {
     return {
       nivel: "regular",
-      mensagem: "⚠️ Abaixo da média. Foque nos pontos fracos!",
+      mensagem: "⚠️ Abaixo da média. Muitos erros estão anulando acertos.",
       cor: "#f59e0b",
-      icone: "alert",
-      score: scoreNormalizado,
-    };
-  }
-
-  if (percentual >= 0) {
-    return {
-      nivel: "insuficiente",
-      mensagem: "❌ Insuficiente. Revisão completa necessária",
-      cor: "#f97316",
       icone: "warning",
-      score: scoreNormalizado,
+      score: percentual,
     };
   }
 
   // Pontuação negativa
   return {
     nivel: "critico",
-    mensagem: "🚨 Crítico! Muitos erros anulando acertos",
+    mensagem: "🚨 Crítico! Erros estão superando acertos.",
     cor: "#ef4444",
-    icone: "danger",
-    score: scoreNormalizado,
+    icone: "warning-circle",
+    score: percentual,
   };
 }
 
 /** Identifica disciplinas mais fracas para foco de estudo */
 export function identificarPontosFracos(
   estatisticas: EstatisticasSimulado,
-  limitePercentual: number = 60,
+  limitePercentual: number = 50, // Ajustado para 50% (pontuação positiva)
 ): Disciplina[] {
   return ORDEM_DISCIPLINAS.filter((disc) => {
     const stats = estatisticas.desempenhoPorDisciplina[disc];
+    // Filtro: tem questões respondidas E pontuação percentual abaixo do limite
     return stats.total > 0 && stats.percentual < limitePercentual;
   }).sort((a, b) => {
     const pa = estatisticas.desempenhoPorDisciplina[a].percentual;
@@ -375,25 +413,30 @@ export function identificarPontosFracos(
   });
 }
 
-/** Calcula tendência comparando com histórico */
+/** Calcula tendência comparando com histórico recente */
 export function calcularTendencia(
   estatisticasAtual: EstatisticasSimulado,
   historico: EstatisticasSimulado[],
 ): "subindo" | "estavel" | "caindo" {
   if (historico.length < 2) return "estavel";
 
-  const recentes = historico.slice(-3);
+  // Pega os últimos 3 simulados ou menos se não houver
+  const qtdHistorico = Math.min(historico.length, 3);
+  const recentes = historico.slice(-qtdHistorico);
+
   const mediaRecente =
     recentes.reduce((a, h) => a + h.pontuacao, 0) / recentes.length;
+
   const diferenca = estatisticasAtual.pontuacao - mediaRecente;
 
+  // Limiar de sensibilidade (5 pontos de diferença)
   if (diferenca > 5) return "subindo";
   if (diferenca < -5) return "caindo";
   return "estavel";
 }
 
 // ═══════════════════════════════════════════════════════════
-// FORMATAÇÃO DE TEMPO (ÚNICA VERSÃO CONSOLIDADA)
+// FORMATAÇÃO DE TEMPO
 // ═══════════════════════════════════════════════════════════
 
 export interface OpcoesFormatacao {
@@ -403,7 +446,7 @@ export interface OpcoesFormatacao {
 }
 
 /**
- * Formata tempo em segundos para exibição
+ * Formata tempo em segundos para exibição (HH:MM:SS ou MM:SS)
  */
 export function formatarTempo(
   segundos: number,
@@ -411,13 +454,16 @@ export function formatarTempo(
 ): string {
   const { sempreComHoras = false, abreviado = false, separador = ":" } = opcoes;
 
-  const hrs = Math.floor(segundos / 3600);
-  const mins = Math.floor((segundos % 3600) / 60);
-  const secs = segundos % 60;
+  // Garante que segundos seja não-negativo
+  const s = Math.max(0, Math.floor(segundos));
+
+  const hrs = Math.floor(s / 3600);
+  const mins = Math.floor((s % 3600) / 60);
+  const secs = s % 60;
 
   if (abreviado) {
-    if (hrs > 0) return `${hrs}h${mins}min`;
-    if (mins > 0) return `${mins}min`;
+    if (hrs > 0) return `${hrs}h ${mins}min`;
+    if (mins > 0) return `${mins}min ${secs}s`;
     return `${secs}s`;
   }
 
@@ -441,20 +487,6 @@ export function formatarTempoMinutos(minutos: number): string {
 /** Formata tempo em segundos para texto legível */
 export function formatarTempoLegivel(segundos: number): string {
   return formatarTempo(segundos, { abreviado: true });
-}
-
-/** Calcula fase do cronômetro para estilização */
-export function calcularFaseCronometro(
-  tempoRestante: number,
-  tempoTotal: number,
-): FaseTempo {
-  if (tempoRestante <= 0) return "esgotado";
-
-  const percentual = (tempoRestante / tempoTotal) * 100;
-
-  if (percentual <= 10) return "critico";
-  if (percentual <= 25) return "atencao";
-  return "normal";
 }
 
 /** Converte string de tempo (HH:MM:SS) para segundos */
@@ -506,7 +538,9 @@ export function gerarResumoSimulado(
     linhas.push(`⚠️ Disciplinas que precisam de atenção:`);
     pontosFracos.slice(0, 3).forEach((disc) => {
       const stats = estatisticas.desempenhoPorDisciplina[disc];
-      linhas.push(`  • ${disc}: ${stats.percentual.toFixed(0)}%`);
+      linhas.push(
+        `  • ${disc}: ${stats.percentual.toFixed(0)}% (${stats.pontuacao} pts)`,
+      );
     });
   }
 
@@ -521,8 +555,8 @@ export function exportarCSV(estatisticas: EstatisticasSimulado): string {
     "Acertos",
     "Erros",
     "Brancos",
-    "%",
-    "Pontuação",
+    "% Acerto",
+    "Pontuação (Adq - Err)",
   ];
   const rows = ORDEM_DISCIPLINAS.map((disc) => {
     const s = estatisticas.desempenhoPorDisciplina[disc];
@@ -532,7 +566,7 @@ export function exportarCSV(estatisticas: EstatisticasSimulado): string {
       s.acertos,
       s.erros,
       s.brancos,
-      s.percentual.toFixed(1),
+      s.percentual.toFixed(1).replace(".", ","),
       s.pontuacao,
     ].join(",");
   });

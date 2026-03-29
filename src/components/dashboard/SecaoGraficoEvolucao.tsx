@@ -101,7 +101,6 @@ const getChartOptions = (
             }
             const { chart } = context;
             const tooltipModel = tooltip;
-            const position = chart.canvas.getBoundingClientRect();
             const body = tooltipModel.body;
 
             if (body?.[0]?.lines?.[0]) {
@@ -216,8 +215,8 @@ export default memo(function GraficoEvolucao({
   }, [historico]);
 
   const options = useMemo(
-    () => getChartOptions(theme, mostrarMeta, metaAprovacao),
-    [theme, mostrarMeta, metaAprovacao],
+    () => getChartOptions(theme, mostrarMeta, metaAprovacao, onTooltipChange),
+    [theme, mostrarMeta, metaAprovacao, onTooltipChange],
   );
 
   // Plugin para linha de meta

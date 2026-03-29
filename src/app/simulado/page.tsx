@@ -22,7 +22,6 @@ import {
 } from "react";
 
 // Lazy load componentes pesados
-const Cronometro = lazy(() => import("@/components/Cronometro"));
 const QuestaoCard = lazy(() => import("@/components/QuestaoCard"));
 const GlassCard = lazy(() =>
   import("@/components/ui/GlassCard").then((module) => ({
@@ -642,17 +641,7 @@ export default function SimuladoPage() {
           </div>
         </div>
       </header>
-
-      {/* Cronômetro */}
-      <Suspense fallback={null}>
-        <Cronometro
-          tempoInicial={tempoMaximo}
-          onTempoEsgotado={finalizarSimulado}
-          posicao="fixed"
-          tamanho="md"
-        />
-      </Suspense>
-
+      
       {/* Conteúdo */}
       <main className="max-w-3xl mx-auto p-4 sm:p-6 pt-6">
         <AnimatePresence mode="wait">

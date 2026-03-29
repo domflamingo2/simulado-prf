@@ -176,7 +176,6 @@ export function useGamificacao(): UseGamificacaoReturn {
 
       // Bônus de recorde
       setProgress((prev) => {
-        const novasConquistasList: BadgeType[] = [];
         const novosRecordes = { ...prev.conquistas.recordes };
 
         // Verifica recorde de pontuação

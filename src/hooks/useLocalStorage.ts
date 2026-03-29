@@ -2,10 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// ═══════════════════════════════════════════════════════════
-// TIPOS
-// ═══════════════════════════════════════════════════════════
-
 type StorageValue<T> = T | undefined;
 
 interface UseLocalStorageOptions<T> {
@@ -26,164 +22,172 @@ interface UseLocalStorageReturn<T> {
   refresh: () => void;
 }
 
-// ═══════════════════════════════════════════════════════════
-// SERIALIZADORES PADRÃO
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// DEFAULTS (ESTÁVEIS)
+// ═══════════════════════════════════════
 
-const defaultSerializer = <T>(value: T): string => JSON.stringify(value);
-const defaultDeserializer = <T>(value: string): T => JSON.parse(value);
+const defaultSerializer = <T>(value: T) => JSON.stringify(value);
+const defaultDeserializer = <T>(value: string) => JSON.parse(value) as T;
 
-// ═══════════════════════════════════════════════════════════
-// HOOK PRINCIPAL
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// HOOK
+// ═══════════════════════════════════════
 
 export function useLocalStorage<T>({
   key,
-  defaultValue = undefined,
+  defaultValue,
   serializer = defaultSerializer,
   deserializer = defaultDeserializer,
   syncAcrossTabs = true,
   validate,
 }: UseLocalStorageOptions<T>): UseLocalStorageReturn<T> {
-  const [value, setInternalValue] = useState<StorageValue<T>>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const isClient = typeof window !== "undefined";
 
-  // CORREÇÃO: useRef para garantir execução única do carregamento inicial
-  const didInitRef = useRef(false);
+  // 🔒 refs estáveis (NUNCA mudam)
+  const defaultRef = useRef(defaultValue);
+  const serializerRef = useRef(serializer);
+  const deserializerRef = useRef(deserializer);
+  const validateRef = useRef(validate);
 
-  // ═══════════════════════════════════════════════════════════
-  // FUNÇÕES AUXILIARES - CORREÇÃO: useCallback com dependências estáveis
-  // ═══════════════════════════════════════════════════════════
-
-  const readValue = useCallback((): StorageValue<T> => {
-    if (typeof window === "undefined") {
-      return defaultValue;
-    }
+  const [value, setValueState] = useState<StorageValue<T>>(() => {
+    if (!isClient) return defaultRef.current;
 
     try {
-      const item = window.localStorage.getItem(key);
+      const item = localStorage.getItem(key);
+      if (item === null) return defaultRef.current;
 
-      if (item === null) {
-        return defaultValue;
-      }
+      const parsed = deserializerRef.current(item);
 
-      const parsed = deserializer(item);
-
-      if (validate && !validate(parsed)) {
-        console.warn(`[useLocalStorage] Valor inválido para chave "${key}"`);
-        return defaultValue;
+      if (validateRef.current && !validateRef.current(parsed)) {
+        return defaultRef.current;
       }
 
       return parsed;
-    } catch (err) {
-      console.error(`[useLocalStorage] Erro ao ler "${key}":`, err);
-      setError(err instanceof Error ? err : new Error(String(err)));
-      return defaultValue;
+    } catch {
+      return defaultRef.current;
     }
-  }, [key, defaultValue, deserializer, validate]);
+  });
 
-  const writeValue = useCallback(
+  const [error, setError] = useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ═══════════════════════════════════════
+  // WRITE (isolado)
+  // ═══════════════════════════════════════
+
+  const writeToStorage = useCallback(
     (newValue: StorageValue<T>) => {
-      if (typeof window === "undefined") {
-        return;
-      }
+      if (!isClient) return;
 
       try {
         if (newValue === undefined) {
-          window.localStorage.removeItem(key);
+          localStorage.removeItem(key);
         } else {
-          const serialized = serializer(newValue);
-          window.localStorage.setItem(key, serialized);
+          const serialized = serializerRef.current(newValue);
+          localStorage.setItem(key, serialized);
         }
 
         setError(null);
       } catch (err) {
-        console.error(`[useLocalStorage] Erro ao escrever "${key}":`, err);
         setError(err instanceof Error ? err : new Error(String(err)));
-
-        if (err instanceof Error && err.name === "QuotaExceededError") {
-          console.warn(
-            `[useLocalStorage] Limite de armazenamento excedido para "${key}"`,
-          );
-        }
       }
     },
-    [key, serializer],
+    [key, isClient],
   );
 
-  // ═══════════════════════════════════════════════════════════
-  // EFEITOS - CORREÇÃO: Array de dependências constante
-  // ═══════════════════════════════════════════════════════════
-
-  // Carregamento inicial - executa apenas uma vez
-  useEffect(() => {
-    if (didInitRef.current) return;
-    didInitRef.current = true;
-
-    const initialValue = readValue();
-    setInternalValue(initialValue);
-    setIsLoading(false);
-  }, []); // Array vazio - executa uma vez só
-
-  // Sincronização entre abas/janelas
-  useEffect(() => {
-    if (!syncAcrossTabs || typeof window === "undefined") return;
-
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key !== key) return;
-
-      if (event.newValue === null) {
-        setInternalValue(defaultValue);
-      } else {
-        try {
-          const newValue = deserializer(event.newValue);
-          if (!validate || validate(newValue)) {
-            setInternalValue(newValue);
-          }
-        } catch (err) {
-          console.error(
-            `[useLocalStorage] Erro na sincronização de "${key}":`,
-            err,
-          );
-        }
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [key, defaultValue, deserializer, syncAcrossTabs, validate]);
-
-  // ═══════════════════════════════════════════════════════════
-  // API PÚBLICA
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════
+  // SET VALUE (ANTI-LOOP)
+  // ═══════════════════════════════════════
 
   const setValue = useCallback(
     (valueOrUpdater: T | ((prev: T | undefined) => T | undefined)) => {
-      setInternalValue((prev) => {
+      setValueState((prev) => {
         const nextValue =
           valueOrUpdater instanceof Function
             ? valueOrUpdater(prev)
             : valueOrUpdater;
 
-        writeValue(nextValue);
+        // 🛑 evita loop infinito
+        if (Object.is(prev, nextValue)) return prev;
+
+        writeToStorage(nextValue);
         return nextValue;
       });
     },
-    [writeValue],
+    [writeToStorage],
   );
 
+  // ═══════════════════════════════════════
+  // REMOVE
+  // ═══════════════════════════════════════
+
   const removeValue = useCallback(() => {
-    setInternalValue(defaultValue);
-    writeValue(undefined);
-  }, [defaultValue, writeValue]);
+    setValueState(defaultRef.current);
+    writeToStorage(undefined);
+  }, [writeToStorage]);
+
+  // ═══════════════════════════════════════
+  // SYNC ENTRE ABAS
+  // ═══════════════════════════════════════
+
+  useEffect(() => {
+    if (!syncAcrossTabs || !isClient) return;
+
+    const handler = (event: StorageEvent) => {
+      if (event.key !== key) return;
+
+      try {
+        if (event.newValue === null) {
+          setValueState(defaultRef.current);
+          return;
+        }
+
+        const parsed = deserializerRef.current(event.newValue);
+
+        if (validateRef.current && !validateRef.current(parsed)) return;
+
+        setValueState((prev) => {
+          if (Object.is(prev, parsed)) return prev;
+          return parsed;
+        });
+      } catch {
+        // ignora erro silenciosamente
+      }
+    };
+
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, [key, syncAcrossTabs, isClient]);
+
+  // ═══════════════════════════════════════
+  // REFRESH
+  // ═══════════════════════════════════════
 
   const refresh = useCallback(() => {
+    if (!isClient) return;
+
     setIsLoading(true);
-    const freshValue = readValue();
-    setInternalValue(freshValue);
-    setIsLoading(false);
-  }, [readValue]);
+
+    try {
+      const item = localStorage.getItem(key);
+
+      if (item === null) {
+        setValueState(defaultRef.current);
+      } else {
+        const parsed = deserializerRef.current(item);
+
+        if (!validateRef.current || validateRef.current(parsed)) {
+          setValueState(parsed);
+        }
+      }
+
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [key, isClient]);
 
   return {
     value,
@@ -194,253 +198,3 @@ export function useLocalStorage<T>({
     refresh,
   };
 }
-
-// ═══════════════════════════════════════════════════════════
-// VARIANTES ESPECIALIZADAS
-// ═══════════════════════════════════════════════════════════
-
-export function useLocalStorageArray<T>(
-  options: Omit<UseLocalStorageOptions<T[]>, "defaultValue">,
-) {
-  const { value, setValue, ...rest } = useLocalStorage<T[]>({
-    ...options,
-    defaultValue: [],
-  });
-
-  const push = useCallback(
-    (item: T) => {
-      setValue((prev) => [...(prev || []), item]);
-    },
-    [setValue],
-  );
-
-  const unshift = useCallback(
-    (item: T) => {
-      setValue((prev) => [item, ...(prev || [])]);
-    },
-    [setValue],
-  );
-
-  const filter = useCallback(
-    (predicate: (item: T) => boolean) => {
-      setValue((prev) => (prev || []).filter(predicate));
-    },
-    [setValue],
-  );
-
-  const map = useCallback(
-    <U>(fn: (item: T, index: number) => U): U[] => {
-      return (value || []).map(fn);
-    },
-    [value],
-  );
-
-  const find = useCallback(
-    (predicate: (item: T) => boolean): T | undefined => {
-      return (value || []).find(predicate);
-    },
-    [value],
-  );
-
-  const some = useCallback(
-    (predicate: (item: T) => boolean): boolean => {
-      return (value || []).some(predicate);
-    },
-    [value],
-  );
-
-  const every = useCallback(
-    (predicate: (item: T) => boolean): boolean => {
-      return (value || []).every(predicate);
-    },
-    [value],
-  );
-
-  const length = value?.length || 0;
-
-  return {
-    value: value || [],
-    setValue,
-    push,
-    unshift,
-    filter,
-    map,
-    find,
-    some,
-    every,
-    length,
-    ...rest,
-  };
-}
-
-export function useLocalStorageObject<T extends Record<string, unknown>>(
-  options: Omit<UseLocalStorageOptions<T>, "defaultValue"> & {
-    defaultValue?: Partial<T>;
-  },
-) {
-  const fullDefault = { ...options.defaultValue } as T;
-
-  const { value, setValue, ...rest } = useLocalStorage<T>({
-    ...options,
-    defaultValue: fullDefault,
-    deserializer: (str) => {
-      const parsed = JSON.parse(str);
-      return { ...fullDefault, ...parsed };
-    },
-  });
-
-  const update = useCallback(
-    (updates: Partial<T> | ((prev: T) => Partial<T>)) => {
-      setValue((prev) => {
-        const current = prev || fullDefault;
-        const newValues =
-          updates instanceof Function ? updates(current) : updates;
-        return { ...current, ...newValues };
-      });
-    },
-    [setValue, fullDefault],
-  );
-
-  const reset = useCallback(() => {
-    setValue(fullDefault);
-  }, [setValue, fullDefault]);
-
-  return {
-    value: value || fullDefault,
-    setValue,
-    update,
-    reset,
-    ...rest,
-  };
-}
-
-export function useLocalStorageNumber(
-  options: Omit<UseLocalStorageOptions<number>, "defaultValue"> & {
-    defaultValue?: number;
-  },
-) {
-  const { value, setValue, ...rest } = useLocalStorage<number>({
-    ...options,
-    defaultValue: options.defaultValue ?? 0,
-  });
-
-  const increment = useCallback(
-    (amount = 1) => {
-      setValue((prev) => (prev ?? 0) + amount);
-    },
-    [setValue],
-  );
-
-  const decrement = useCallback(
-    (amount = 1) => {
-      setValue((prev) => (prev ?? 0) - amount);
-    },
-    [setValue],
-  );
-
-  const multiply = useCallback(
-    (factor: number) => {
-      setValue((prev) => (prev ?? 0) * factor);
-    },
-    [setValue],
-  );
-
-  const divide = useCallback(
-    (divisor: number) => {
-      setValue((prev) => (divisor !== 0 ? (prev ?? 0) / divisor : (prev ?? 0)));
-    },
-    [setValue],
-  );
-
-  return {
-    value: value ?? 0,
-    setValue,
-    increment,
-    decrement,
-    multiply,
-    divide,
-    ...rest,
-  };
-}
-
-export function useLocalStorageBoolean(
-  options: Omit<UseLocalStorageOptions<boolean>, "defaultValue"> & {
-    defaultValue?: boolean;
-  },
-) {
-  const { value, setValue, ...rest } = useLocalStorage<boolean>({
-    ...options,
-    defaultValue: options.defaultValue ?? false,
-  });
-
-  const toggle = useCallback(() => {
-    setValue((prev) => !prev);
-  }, [setValue]);
-
-  const setTrue = useCallback(() => setValue(true), [setValue]);
-  const setFalse = useCallback(() => setValue(false), [setValue]);
-
-  return {
-    value: value ?? false,
-    toggle,
-    setTrue,
-    setFalse,
-    setValue,
-    ...rest,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════
-// UTILITÁRIOS
-// ═══════════════════════════════════════════════════════════
-
-export function clearLocalStorageByPrefix(prefix: string): void {
-  if (typeof window === "undefined") return;
-
-  const keysToRemove: string[] = [];
-
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(prefix)) {
-      keysToRemove.push(key);
-    }
-  }
-
-  keysToRemove.forEach((key) => localStorage.removeItem(key));
-}
-
-export function getLocalStorageInfo(): {
-  used: number;
-  total: number;
-  remaining: number;
-} {
-  if (typeof window === "undefined") {
-    return { used: 0, total: 0, remaining: 0 };
-  }
-
-  let used = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key) {
-      const value = localStorage.getItem(key) || "";
-      used += key.length + value.length;
-    }
-  }
-
-  const total = 5 * 1024 * 1024;
-  const remaining = total - used;
-
-  return { used, total, remaining };
-}
-
-export const validators = {
-  isString: (value: unknown): value is string => typeof value === "string",
-  isNumber: (value: unknown): value is number =>
-    typeof value === "number" && !isNaN(value),
-  isBoolean: (value: unknown): value is boolean => typeof value === "boolean",
-  isArray: <T>(value: unknown): value is T[] => Array.isArray(value),
-  isObject: (value: unknown): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null && !Array.isArray(value),
-  isDateString: (value: unknown): value is string =>
-    typeof value === "string" && !isNaN(Date.parse(value)),
-};
