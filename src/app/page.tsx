@@ -35,6 +35,8 @@ import {
   useState,
 } from "react";
 
+import Footer from "@/components/layout/Footer";
+
 // ============================================================================
 // IMPORTS DE COMPONENTES UI
 // ============================================================================
@@ -1154,6 +1156,9 @@ export default function Dashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Footer  */}
+      <Footer />
     </div>
   );
 }

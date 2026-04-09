@@ -1,4 +1,3 @@
-// src/components/dashboard/EmptyStateDashboard.tsx
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -12,7 +11,6 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ============================================================================
@@ -27,7 +25,6 @@ export interface EmptyStateProps {
   textoBotao?: string;
 }
 
-// ✅ Defina o tipo de status independentemente (antes de iconVariants)
 type StatusType = "idle" | "loading" | "success" | "error";
 
 interface EstadoUI {
@@ -64,7 +61,6 @@ const itemVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-// ✅ Tipar iconVariants com StatusType para type-safety
 const iconVariants: Record<StatusType, Variants[keyof Variants]> = {
   idle: { rotate: 0, scale: 1 },
   loading: {
@@ -87,29 +83,32 @@ export default function EmptyStateDashboard({
   descricao = "Simulados realistas no formato CEBRASPE. Estude com questões comentadas e acompanhe sua evolução.",
   textoBotao = "Iniciar Simulado",
 }: EmptyStateProps) {
-  // ✅ Hook useState AGORA dentro do componente - CORRETO!
   const [estado, setEstado] = useState<EstadoUI>({ status: "idle" });
   const abortControllerRef = useRef<AbortController | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Cleanup do AbortController
   useEffect(() => {
     return () => abortControllerRef.current?.abort();
   }, []);
 
-  // Handler principal do botão
   const handleIniciar = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
-      if (estado.status === "loading") {
-        abortControllerRef.current?.abort();
-        setEstado({ status: "idle" });
-        return;
-      }
+      // ✅ OTIMIZAÇÃO: Usa forma funcional para não depender de 'estado.status' nas dependências
+      setEstado((prev) => {
+        if (prev.status === "loading") {
+          abortControllerRef.current?.abort();
+          return { status: "idle" as StatusType };
+        }
+        return { status: "loading" as StatusType };
+      });
 
+      // Aborta anterior se existir (redundância de segurança, mas boa prática)
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       abortControllerRef.current = new AbortController();
-      setEstado({ status: "loading" });
 
       try {
         const timeoutId = setTimeout(() => {
@@ -137,7 +136,7 @@ export default function EmptyStateDashboard({
         }
       }
     },
-    [onIniciar, estado.status],
+    [onIniciar], // Dependência limpa
   );
 
   const handleRetry = useCallback(() => {
@@ -147,11 +146,15 @@ export default function EmptyStateDashboard({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && estado.status === "idle") {
-        buttonRef.current?.click();
-      }
+      // ✅ OTIMIZAÇÃO: Usa forma funcional aqui também
+      setEstado((prev) => {
+        if (e.key === "Enter" && prev.status === "idle") {
+          buttonRef.current?.click();
+        }
+        return prev; // Importante retornar o estado se não houver mudança
+      });
     },
-    [estado.status],
+    [], // Dependências vazias
   );
 
   const renderIcon = () => {
@@ -225,7 +228,7 @@ export default function EmptyStateDashboard({
           />
         </div>
 
-        {/* ✅ Ícone principal com animação - animate agora é type-safe */}
+        {/* Ícone principal com animação */}
         <motion.div
           variants={iconVariants}
           animate={estado.status}
@@ -387,20 +390,17 @@ export default function EmptyStateDashboard({
 
             {/* Link secundário */}
             {estado.status === "idle" && (
-              <Link
+              <motion.a
                 href="/como-funciona"
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400 }}
                 className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-slate-800/60 hover:bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-all duration-200 group min-w-[180px] focus:outline-none focus:ring-2 focus:ring-slate-500/50"
               >
-                <motion.span
-                  className="flex items-center gap-2"
-                  whileHover={{ x: 2 }}
-                  transition={{ type: "spring", stiffness: 400 }}
-                >
-                  <BookOpen className="w-4.5 h-4.5" />
-                  <span>Como Funciona</span>
-                  <ArrowRight className="w-4.5 h-4.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                </motion.span>
-              </Link>
+                <BookOpen className="w-4.5 h-4.5" />
+                <span>Como Funciona</span>
+                <ArrowRight className="w-4.5 h-4.5 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
+              </motion.a>
             )}
           </motion.div>
         )}

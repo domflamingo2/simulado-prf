@@ -1,4 +1,3 @@
-// src/components/charts/GraficoEvolucao.tsx
 "use client";
 
 import {
@@ -65,7 +64,7 @@ const getChartOptions = (
   theme: "light" | "dark",
   mostrarMeta: boolean,
   metaAprovacao: number,
-  onTooltipChange?: ( // ← NOVO PARÂMETRO
+  onTooltipChange?: (
     data: {
       visible: boolean;
       x: number;
@@ -94,24 +93,31 @@ const getChartOptions = (
         enabled: false, // Desabilitado para usar tooltip customizado
         external: (context) => {
           const tooltip = context.tooltip;
-          if (onTooltipChange) {
-            if (tooltip.opacity === 0) {
-              onTooltipChange(null);
-              return;
-            }
-            const { chart } = context;
-            const tooltipModel = tooltip;
-            const body = tooltipModel.body;
 
-            if (body?.[0]?.lines?.[0]) {
-              onTooltipChange({
-                visible: true,
-                x: tooltipModel.caretX,
-                y: tooltipModel.caretY - 10,
-                content: body[0].lines[0],
-              });
-            }
+          // ✅ CORREÇÃO TS: Garante que onTooltipChange existe antes de tentar chamar
+          if (!onTooltipChange) return;
+
+          if (tooltip.opacity === 0) {
+            onTooltipChange(null);
+            return;
           }
+
+          // ✅ CORREÇÃO TS: Acessa 'body' de forma segura (pode ser undefined)
+          if (!tooltip.body || !tooltip.body[0]?.lines?.[0]) {
+            return;
+          }
+
+          const { chart } = context;
+          const tooltipModel = tooltip;
+          // Usando Optional Chaining (?.) para evitar erro se 'lines' for undefined
+          const content = tooltipModel.body[0].lines[0];
+
+          onTooltipChange({
+            visible: true,
+            x: tooltipModel.caretX,
+            y: tooltipModel.caretY - 10,
+            content: String(content), // ✅ CORREÇÃO TS: Converte explicitamente para string
+          });
         },
       },
     },
@@ -200,16 +206,6 @@ export default memo(function GraficoEvolucao({
           fill: true,
           tension: 0.4,
         },
-        // Linha de percentual (opcional, secundária)
-        // {
-        //   label: "Aproveitamento %",
-        //   data: percentuais,
-        //   borderColor: "rgba(16, 185, 129, 0.8)",
-        //   borderDash: [5, 5],
-        //   borderWidth: 1.5,
-        //   pointRadius: 0,
-        //   yAxisID: "y1",
-        // },
       ],
     };
   }, [historico]);
