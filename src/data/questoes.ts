@@ -14,6 +14,7 @@ export const TEMPO_PROVA_MINUTOS = 240; // 4 horas
 export const TEMPO_TURBO_MINUTOS = 40;
 
 /** Estrutura oficial da prova PRF Administrativo CEBRASPE */
+// ✅ MELHORIA: Tipagem explícita para garantir que as chaves são 'Disciplina'
 export const ESTRUTURA_PROVA: EstruturaProva = {
   conhecimentosBasicos: {
     total: 24,
@@ -21,7 +22,9 @@ export const ESTRUTURA_PROVA: EstruturaProva = {
       PORTUGUES: 12,
       ETICA: 6,
       RACIOCINIO_LOGICO: 6,
-    },
+      // Garante que outras disciplinas NÃO estejam aqui (opcional, se EstruturaProva permitir)
+      // como Partial, está ok. Mas idealmente o objeto deve refletir a prova.
+    } as Partial<Record<Disciplina, number>>,
   },
   conhecimentosEspecificos: {
     total: 36,
@@ -32,7 +35,7 @@ export const ESTRUTURA_PROVA: EstruturaProva = {
       ARQUIVOLOGIA: 6,
       INFORMATICA: 6,
       LEGISLACAO_PRF: 6,
-    },
+    } as Partial<Record<Disciplina, number>>,
   },
 };
 

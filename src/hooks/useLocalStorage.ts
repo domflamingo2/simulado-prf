@@ -1,16 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { type ZodSchema } from "zod";
+
+// ═══════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════
 
 type StorageValue<T> = T | undefined;
 
 interface UseLocalStorageOptions<T> {
   key: string;
   defaultValue?: T;
-  serializer?: (value: T) => string;
-  deserializer?: (value: string) => T;
+
+  // Validação
+  schema?: ZodSchema<T>;
+
+  // Sync
   syncAcrossTabs?: boolean;
-  validate?: (value: unknown) => value is T;
+
+  // Versionamento
+  version?: number;
+  migrate?: (oldData: unknown, oldVersion: number) => T;
 }
 
 interface UseLocalStorageReturn<T> {
@@ -23,11 +34,25 @@ interface UseLocalStorageReturn<T> {
 }
 
 // ═══════════════════════════════════════
-// DEFAULTS (ESTÁVEIS)
+// INTERNAL STORAGE FORMAT
 // ═══════════════════════════════════════
 
-const defaultSerializer = <T>(value: T) => JSON.stringify(value);
-const defaultDeserializer = <T>(value: string) => JSON.parse(value) as T;
+interface StoredData<T> {
+  v: number;
+  data: T | undefined;
+}
+
+// ═══════════════════════════════════════
+// SAFE PARSE
+// ═══════════════════════════════════════
+
+function parseStoredData<T>(raw: string): StoredData<T> | null {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 // ═══════════════════════════════════════
 // HOOK
@@ -36,34 +61,54 @@ const defaultDeserializer = <T>(value: string) => JSON.parse(value) as T;
 export function useLocalStorage<T>({
   key,
   defaultValue,
-  serializer = defaultSerializer,
-  deserializer = defaultDeserializer,
+  schema,
   syncAcrossTabs = true,
-  validate,
+  version = 1,
+  migrate,
 }: UseLocalStorageOptions<T>): UseLocalStorageReturn<T> {
   const isClient = typeof window !== "undefined";
 
-  // 🔒 refs estáveis (NUNCA mudam)
   const defaultRef = useRef(defaultValue);
-  const serializerRef = useRef(serializer);
-  const deserializerRef = useRef(deserializer);
-  const validateRef = useRef(validate);
+  const schemaRef = useRef(schema);
+
+  // ═══════════════════════════════════════
+  // INIT
+  // ═══════════════════════════════════════
 
   const [value, setValueState] = useState<StorageValue<T>>(() => {
     if (!isClient) return defaultRef.current;
 
     try {
-      const item = localStorage.getItem(key);
-      if (item === null) return defaultRef.current;
+      const raw = localStorage.getItem(key);
+      if (!raw) return defaultRef.current;
 
-      const parsed = deserializerRef.current(item);
+      const parsed = parseStoredData<T>(raw);
+      if (!parsed) return defaultRef.current;
 
-      if (validateRef.current && !validateRef.current(parsed)) {
-        return defaultRef.current;
+      let data = parsed.data;
+
+      // VERSION
+      if (parsed.v !== version) {
+        if (migrate) {
+          data = migrate(parsed.data, parsed.v);
+        } else {
+          return defaultRef.current;
+        }
       }
 
-      return parsed;
-    } catch {
+      // ZOD
+      if (schemaRef.current) {
+        const result = schemaRef.current.safeParse(data);
+        if (!result.success) {
+          console.warn("Zod validation failed", result.error);
+          return defaultRef.current;
+        }
+        return result.data;
+      }
+
+      return data;
+    } catch (err) {
+      console.error("read error", err);
       return defaultRef.current;
     }
   });
@@ -72,7 +117,7 @@ export function useLocalStorage<T>({
   const [isLoading, setIsLoading] = useState(false);
 
   // ═══════════════════════════════════════
-  // WRITE (isolado)
+  // WRITE
   // ═══════════════════════════════════════
 
   const writeToStorage = useCallback(
@@ -83,8 +128,12 @@ export function useLocalStorage<T>({
         if (newValue === undefined) {
           localStorage.removeItem(key);
         } else {
-          const serialized = serializerRef.current(newValue);
-          localStorage.setItem(key, serialized);
+          const payload: StoredData<T> = {
+            v: version,
+            data: newValue,
+          };
+
+          localStorage.setItem(key, JSON.stringify(payload));
         }
 
         setError(null);
@@ -92,26 +141,25 @@ export function useLocalStorage<T>({
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     },
-    [key, isClient],
+    [key, isClient, version],
   );
 
   // ═══════════════════════════════════════
-  // SET VALUE (ANTI-LOOP)
+  // SET
   // ═══════════════════════════════════════
 
   const setValue = useCallback(
     (valueOrUpdater: T | ((prev: T | undefined) => T | undefined)) => {
       setValueState((prev) => {
-        const nextValue =
-          valueOrUpdater instanceof Function
-            ? valueOrUpdater(prev)
+        const next =
+          typeof valueOrUpdater === "function"
+            ? (valueOrUpdater as (prev: T | undefined) => T | undefined)(prev)
             : valueOrUpdater;
 
-        // 🛑 evita loop infinito
-        if (Object.is(prev, nextValue)) return prev;
+        if (Object.is(prev, next)) return prev;
 
-        writeToStorage(nextValue);
-        return nextValue;
+        writeToStorage(next);
+        return next;
       });
     },
     [writeToStorage],
@@ -127,7 +175,7 @@ export function useLocalStorage<T>({
   }, [writeToStorage]);
 
   // ═══════════════════════════════════════
-  // SYNC ENTRE ABAS
+  // SYNC
   // ═══════════════════════════════════════
 
   useEffect(() => {
@@ -137,27 +185,35 @@ export function useLocalStorage<T>({
       if (event.key !== key) return;
 
       try {
-        if (event.newValue === null) {
+        if (!event.newValue) {
           setValueState(defaultRef.current);
           return;
         }
 
-        const parsed = deserializerRef.current(event.newValue);
+        const parsed = parseStoredData<T>(event.newValue);
+        if (!parsed) return;
 
-        if (validateRef.current && !validateRef.current(parsed)) return;
+        let data = parsed.data;
 
-        setValueState((prev) => {
-          if (Object.is(prev, parsed)) return prev;
-          return parsed;
-        });
-      } catch {
-        // ignora erro silenciosamente
+        if (parsed.v !== version && migrate) {
+          data = migrate(parsed.data, parsed.v);
+        }
+
+        if (schemaRef.current) {
+          const result = schemaRef.current.safeParse(data);
+          if (!result.success) return;
+          data = result.data;
+        }
+
+        setValueState(data);
+      } catch (err) {
+        console.error("sync error", err);
       }
     };
 
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
-  }, [key, syncAcrossTabs, isClient]);
+  }, [key, syncAcrossTabs, isClient, version, migrate]);
 
   // ═══════════════════════════════════════
   // REFRESH
@@ -169,16 +225,27 @@ export function useLocalStorage<T>({
     setIsLoading(true);
 
     try {
-      const item = localStorage.getItem(key);
+      const raw = localStorage.getItem(key);
 
-      if (item === null) {
+      if (!raw) {
         setValueState(defaultRef.current);
       } else {
-        const parsed = deserializerRef.current(item);
+        const parsed = parseStoredData<T>(raw);
+        if (!parsed) return;
 
-        if (!validateRef.current || validateRef.current(parsed)) {
-          setValueState(parsed);
+        let data = parsed.data;
+
+        if (parsed.v !== version && migrate) {
+          data = migrate(parsed.data, parsed.v);
+          11;
         }
+
+        if (schemaRef.current) {
+          const result = schemaRef.current.safeParse(data);
+          data = result.success ? result.data : defaultRef.current;
+        }
+
+        setValueState(data);
       }
 
       setError(null);
@@ -187,7 +254,7 @@ export function useLocalStorage<T>({
     } finally {
       setIsLoading(false);
     }
-  }, [key, isClient]);
+  }, [key, isClient, version, migrate]);
 
   return {
     value,

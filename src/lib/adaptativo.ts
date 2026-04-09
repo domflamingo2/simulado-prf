@@ -14,8 +14,8 @@ import { embaralhar } from "./simulado-logic";
 const CONFIG = {
   // Pesos base
   PESO_NEUTRO: 1.0,
-  PESO_INCERTEZA: 0.4, // Bônus para disciplinas pouco vistas
-  PESO_ERRO: 2.5, // Multiplicador de taxa de erro
+  PESO_INCERTEZA: 0.4,
+  PESO_ERRO: 2.5,
 
   // Limiares
   MIN_QUESTOES_PARA_CONFIANCA: 8,
@@ -23,12 +23,12 @@ const CONFIG = {
   MIN_TAXA_ERRO_PARA_FOCO: 0.45,
 
   // Distribuição
-  PROPORCAO_NOVAS: 0.7, // 70% questões nunca vistas
-  PROPORCAO_REVISAO: 0.3, // 30% questões erradas anteriormente
-  MIN_QUESTOES_POR_DISCIPLINA: 2, // Garante variedade mínima
+  PROPORCAO_NOVAS: 0.7,
+  PROPORCAO_REVISAO: 0.3,
+  MIN_QUESTOES_POR_DISCIPLINA: 2,
 
-  // Decaimento temporal (peso de simulados antigos)
-  MEIA_VIDA_DIAS: 30, // Simulado de 30 dias atrás vale metade
+  // Decaimento temporal
+  MEIA_VIDA_DIAS: 30,
 } as const;
 
 // ═══════════════════════════════════════════════════════════
@@ -43,18 +43,18 @@ export interface PesoDisciplina {
   taxaAcerto: number;
   questoesRespondidas: number;
   tendencia: "melhorando" | "piorando" | "estavel" | "insuficiente";
-  confianca: number; // 0-1 quão confiável é a estatística
+  confianca: number;
   ultimaRevisao?: Date;
 }
 
 export interface SelecaoAdaptativaResult {
   questoes: Questao[];
   metadados: {
-    distribuicaoPorDisciplina: Record<string, number>; // Ajustado para flexibilidade
+    distribuicaoPorDisciplina: Record<string, number>;
     percentualNovas: number;
     percentualRevisao: number;
     disciplinasPriorizadas: Disciplina[];
-    nivelAdaptacao: number; // 0-1 quão "personalizado" ficou
+    nivelAdaptacao: number;
   };
 }
 
@@ -62,8 +62,8 @@ export interface AnaliseAdaptativa {
   resumo: string;
   disciplinasCriticas: PesoDisciplina[];
   disciplinasDominadas: PesoDisciplina[];
-  disciplinasEmAlta: PesoDisciplina[]; // Melhorando recentemente
-  disciplinasEmBaixa: PesoDisciplina[]; // Piorando recentemente
+  disciplinasEmAlta: PesoDisciplina[];
+  disciplinasEmBaixa: PesoDisciplina[];
   recomendacoes: string[];
   distribuicaoSugerida: PesoDisciplina[];
   nivelConfiancaGlobal: number;
@@ -78,20 +78,12 @@ export interface AnaliseAdaptativa {
 // FUNÇÕES AUXILIARES
 // ═══════════════════════════════════════════════════════════
 
-/**
- * Calcula fator de decaimento temporal baseado na data do simulado.
- * Quanto mais antigo, menor o peso (0 a 1).
- */
 function calcularDecaimentoTemporal(dataSimuladoISO: string): number {
   const dias =
     (Date.now() - new Date(dataSimuladoISO).getTime()) / (1000 * 60 * 60 * 24);
   return Math.exp(-dias / CONFIG.MEIA_VIDA_DIAS);
 }
 
-/**
- * Analisa tendência comparando primeiros 50% vs últimos 50% do histórico
- * para determinar se o desempenho está melhorando ou piorando.
- */
 function calcularTendencia(
   questoes: QuestaoRespondida[],
 ): PesoDisciplina["tendencia"] {
@@ -118,10 +110,6 @@ function calcularTendencia(
   return "estavel";
 }
 
-/**
- * Calcula confiança estatística baseada no tamanho da amostra.
- * Retorna valor entre 0 e 1.
- */
 function calcularConfianca(n: number): number {
   return Math.min(n / CONFIG.MIN_QUESTOES_PARA_CONFIANCA, 1);
 }
@@ -146,32 +134,29 @@ export function calcularPesosAdaptativos(
     "LEGISLACAO_PRF",
   ];
 
-  // Mapa para contar total de questões disponíveis por disciplina (Otimização)
-  const totalPorDisciplina = todasQuestoes.reduce(
+  // ✅ CORREÇÃO TS: Inicializa explicitamente com Record<Disciplina, number> ou usa cast seguro
+  const totalPorDisciplina = todasQuestoes.reduce<Record<string, number>>(
     (acc, q) => {
+      // ✅ CORREÇÃO TS: Acesso seguro após tipagem do reduce
       acc[q.disciplina] = (acc[q.disciplina] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>,
+    {} as Record<string, number>, // Ou inicializar com um objeto mapeado das disciplinas
   );
 
   const estatisticas = disciplinas.map((disciplina): PesoDisciplina => {
-    // Coleta questões com peso temporal e filtra pela disciplina em um único passe
     const questoesComPeso: (QuestaoRespondida & { pesoTemporal: number })[] =
       [];
-
     let ultimaDataRevisaoTimestamp = 0;
 
     for (const h of historico) {
       const peso = calcularDecaimentoTemporal(h.data);
-      // Filtra e adiciona peso
       const questoesDisciplina = h.questoes.filter(
         (q) => q.disciplina === disciplina,
       );
 
       for (const q of questoesDisciplina) {
         questoesComPeso.push({ ...q, pesoTemporal: peso });
-        // Rastreia a data mais recente usando o timestamp do simulado
         const timestampSimulado = new Date(h.data).getTime();
         if (timestampSimulado > ultimaDataRevisaoTimestamp) {
           ultimaDataRevisaoTimestamp = timestampSimulado;
@@ -181,7 +166,6 @@ export function calcularPesosAdaptativos(
 
     const questoesRespondidas = questoesComPeso.length;
 
-    // Caso sem histórico: peso baseado na dificuldade percebida da disciplina
     if (questoesRespondidas === 0) {
       const dificuldadePercebida =
         {
@@ -191,7 +175,7 @@ export function calcularPesosAdaptativos(
           DIREITO_CONSTITUCIONAL: 1.1,
           DIREITO_ADMINISTRATIVO: 1.1,
           ADMINISTRACAO: 1.0,
-          ARQUIVOLOGIA: 1.3, // Geralmente mais difícil
+          ARQUIVOLOGIA: 1.3,
           INFORMATICA: 0.8,
           LEGISLACAO_PRF: 1.2,
         }[disciplina] || 1.0;
@@ -208,7 +192,6 @@ export function calcularPesosAdaptativos(
       };
     }
 
-    // Calcula taxas ponderadas temporalmente
     let pesoTotal = 0;
     let acertosPonderados = 0;
     let errosPonderados = 0;
@@ -225,7 +208,6 @@ export function calcularPesosAdaptativos(
     const taxaAcerto = pesoTotal > 0 ? acertosPonderados / pesoTotal : 0;
     const taxaErro = pesoTotal > 0 ? errosPonderados / pesoTotal : 0;
 
-    // Fórmula de peso adaptativa
     const fatorErro = taxaErro * CONFIG.PESO_ERRO;
     const fatorIncerteza =
       questoesRespondidas < CONFIG.MIN_QUESTOES_PARA_CONFIANCA
@@ -239,8 +221,8 @@ export function calcularPesosAdaptativos(
 
     return {
       disciplina,
-      peso: Math.max(0.3, pesoBruto), // Mínimo para não zerar
-      pesoNormalizado: 0, // Calculado depois
+      peso: Math.max(0.3, pesoBruto),
+      pesoNormalizado: 0,
       taxaErro,
       taxaAcerto,
       questoesRespondidas,
@@ -253,10 +235,7 @@ export function calcularPesosAdaptativos(
     };
   });
 
-  // Normalização para soma = número de disciplinas (média 1.0)
   const somaPesos = estatisticas.reduce((acc, e) => acc + e.peso, 0);
-
-  // Evita divisão por zero caso somaPesos seja 0 (impossível dado o Math.max, mas seguro)
   const fatorNormalizacao = somaPesos > 0 ? disciplinas.length / somaPesos : 0;
 
   return estatisticas.map((e) => ({
@@ -276,12 +255,10 @@ export function selecionarQuestoesAdaptativas(
 ): SelecaoAdaptativaResult {
   const pesos = calcularPesosAdaptativos(historico, todasQuestoes);
 
-  // Otimização: Usa Set para busca O(1) em vez de includes O(n)
   const historicoIds = new Set(
     historico.flatMap((h) => h.questoes.map((q) => q.id)),
   );
 
-  // Mapeamento de questões erradas para rápida verificação
   const questoesErradasAnteriormente = new Set<string>();
   historico.forEach((h) => {
     h.questoes.forEach((q) => {
@@ -305,7 +282,6 @@ export function selecionarQuestoesAdaptativas(
   const totalCalculado = distribuicao.reduce((acc, d) => acc + d.quantidade, 0);
   const restante = totalQuestoes - totalCalculado;
 
-  // Ordena por maior resto decimal para distribuir as sobras
   const comRestos = pesos
     .map((p, i) => {
       const qtdAlvo = p.pesoNormalizado * (totalQuestoes / pesos.length);
@@ -318,7 +294,6 @@ export function selecionarQuestoesAdaptativas(
     .sort((a, b) => b.resto - a.resto);
 
   for (let i = 0; i < restante; i++) {
-    // Usa módulo para evitar index out of bounds se restante > array length (caso raro)
     const idx = comRestos[i % comRestos.length].index;
     distribuicao[idx].quantidade++;
   }
@@ -329,48 +304,49 @@ export function selecionarQuestoesAdaptativas(
     quantidade: Math.max(d.quantidade, CONFIG.MIN_QUESTOES_POR_DISCIPLINA),
   }));
 
-  // Reajusta se excedeu (remove do maior peso)
-  // Loop while seguro com contador para evitar infinite loops
+  // ✅ MELHORIA LÓGICA: Tratamento de overflow onde MIN > TOTAL_POSSIVEL
+  // Se mesmo reduzindo ao máximo (min por disciplina) a soma exceder o total,
+  // precisamos aceitar que o simulado terá mais questões ou lançar erro.
+  // Aqui, faremos um "Best Effort" para cortar dos maiores pesos ainda possíveis.
+
   let safetyCounter = 0;
   while (
     distribuicao.reduce((acc, d) => acc + d.quantidade, 0) > totalQuestoes &&
-    safetyCounter < 100
+    safetyCounter < 1000 // Aumentado ligeiramente para segurança
   ) {
-    let maiorIndex = -1;
-    let maiorQtd = -1;
+    // Encontra a disciplina com maior quantidade que ainda pode ser reduzida ( > MIN )
+    // Ordena por quantidade decrescente para pegar a mais "cheia"
+    const candidatos = distribuicao
+      .map((d, i) => ({ ...d, originalIndex: i }))
+      .filter((d) => d.quantidade > CONFIG.MIN_QUESTOES_POR_DISCIPLINA)
+      .sort((a, b) => b.quantidade - a.quantidade);
 
-    distribuicao.forEach((d, i) => {
-      if (d.quantidade > maiorQtd) {
-        maiorQtd = d.quantidade;
-        maiorIndex = i;
-      }
-    });
-
-    if (
-      maiorIndex !== -1 &&
-      distribuicao[maiorIndex].quantidade > CONFIG.MIN_QUESTOES_POR_DISCIPLINA
-    ) {
-      distribuicao[maiorIndex].quantidade--;
-    } else {
-      break; // Não consegue reduzir mais
+    if (candidatos.length === 0) {
+      // Situação crítica: Todas estão no mínimo e ainda estoura o total.
+      // Ação de emergência: cortar 1 da que tem mais quantidade mesmo que seja o mínimo
+      // (Isso quebra a regra MIN, mas evita loop infinito)
+      const maiorQuantidade = Math.max(
+        ...distribuicao.map((d) => d.quantidade),
+      );
+      const idxMaior = distribuicao.findIndex(
+        (d) => d.quantidade === maiorQuantidade,
+      );
+      if (idxMaior !== -1) distribuicao[idxMaior].quantidade--;
+      break;
     }
+
+    // Reduz o maior candidato
+    const idxParaCortar = candidatos[0].originalIndex;
+    distribuicao[idxParaCortar].quantidade--;
+
     safetyCounter++;
   }
 
-  // Seleciona questões de cada disciplina
   const selecionadas: Questao[] = [];
-  const metadados: SelecaoAdaptativaResult["metadados"] & {
-    novas: number;
-    revisao: number;
-  } = {
-    distribuicaoPorDisciplina: {},
-    percentualNovas: 0,
-    percentualRevisao: 0,
-    disciplinasPriorizadas: [],
-    nivelAdaptacao: 0,
-    novas: 0,
-    revisao: 0,
-  };
+
+  // ✅ CORREÇÃO TS: Variável auxiliar para contagem estrita
+  let novasCount = 0;
+  let revisaoCount = 0;
 
   distribuicao.forEach(({ disciplina, quantidade }) => {
     if (quantidade === 0) return;
@@ -379,7 +355,6 @@ export function selecionarQuestoesAdaptativas(
       (q) => q.disciplina === disciplina,
     );
 
-    // Filtragens eficientes
     const naoVistas = questoesDisciplina.filter((q) => !historicoIds.has(q.id));
     const vistasErradas = questoesDisciplina.filter((q) =>
       questoesErradasAnteriormente.has(q.id),
@@ -388,7 +363,6 @@ export function selecionarQuestoesAdaptativas(
       (q) => historicoIds.has(q.id) && !questoesErradasAnteriormente.has(q.id),
     );
 
-    // Cálculo de proporção
     const qtdNovas = Math.min(
       Math.round(quantidade * CONFIG.PROPORCAO_NOVAS),
       naoVistas.length,
@@ -410,15 +384,13 @@ export function selecionarQuestoesAdaptativas(
       ...selecionadasReforco,
     );
 
-    metadados.distribuicaoPorDisciplina[disciplina] = quantidade;
-    metadados.novas += qtdNovas;
-    metadados.revisao += qtdRevisao;
+    novasCount += qtdNovas;
+    revisaoCount += qtdRevisao;
   });
 
-  // Embaralha final mantendo distribuição misturada
   const questoesFinais = embaralhar(selecionadas);
 
-  // Calcula nível de adaptação (desvio padrão simples dos pesos normalizados)
+  // Cálculo de desvio padrão
   const somaDiferencasQuadradas = pesos.reduce(
     (acc, p) => acc + Math.pow(p.pesoNormalizado - 1, 2),
     0,
@@ -426,13 +398,23 @@ export function selecionarQuestoesAdaptativas(
   const desvioPadrao = Math.sqrt(somaDiferencasQuadradas / pesos.length);
   const nivelAdaptacao = Math.min(desvioPadrao * 2, 1);
 
-  metadados.percentualNovas = (metadados.novas / totalQuestoes) * 100;
-  metadados.percentualRevisao = (metadados.revisao / totalQuestoes) * 100;
-  metadados.disciplinasPriorizadas = pesos
-    .filter((p) => p.pesoNormalizado > 1.3)
-    .sort((a, b) => b.pesoNormalizado - a.pesoNormalizado)
-    .map((p) => p.disciplina);
-  metadados.nivelAdaptacao = nivelAdaptacao;
+  // ✅ CORREÇÃO TS: Retorno limpo batendo exatamente com a interface
+  const metadados: SelecaoAdaptativaResult["metadados"] = {
+    distribuicaoPorDisciplina: distribuicao.reduce(
+      (acc, curr) => {
+        acc[curr.disciplina] = curr.quantidade;
+        return acc;
+      },
+      {} as Record<string, number>,
+    ),
+    percentualNovas: (novasCount / questoesFinais.length) * 100,
+    percentualRevisao: (revisaoCount / questoesFinais.length) * 100,
+    disciplinasPriorizadas: pesos
+      .filter((p) => p.pesoNormalizado > 1.3)
+      .sort((a, b) => b.pesoNormalizado - a.pesoNormalizado)
+      .map((p) => p.disciplina),
+    nivelAdaptacao,
+  };
 
   return {
     questoes: questoesFinais,
@@ -450,7 +432,6 @@ export function gerarAnaliseAdaptativa(
 ): AnaliseAdaptativa {
   const pesos = calcularPesosAdaptativos(historico, todasQuestoes);
 
-  // Categorização
   const criticas = pesos
     .filter(
       (p) =>
@@ -474,7 +455,6 @@ export function gerarAnaliseAdaptativa(
     .filter((p) => p.tendencia === "piorando" && p.confianca > 0.3)
     .sort((a, b) => a.taxaAcerto - b.taxaAcerto);
 
-  // Gera recomendações textuais
   const recomendacoes: string[] = [];
 
   if (criticas.length > 0) {
@@ -503,17 +483,13 @@ export function gerarAnaliseAdaptativa(
     );
   }
 
-  // Próximo milestone
-  // Filtra disciplinas que não estão dominadas (acerto < 90%) e tem dados suficientes
   const candidatosMilestone = pesos.filter(
     (p) => p.taxaAcerto < 0.9 && p.confianca > 0.3,
   );
 
-  // Pega a mais próxima de 90%
   const proximoMilestone =
     candidatosMilestone.sort((a, b) => b.taxaAcerto - a.taxaAcerto)[0] || null;
 
-  // Resumo executivo
   let resumo: string;
   if (criticas.length >= 3) {
     resumo =
@@ -529,7 +505,6 @@ export function gerarAnaliseAdaptativa(
       "Desempenho equilibrado. O sistema vai otimizar sua rotina de estudos.";
   }
 
-  // Confiança global
   const confiancaGlobal =
     pesos.reduce((acc, p) => acc + p.confianca, 0) / pesos.length;
 
@@ -557,11 +532,6 @@ export function gerarAnaliseAdaptativa(
   };
 }
 
-// ═══════════════════════════════════════════════════════════
-// FUNÇÃO LEGACY (compatibilidade)
-// ═══════════════════════════════════════════════════════════
-
-/** @deprecated Use selecionarQuestoesAdaptativas com metadados */
 export function selecionarQuestoesAdaptativasLegacy(
   todasQuestoes: Questao[],
   historico: HistoricoSimulado[],

@@ -15,11 +15,8 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number = 300,
   options: {
-    /** Executa na leading edge (primeiro call imediato) */
     leading?: boolean;
-    /** Executa na trailing edge (último call após delay) - padrão: true */
     trailing?: boolean;
-    /** Max tempo de espera antes de forçar execução */
     maxWait?: number;
   } = {},
 ): UseDebouncedCallbackReturn<T> {
@@ -32,20 +29,16 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   const callbackRef = useRef(callback);
   const isLeadingCalledRef = useRef(false);
 
-  // Sincroniza callback sem causar re-render
+  // Sincroniza o callback mais recente
   useEffect(() => {
     callbackRef.current = callback;
   }, [callback]);
 
-  // Cleanup seguro no unmount
+  // Cleanup seguro (executado apenas no unmount)
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (maxWaitTimeoutRef.current) {
-        clearTimeout(maxWaitTimeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (maxWaitTimeoutRef.current) clearTimeout(maxWaitTimeoutRef.current);
     };
   }, []);
 
@@ -58,15 +51,18 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       clearTimeout(maxWaitTimeoutRef.current);
       maxWaitTimeoutRef.current = null;
     }
-    lastArgsRef.current = null;
-    lastCallTimeRef.current = null;
+    // Não reseta lastArgs ou lastCallTime aqui para permitir que flush funcione se desejado,
+    // mas reseta a flag de leading para permitir nova execução imediata
     isLeadingCalledRef.current = false;
   }, []);
 
   const flush = useCallback(
     (...args: Parameters<T>) => {
       cancel();
+      // Executa e limpa argumentos
       callbackRef.current(...args);
+      lastArgsRef.current = null;
+      lastCallTimeRef.current = null;
     },
     [cancel],
   );
@@ -78,51 +74,65 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   const debounced = useCallback(
     (...args: Parameters<T>) => {
       const now = Date.now();
+      const shouldCallLeading = leading && !isLeadingCalledRef.current;
+
+      // Armazena argumentos para trailing ou maxWait
       lastArgsRef.current = args;
       lastCallTimeRef.current = now;
 
-      // Leading edge: executa imediatamente no primeiro call
-      if (leading && !isLeadingCalledRef.current && !timeoutRef.current) {
+      // 1. Lógica Leading Edge (Executa imediatamente se configurado e permitido)
+      if (shouldCallLeading) {
         isLeadingCalledRef.current = true;
         callbackRef.current(...args);
 
-        // Reseta flag após delay para permitir próximo leading
+        // Agenda o reset da flag de leading.
+        // Usamos o mesmo 'delay' para garantir que a janela de bloqueio dure o tempo do debounce.
         timeoutRef.current = setTimeout(() => {
-          isLeadingCalledRef.current = false;
           timeoutRef.current = null;
+          isLeadingCalledRef.current = false;
         }, delay);
-        return;
+
+        // Se não tem maxWait e não tem trailing, acabou aqui.
+        if (!maxWait && !trailing) return;
       }
 
-      // Cancela timeout anterior
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      // Setup maxWait se configurado
-      if (maxWait && !maxWaitTimeoutRef.current) {
-        maxWaitTimeoutRef.current = setTimeout(() => {
-          if (lastArgsRef.current) {
-            callbackRef.current(...lastArgsRef.current);
+      // 2. Gerencia o MaxWait
+      if (maxWait) {
+        // Se o maxWait já estiver rodando, não precisa recriar (ele sempre rola do último call)
+        if (!maxWaitTimeoutRef.current) {
+          maxWaitTimeoutRef.current = setTimeout(() => {
+            // Ao disparar o maxWait, executamos com os últimos argumentos
+            if (lastArgsRef.current) {
+              callbackRef.current(...lastArgsRef.current);
+            }
+            // Reseta estado de "bloqueio" para permitir novos ciclos
             cancel();
-          }
-        }, maxWait);
+          }, maxWait);
+        }
       }
 
-      // Setup trailing edge
+      // 3. Lógica Trailing Edge
       if (trailing) {
-        timeoutRef.current = setTimeout(() => {
-          if (lastArgsRef.current) {
-            callbackRef.current(...lastArgsRef.current);
-          }
-          cancel();
-        }, delay);
+        // Se já executou no leading, o timeoutRef já está setado para resetar a flag.
+        // Se NÃO executou no leading (leading=false ou já estava bloqueado),
+        // precisamos setar o timeout para executar no final.
+        if (!shouldCallLeading) {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+          timeoutRef.current = setTimeout(() => {
+            if (lastArgsRef.current && !isLeadingCalledRef.current) {
+              callbackRef.current(...lastArgsRef.current);
+            }
+            // Limpeza final do ciclo de trailing
+            cancel();
+          }, delay);
+        }
       }
     },
     [delay, leading, trailing, maxWait, cancel],
   );
 
-  // Attach métodos utilitários
+  // Attach métodos
   (debounced as UseDebouncedCallbackReturn<T>).cancel = cancel;
   (debounced as UseDebouncedCallbackReturn<T>).flush = flush;
   (debounced as UseDebouncedCallbackReturn<T>).isPending = isPending;
