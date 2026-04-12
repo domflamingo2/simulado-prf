@@ -131,7 +131,40 @@ export const DIFICULDADE_CONFIG = {
 } as const;
 
 // ============================================================================
-// SUB-COMPONENTE: Botão de Resposta (Memoizado)
+// HELPER: classe estável para BotaoResposta
+// Extraído para fora do componente — sem closures, sem re-criação
+// ============================================================================
+
+function getBotaoClasse(
+  tipo: RespostaTipo,
+  isSelecionado: boolean,
+  isCorreta: boolean,
+  isErrada: boolean,
+  mostrarCorrecao: boolean,
+): string {
+  // FIX: `isErrada` só faz sentido visualmente quando mostrarCorrecao está ativo.
+  // Sem essa guarda, o botão piscava como "errado" durante a resposta do usuário.
+  if (!mostrarCorrecao) {
+    if (!isSelecionado) {
+      return "bg-slate-800/50 text-slate-400 border-slate-700 hover:border-slate-500 hover:bg-slate-800";
+    }
+    return tipo === "CERTO"
+      ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/25"
+      : "bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/25";
+  }
+
+  if (isCorreta) {
+    return "bg-emerald-500/20 text-emerald-400 border-emerald-500 ring-2 ring-emerald-500/50";
+  }
+  // FIX: só usa isErrada aqui, onde mostrarCorrecao já é true
+  if (isErrada) {
+    return "bg-rose-500/20 text-rose-400 border-rose-500 line-through opacity-75";
+  }
+  return "bg-slate-800/30 text-slate-600 border-slate-800 opacity-50";
+}
+
+// ============================================================================
+// SUB-COMPONENTE: BotaoResposta (memoizado)
 // ============================================================================
 
 interface BotaoRespostaProps {
@@ -155,48 +188,32 @@ const BotaoResposta = memo(function BotaoResposta({
 }: BotaoRespostaProps) {
   const isCerto = tipo === "CERTO";
 
-  const { classe, icone } = useMemo(() => {
-    if (!mostrarCorrecao) {
-      const baseClasse = isSelecionado
-        ? isCerto
-          ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/25"
-          : "bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/25"
-        : "bg-slate-800/50 text-slate-400 border-slate-700 hover:border-slate-500 hover:bg-slate-800";
+  // FIX: classe calculada com função pura fora do componente — sem useMemo,
+  // sem dependências instáveis, sem recriação de closure a cada render
+  const classe = getBotaoClasse(
+    tipo,
+    isSelecionado,
+    isCorreta,
+    isErrada,
+    mostrarCorrecao,
+  );
 
-      return {
-        classe: `${baseClasse} scale-[1.02]`,
-        icone: isSelecionado ? (
-          isCerto ? (
-            <CheckCircle2 className="w-5 h-5" />
-          ) : (
-            <XCircle className="w-5 h-5" />
-          )
-        ) : null,
-      };
+  const icone = useMemo(() => {
+    if (!mostrarCorrecao && !isSelecionado) return null;
+    if (mostrarCorrecao && isCorreta)
+      return <CheckCircle2 className="w-5 h-5" />;
+    if (mostrarCorrecao && isErrada) return <XCircle className="w-5 h-5" />;
+    if (!mostrarCorrecao && isSelecionado) {
+      return isCerto ? (
+        <CheckCircle2 className="w-5 h-5" />
+      ) : (
+        <XCircle className="w-5 h-5" />
+      );
     }
-
-    if (isCorreta) {
-      return {
-        classe:
-          "bg-emerald-500/20 text-emerald-400 border-emerald-500 ring-2 ring-emerald-500/50",
-        icone: <CheckCircle2 className="w-5 h-5" />,
-      };
-    }
-
-    if (isErrada) {
-      return {
-        classe:
-          "bg-rose-500/20 text-rose-400 border-rose-500 line-through opacity-75",
-        icone: <XCircle className="w-5 h-5" />,
-      };
-    }
-
-    return {
-      classe: "bg-slate-800/30 text-slate-600 border-slate-800 opacity-50",
-      icone: null,
-    };
+    return null;
   }, [mostrarCorrecao, isSelecionado, isCorreta, isErrada, isCerto]);
 
+  // FIX: handler estável — não recria closure a cada render do pai
   const handleClick = useCallback(() => {
     if (!mostrarCorrecao && !isLoading) {
       onResposta(tipo);
@@ -205,22 +222,27 @@ const BotaoResposta = memo(function BotaoResposta({
 
   return (
     <motion.button
-      whileHover={!mostrarCorrecao ? { scale: 1.02, y: -2 } : undefined}
-      whileTap={!mostrarCorrecao ? { scale: 0.97 } : undefined}
+      whileHover={
+        !mostrarCorrecao && !isLoading ? { scale: 1.02, y: -2 } : undefined
+      }
+      whileTap={!mostrarCorrecao && !isLoading ? { scale: 0.97 } : undefined}
       onClick={handleClick}
       disabled={mostrarCorrecao || isLoading}
-      className={`
-        relative overflow-hidden p-5 sm:p-7 rounded-2xl border-2 font-bold text-lg sm:text-xl
-        transition-all duration-200 flex items-center justify-center gap-3
-        ${classe}
-        disabled:cursor-not-allowed
-        focus:outline-none focus-visible:ring-4 ${isCerto ? "focus-visible:ring-emerald-500/30" : "focus-visible:ring-rose-500/30"}
-      `}
+      className={[
+        "relative overflow-hidden p-5 sm:p-7 rounded-2xl border-2 font-bold",
+        "text-lg sm:text-xl transition-all duration-200",
+        "flex items-center justify-center gap-3",
+        "disabled:cursor-not-allowed",
+        "focus:outline-none",
+        isCerto
+          ? "focus-visible:ring-4 focus-visible:ring-emerald-500/30"
+          : "focus-visible:ring-4 focus-visible:ring-rose-500/30",
+        classe,
+      ].join(" ")}
       aria-pressed={isSelecionado}
       aria-label={`Marcar como ${tipo} (Atalho: ${isCerto ? "1 ou C" : "2 ou E"})`}
-      role="button"
     >
-      {/* Efeito de background ao selecionar */}
+      {/* Ripple de seleção */}
       <AnimatePresence mode="wait">
         {!mostrarCorrecao && isSelecionado && (
           <motion.div
@@ -236,9 +258,8 @@ const BotaoResposta = memo(function BotaoResposta({
       {icone}
       <span>{tipo}</span>
 
-      {/* Hint de atalho (desktop) */}
       {!mostrarCorrecao && (
-        <kbd className="absolute top-2 right-2 text-[10px] opacity-50 font-normal hidden sm:block px-1.5 py-0.5 bg-black/20 rounded">
+        <kbd className="absolute top-2 right-2 text-[10px] opacity-40 font-normal hidden sm:block px-1.5 py-0.5 bg-black/20 rounded">
           {isCerto ? "1" : "2"}
         </kbd>
       )}
@@ -247,7 +268,7 @@ const BotaoResposta = memo(function BotaoResposta({
 });
 
 // ============================================================================
-// SUB-COMPONENTE: Indicador de Progresso (Memoizado)
+// SUB-COMPONENTE: IndicadorProgresso (memoizado)
 // ============================================================================
 
 interface IndicadorProgressoProps {
@@ -259,7 +280,12 @@ const IndicadorProgresso = memo(function IndicadorProgresso({
   total,
   current,
 }: IndicadorProgressoProps) {
-  const visibleDots = Math.min(total, 20);
+  // FIX: Array gerado uma única vez com useMemo — sem Array.from a cada render
+  const dots = useMemo(() => {
+    const count = Math.min(total, 20);
+    return Array.from({ length: count }, (_, i) => i + 1);
+  }, [total]);
+
   const showEllipsis = total > 20;
 
   return (
@@ -270,14 +296,12 @@ const IndicadorProgresso = memo(function IndicadorProgresso({
       aria-valuemax={total}
       aria-label={`Progresso: questão ${current} de ${total}`}
     >
-      {Array.from({ length: visibleDots }, (_, i) => {
-        const questNum = i + 1;
+      {dots.map((questNum) => {
         const isCurrent = questNum === current;
         const isPast = questNum < current;
-
         return (
           <motion.div
-            key={i}
+            key={questNum}
             initial={false}
             animate={{
               scale: isCurrent ? 1.2 : 1,
@@ -288,7 +312,7 @@ const IndicadorProgresso = memo(function IndicadorProgresso({
                   : "#1e293b",
             }}
             transition={{ duration: 0.15 }}
-            className={`w-2 h-2 rounded-full transition-colors ${isCurrent ? "ring-2 ring-white/30" : ""}`}
+            className={`w-2 h-2 rounded-full ${isCurrent ? "ring-2 ring-white/30" : ""}`}
             aria-current={isCurrent ? "step" : undefined}
           />
         );
@@ -303,7 +327,7 @@ const IndicadorProgresso = memo(function IndicadorProgresso({
 });
 
 // ============================================================================
-// SUB-COMPONENTE: Painel de Correção (Memoizado)
+// SUB-COMPONENTE: CorrecaoPanel (memoizado)
 // ============================================================================
 
 interface CorrecaoPanelProps {
@@ -360,7 +384,6 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
       <div
         className={`p-5 sm:p-6 rounded-2xl border-2 ${statusConfig.bgCard} ${statusConfig.border}`}
       >
-        {/* Header com status */}
         <div className="flex items-center gap-3 mb-4">
           <div className={`p-2 rounded-full ${statusConfig.bgHeader}`}>
             {statusConfig.icone}
@@ -370,7 +393,6 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
           </span>
         </div>
 
-        {/* Comparação: Sua resposta vs Correta */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
           <div
             className={`p-4 rounded-xl border ${statusConfig.bgCard} ${statusConfig.border}`}
@@ -379,7 +401,7 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
               Sua resposta
             </span>
             <span className={`font-bold text-lg ${statusConfig.corTitulo}`}>
-              {questao.respostaUsuario || "Em branco"}
+              {questao.respostaUsuario ?? "Em branco"}
             </span>
           </div>
           <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
@@ -392,7 +414,6 @@ const CorrecaoPanel = memo(function CorrecaoPanel({
           </div>
         </div>
 
-        {/* Explicação detalhada */}
         <div className="flex items-start gap-4 bg-slate-950/30 p-4 rounded-xl">
           <div className="p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
             <BookOpen className="w-5 h-5 text-blue-400" aria-hidden="true" />
@@ -431,101 +452,129 @@ export default memo(function QuestaoCard({
   const [showShortcuts, setShowShortcuts] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ CORREÇÃO 1: Ref para estabilizar funções de callback (evita recriar listeners)
+  // ── Refs para callbacks — evita re-registro do listener a cada render ──────
+  // FIX principal: `onNavegar` e `onResposta` mudam a cada render do pai.
+  // Usar refs garante que o listener sempre acessa a versão mais nova
+  // sem precisar re-registrar no DOM (o que era a causa do "lag" no teclado).
+  const onRespostaRef = useRef(onResposta);
+  useEffect(() => {
+    onRespostaRef.current = onResposta;
+  });
+
   const onNavegarRef = useRef(onNavegar);
-  onNavegarRef.current = onNavegar;
+  useEffect(() => {
+    onNavegarRef.current = onNavegar;
+  });
 
-  const keyboardEnabled = useRef(true);
-  const lastKeyTime = useRef<number>(0);
-  const KEY_DEBOUNCE_MS = 150;
+  const onMarcarRevisaoRef = useRef(onMarcarRevisao);
+  useEffect(() => {
+    onMarcarRevisaoRef.current = onMarcarRevisao;
+  });
 
-  // ============================================================================
-  // MEMOIZAÇÕES DE DADOS
-  // ============================================================================
+  // Ref para o debounce do teclado — limpo quando a questão muda
+  const lastKeyTimeRef = useRef<number>(0);
 
-  const disciplina = useMemo(() => {
-    return (
+  // FIX: reseta o debounce quando muda de questão para evitar que o debounce
+  // da questão anterior bloqueie a primeira tecla na questão seguinte
+  useEffect(() => {
+    lastKeyTimeRef.current = 0;
+  }, [numero]);
+
+  // ── Memos de dados ─────────────────────────────────────────────────────────
+
+  const disciplina = useMemo(
+    () =>
       DISCIPLINAS_CONFIG[questao.disciplina] ?? {
         nome: questao.disciplina,
         cor: "from-gray-500 to-slate-500",
         bg: "bg-gray-500/10",
         icone: "❓",
-      }
-    );
-  }, [questao.disciplina]);
+      },
+    [questao.disciplina],
+  );
 
-  const dificuldade = useMemo(() => {
-    return questao.dificuldade
-      ? DIFICULDADE_CONFIG[
-          questao.dificuldade as keyof typeof DIFICULDADE_CONFIG
-        ]
-      : null;
-  }, [questao.dificuldade]);
+  const dificuldade = useMemo(
+    () =>
+      questao.dificuldade
+        ? (DIFICULDADE_CONFIG[
+            questao.dificuldade as keyof typeof DIFICULDADE_CONFIG
+          ] ?? null)
+        : null,
+    [questao.dificuldade],
+  );
 
   const estaMarcada = useMemo(
     () => marcadasParaRevisao.includes(numero),
     [marcadasParaRevisao, numero],
   );
 
-  const emBranco = !questao.respostaUsuario && !mostrarCorrecao;
+  // FIX: emBranco memoizado — antes era calculado inline a cada render
+  const emBranco = useMemo(
+    () => !questao.respostaUsuario && !mostrarCorrecao,
+    [questao.respostaUsuario, mostrarCorrecao],
+  );
+
   const isLastQuestion = numero === total;
 
+  // FIX: estadosResposta.*.isErrada agora só é true quando mostrarCorrecao
+  // está ativo — evita piscar o estilo "errado" durante a seleção do usuário
   const estadosResposta = useMemo(
     () => ({
       certo: {
         isSelecionado: questao.respostaUsuario === "CERTO",
-        isCorreta: questao.resposta === "CERTO",
+        isCorreta: mostrarCorrecao && questao.resposta === "CERTO",
         isErrada:
-          questao.respostaUsuario === "CERTO" && questao.resposta !== "CERTO",
+          mostrarCorrecao &&
+          questao.respostaUsuario === "CERTO" &&
+          questao.resposta !== "CERTO",
       },
       errado: {
         isSelecionado: questao.respostaUsuario === "ERRADO",
-        isCorreta: questao.resposta === "ERRADO",
+        isCorreta: mostrarCorrecao && questao.resposta === "ERRADO",
         isErrada:
-          questao.respostaUsuario === "ERRADO" && questao.resposta !== "ERRADO",
+          mostrarCorrecao &&
+          questao.respostaUsuario === "ERRADO" &&
+          questao.resposta !== "ERRADO",
       },
     }),
-    [questao.respostaUsuario, questao.resposta],
+    [questao.respostaUsuario, questao.resposta, mostrarCorrecao],
   );
 
-  // ============================================================================
-  // HANDLERS ESTÁVEIS
-  // ============================================================================
+  // ── Handlers estáveis ──────────────────────────────────────────────────────
 
-  const handleResposta = useCallback(
-    (tipo: RespostaTipo) => {
-      onResposta(tipo);
-    },
-    [onResposta],
-  );
+  // FIX: handleResposta não precisa de useCallback dependendo de onResposta,
+  // pois usa a ref. Dep array vazio = função verdadeiramente estável.
+  const handleResposta = useCallback((tipo: RespostaTipo) => {
+    onRespostaRef.current(tipo);
+  }, []);
 
   const handleMarcarRevisao = useCallback(() => {
-    onMarcarRevisao?.(numero);
-  }, [onMarcarRevisao, numero]);
+    onMarcarRevisaoRef.current?.(numero);
+  }, [numero]);
 
-  // Helper de navegação interno
+  // Navegação via ref — estável
   const navegarInterno = useCallback((direcao: "anterior" | "proxima") => {
     onNavegarRef.current?.(direcao);
-  }, []); // Sem dependências pois usa a ref
+  }, []);
 
-  // ============================================================================
-  // KEYBOARD HANDLER OTIMIZADO
-  // ============================================================================
+  const handleFinalizar = useCallback(() => {
+    onNavegarRef.current?.("finalizar");
+  }, []);
 
+  const toggleShortcuts = useCallback(() => {
+    setShowShortcuts((p) => !p);
+  }, []);
+
+  // ── Listener de teclado ────────────────────────────────────────────────────
+  // FIX principal: deps array contém apenas valores primitivos estáveis.
+  // `onNavegar` foi REMOVIDO das deps — usamos a ref no lugar.
+  // Isso impede o re-registro do listener a cada render do pai.
   useEffect(() => {
-    // Se estiver carregando, em correção ou sem função de navegar, desabilita
-    if (mostrarCorrecao || isLoading || !onNavegar) {
-      keyboardEnabled.current = false;
-      return;
-    }
-
-    keyboardEnabled.current = true;
+    const KEY_DEBOUNCE_MS = 150;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!keyboardEnabled.current) return;
-
-      const now = Date.now();
-      if (now - lastKeyTime.current < KEY_DEBOUNCE_MS) return;
+      // Não processa quando em modo de correção ou carregando
+      if (mostrarCorrecao || isLoading) return;
 
       const target = e.target as HTMLElement;
       if (
@@ -536,81 +585,104 @@ export default memo(function QuestaoCard({
         return;
       }
 
+      const now = Date.now();
+      if (now - lastKeyTimeRef.current < KEY_DEBOUNCE_MS) return;
+
       switch (e.key) {
         case "1":
         case "c":
         case "C":
           e.preventDefault();
-          lastKeyTime.current = now;
-          onResposta("CERTO");
+          lastKeyTimeRef.current = now;
+          onRespostaRef.current("CERTO");
           break;
+
         case "2":
         case "e":
         case "E":
           e.preventDefault();
-          lastKeyTime.current = now;
-          onResposta("ERRADO");
+          lastKeyTimeRef.current = now;
+          onRespostaRef.current("ERRADO");
           break;
+
         case "ArrowLeft":
           if (numero > 1) {
             e.preventDefault();
-            lastKeyTime.current = now;
-            navegarInterno("anterior");
+            lastKeyTimeRef.current = now;
+            onNavegarRef.current?.("anterior");
           }
           break;
+
         case "ArrowRight":
-        case " ":
+          e.preventDefault();
+          lastKeyTimeRef.current = now;
           if (numero < total) {
-            e.preventDefault();
-            lastKeyTime.current = now;
-            navegarInterno("proxima");
+            onNavegarRef.current?.("proxima");
+          } else {
+            onNavegarRef.current?.("finalizar");
           }
           break;
+
+        case " ":
+          // FIX: espaço navegava mesmo quando não havia proxima questão.
+          // Agora finaliza na última questão, consistente com ArrowRight.
+          e.preventDefault();
+          lastKeyTimeRef.current = now;
+          if (numero < total) {
+            onNavegarRef.current?.("proxima");
+          } else {
+            onNavegarRef.current?.("finalizar");
+          }
+          break;
+
         case "m":
         case "M":
           e.preventDefault();
-          lastKeyTime.current = now;
-          onMarcarRevisao?.(numero);
+          lastKeyTimeRef.current = now;
+          onMarcarRevisaoRef.current?.(numero);
           break;
+
         case "?":
           e.preventDefault();
-          setShowShortcuts((prev) => !prev);
+          setShowShortcuts((p) => !p);
+          break;
+
+        default:
           break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      keyboardEnabled.current = false;
-    };
-    // Removemos 'handleNavegar' das dependências e usamos a ref para evitar recriar o listener
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
+    // FIX: apenas primitivos nas deps — sem funções do pai
     mostrarCorrecao,
     isLoading,
-    onNavegar, // Mantemos apenas para re-ativar o efeito se a props mudar
     numero,
     total,
-    onResposta,
-    onMarcarRevisao,
-    navegarInterno,
   ]);
 
-  // Focus management
+  // ── Focus management ───────────────────────────────────────────────────────
+  // FIX: verifica se não há outro elemento ativo antes de roubar o foco.
+  // Isso evita conflito com modais ou dropdowns abertos.
   useLayoutEffect(() => {
-    if (containerRef.current && !isLoading) {
-      containerRef.current.focus({ preventScroll: true });
+    if (isLoading) return;
+    const activeEl = document.activeElement;
+    const isInteractive =
+      activeEl &&
+      activeEl !== document.body &&
+      activeEl !== containerRef.current &&
+      (activeEl.tagName === "BUTTON" ||
+        activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "A" ||
+        (activeEl as HTMLElement).isContentEditable);
+
+    if (!isInteractive) {
+      containerRef.current?.focus({ preventScroll: true });
     }
   }, [numero, isLoading]);
 
-  const handleFinalizar = useCallback(() => {
-    onNavegarRef.current?.("finalizar");
-  }, []);
-
-  // ============================================================================
-  // RENDERIZAÇÃO
-  // ============================================================================
+  // ── Loading state ──────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -629,6 +701,8 @@ export default memo(function QuestaoCard({
       </div>
     );
   }
+
+  // ── Render principal ───────────────────────────────────────────────────────
 
   return (
     <div
@@ -690,7 +764,6 @@ export default memo(function QuestaoCard({
                   </span>
                 )}
 
-                {/* Timer */}
                 {tempoRestante && (
                   <div
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700"
@@ -741,9 +814,9 @@ export default memo(function QuestaoCard({
             </div>
           </header>
 
-          {/* Conteúdo da questão */}
+          {/* Conteúdo */}
           <article className="p-5 sm:p-8 space-y-6">
-            {/* Tags da questão */}
+            {/* Tags */}
             {questao.tags && questao.tags.length > 0 && (
               <div
                 className="flex flex-wrap gap-2"
@@ -752,7 +825,7 @@ export default memo(function QuestaoCard({
               >
                 {questao.tags.map((tag, idx) => (
                   <span
-                    key={`${tag}-${idx}`} // ✅ CORREÇÃO TS: Key explícito para evitar erro 'any' em 'idx'
+                    key={`${tag}-${idx}`}
                     className="px-2.5 py-1 rounded-md text-[10px] sm:text-xs bg-slate-800/80 text-slate-400 border border-slate-700 hover:border-slate-600 transition-colors cursor-default"
                     role="listitem"
                   >
@@ -791,7 +864,7 @@ export default memo(function QuestaoCard({
               />
             </div>
 
-            {/* Indicador de questão em branco */}
+            {/* Questão em branco */}
             <AnimatePresence>
               {emBranco && (
                 <motion.div
@@ -808,11 +881,11 @@ export default memo(function QuestaoCard({
               )}
             </AnimatePresence>
 
-            {/* Atalhos de teclado (toggle) */}
+            {/* Atalhos de teclado */}
             {!mostrarCorrecao && showKeyboardHints && (
               <div className="flex flex-col items-center gap-2">
                 <button
-                  onClick={() => setShowShortcuts((p) => !p)}
+                  onClick={toggleShortcuts}
                   className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
                   aria-expanded={showShortcuts}
                   aria-controls="shortcuts-panel"
@@ -827,7 +900,7 @@ export default memo(function QuestaoCard({
                       id="shortcuts-panel"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }} // ✅ FECHAMENTO ADICIONADO AQUI
+                      exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden w-full"
                     >
                       <div
@@ -835,42 +908,21 @@ export default memo(function QuestaoCard({
                         role="list"
                         aria-label="Lista de atalhos de teclado"
                       >
-                        <span role="listitem">
-                          <kbd className="px-2 py-1 bg-slate-800 rounded">
-                            1/C
-                          </kbd>{" "}
-                          {/* ✅ FECHAMENTO ADICIONADO AQUI */} Certo
-                        </span>
-                        <span role="listitem">
-                          <kbd className="px-2 py-1 bg-slate-800 rounded">
-                            2/E
-                          </kbd>{" "}
-                          {/* ✅ FECHAMENTO ADICIONADO AQUI */} Errado
-                        </span>
-                        <span role="listitem">
-                          <kbd className="px-2 py-1 bg-slate-800 rounded">
-                            ←
-                          </kbd>{" "}
-                          {/* ✅ FECHAMENTO ADICIONADO AQUI */} Anterior
-                        </span>
-                        <span role="listitem">
-                          <kbd className="px-2 py-1 bg-slate-800 rounded">
-                            →/Espaço
-                          </kbd>{" "}
-                          {/* ✅ FECHAMENTO ADICIONADO AQUI */} Próxima
-                        </span>
-                        <span role="listitem">
-                          <kbd className="px-2 py-1 bg-slate-800 rounded">
-                            M
-                          </kbd>{" "}
-                          {/* ✅ FECHAMENTO ADICIONADO AQUI */} Marcar
-                        </span>
-                        <span role="listitem">
-                          <kbd className="px-2 py-1 bg-slate-800 rounded">
-                            ?
-                          </kbd>{" "}
-                          {/* ✅ FECHAMENTO ADICIONADO AQUI */} Ajuda
-                        </span>
+                        {[
+                          { key: "1 / C", desc: "Certo" },
+                          { key: "2 / E", desc: "Errado" },
+                          { key: "←", desc: "Anterior" },
+                          { key: "→ / Espaço", desc: "Próxima" },
+                          { key: "M", desc: "Marcar" },
+                          { key: "?", desc: "Ajuda" },
+                        ].map(({ key, desc }) => (
+                          <span key={key} role="listitem">
+                            <kbd className="px-2 py-1 bg-slate-800 rounded">
+                              {key}
+                            </kbd>{" "}
+                            {desc}
+                          </span>
+                        ))}
                       </div>
                     </motion.div>
                   )}
@@ -878,52 +930,37 @@ export default memo(function QuestaoCard({
               </div>
             )}
 
-            {/* Indicador central */}
-            <div className="flex flex-col items-center">
-              <span
-                className="text-xs text-slate-500 font-medium"
-                aria-live="polite"
-              >
-                {numero} / {total}
-              </span>
-              <div className="w-16 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden">
-                <div
-                  className="h-full bg-slate-600 rounded-full transition-all duration-300"
-                  style={{ width: `${(numero / total) * 100}%` }}
-                  aria-hidden="true"
-                />
-              </div>
-            </div>
-
-            {/* Painel de correção (após finalizar) */}
+            {/* Painel de correção */}
             <AnimatePresence mode="wait">
               {mostrarCorrecao && <CorrecaoPanel questao={questao} />}
             </AnimatePresence>
           </article>
 
-          {/* Navegação entre questões */}
+          {/* Navegação */}
           {onNavegar && (
             <nav
               className="p-5 sm:p-6 border-t border-white/5 flex items-center justify-between bg-slate-950/30"
               aria-label="Navegação entre questões"
             >
-              {/* Botão Anterior */}
               <motion.button
                 whileHover={numero > 1 ? { x: -4 } : undefined}
-                whileTap={numero > 1 ? { scale: 0 } : undefined}
+                whileTap={numero > 1 ? { scale: 0.95 } : undefined}
                 onClick={() => navegarInterno("anterior")}
                 disabled={numero === 1}
-                className="..."
+                className="group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
+                  disabled:opacity-30 disabled:cursor-not-allowed
+                  hover:bg-slate-800 text-slate-300 hover:text-white
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                 <span className="hidden sm:inline">Anterior</span>
               </motion.button>
 
-              {/* Indicador central */}
+              {/* Mini-barra central */}
               <div className="flex flex-col items-center">
                 <span
                   className="text-xs text-slate-500 font-medium"
-                  aria-live="polite" // ✅ CORREÇÃO AQUI
+                  aria-live="polite"
                 >
                   {numero} / {total}
                 </span>
@@ -936,17 +973,21 @@ export default memo(function QuestaoCard({
                 </div>
               </div>
 
-              {/* Botão Próxima ou Finalizar */}
+              {/* Próxima / Finalizar */}
               <motion.button
-                whileHover={!isLastQuestion ? { x: 4 } : { scale: 1.05 }}
-                whileTap={!isLastQuestion ? { scale: 0.95 } : { scale: 0.95 }}
+                whileHover={isLastQuestion ? { scale: 1.05 } : { x: 4 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={
                   isLastQuestion
                     ? handleFinalizar
                     : () => navegarInterno("proxima")
                 }
-                disabled={false}
-                className="..."
+                className="group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
+                  bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                aria-label={
+                  isLastQuestion ? "Finalizar simulado" : "Próxima questão"
+                }
               >
                 {isLastQuestion ? (
                   <>
@@ -955,7 +996,7 @@ export default memo(function QuestaoCard({
                   </>
                 ) : (
                   <>
-                    <span className="hidden sm:inline">Próncia</span>
+                    <span className="hidden sm:inline">Próxima</span>
                     <ChevronRight className="w-5 h-5" aria-hidden="true" />
                   </>
                 )}

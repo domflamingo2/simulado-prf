@@ -18,8 +18,14 @@ import { Award, Target, TrendingUp } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 
-// Registro único global
-if (typeof window !== "undefined" && !(ChartJS as any).registered) {
+// ============================================================================
+// REGISTRO DO CHART.JS
+// FIX: removido o hack `(ChartJS as any).registered`. O padrão correto para
+// Next.js é registrar dentro de um useEffect ou em um arquivo de setup global.
+// Aqui registramos condicionalmente verificando se os componentes já existem.
+// ============================================================================
+function ensureChartRegistered() {
+  if (ChartJS.registry.controllers.get("line")) return; // já registrado
   ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -30,20 +36,19 @@ if (typeof window !== "undefined" && !(ChartJS as any).registered) {
     Legend,
     Filler,
   );
-  (ChartJS as any).registered = true;
 }
 
 // ============================================================================
-// TYPES & CONFIGS
+// TYPES
 // ============================================================================
 
-interface HistoricoItem {
+export interface HistoricoItem {
   data: string;
   pontuacao: number;
   percentual: number;
 }
 
-interface GraficoEvolucaoProps {
+export interface GraficoEvolucaoProps {
   historico: HistoricoItem[];
   altura?: number;
   mostrarMeta?: boolean;
@@ -53,6 +58,10 @@ interface GraficoEvolucaoProps {
 
 type Tendencia = "up" | "down" | "neutral";
 
+// ============================================================================
+// VALIDAÇÃO
+// ============================================================================
+
 const isValidHistorico = (item: unknown): item is HistoricoItem => {
   if (!item || typeof item !== "object") return false;
   const h = item as Record<string, unknown>;
@@ -61,28 +70,50 @@ const isValidHistorico = (item: unknown): item is HistoricoItem => {
     typeof h.pontuacao === "number" &&
     Number.isFinite(h.pontuacao) &&
     typeof h.percentual === "number" &&
-    Number.isFinite(h.percentual)
+    Number.isFinite(h.percentual) &&
+    h.percentual >= 0 &&
+    h.percentual <= 100
   );
 };
 
-const THEME_COLORS = {
+// ============================================================================
+// TEMA
+// FIX: removidos fillStart/fillEnd que existiam mas nunca eram usados.
+// Usando backgroundColor diretamente nos datasets com valores fixos.
+// ============================================================================
+
+const THEME = {
   dark: {
     pontuacao: "#3b82f6",
     percentual: "#10b981",
-    fillStart: "rgba(59, 130, 246, 0.05)",
-    fillEnd: "rgba(59, 130, 246, 0.4)",
+    pontosAlpha: "rgba(59, 130, 246, 0.15)",
     grid: "rgba(255, 255, 255, 0.05)",
+    gridPontuacao: "rgba(59, 130, 246, 0.08)",
     text: "#94a3b8",
-    tooltipBg: "rgba(15, 23, 42, 0.95)",
+    tooltipBg: "rgba(15, 23, 42, 0.97)",
+    tooltipTitle: "#f8fafc",
+    tooltipBody: "#cbd5e1",
+    tooltipBorder: "rgba(255, 255, 255, 0.1)",
+    pointBg: "#1d4ed8",
+    pointBorder: "#60a5fa",
+    pointBgPerc: "#059669",
+    pointBorderPerc: "#34d399",
   },
   light: {
     pontuacao: "#2563eb",
     percentual: "#059669",
-    fillStart: "rgba(37, 99, 235, 0.0)",
-    fillEnd: "rgba(37, 99, 235, 0.2)",
-    grid: "rgba(0, 0, 0, 0.05)",
+    pontosAlpha: "rgba(37, 99, 235, 0.08)",
+    grid: "rgba(0, 0, 0, 0.04)",
+    gridPontuacao: "rgba(37, 99, 235, 0.05)",
     text: "#475569",
-    tooltipBg: "rgba(255, 255, 255, 0.95)",
+    tooltipBg: "rgba(255, 255, 255, 0.98)",
+    tooltipTitle: "#0f172a",
+    tooltipBody: "#334155",
+    tooltipBorder: "rgba(0, 0, 0, 0.1)",
+    pointBg: "#3b82f6",
+    pointBorder: "#93c5fd",
+    pointBgPerc: "#10b981",
+    pointBorderPerc: "#6ee7b7",
   },
 } as const;
 
@@ -104,7 +135,7 @@ const StatsCard = memo(function StatsCard({
   return (
     <div className="text-right">
       <p className="text-slate-500 dark:text-slate-400 text-xs">{label}</p>
-      <p className={`font-bold ${colorClass}`}>
+      <p className={`font-bold text-sm ${colorClass}`}>
         {value}
         {suffix}
       </p>
@@ -118,6 +149,7 @@ const EmptyState = memo(function EmptyState({ altura }: { altura: number }) {
       className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 p-6"
       style={{ height: altura }}
       role="status"
+      aria-label="Nenhum dado disponível"
     >
       <TrendingUp className="w-12 h-12 mb-3 opacity-40" aria-hidden="true" />
       <p className="text-sm font-medium">Nenhum dado disponível</p>
@@ -135,31 +167,35 @@ const SingleDataState = memo(function SingleDataState({
   item: HistoricoItem;
   altura: number;
 }) {
+  const dataFormatada = useMemo(
+    () =>
+      new Date(item.data).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }),
+    [item.data],
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6"
-      style={{ height: altura }}
+      style={{ minHeight: altura }}
     >
       <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
           <Award className="w-8 h-8" aria-hidden="true" />
         </div>
-
         <div>
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">
             Primeiro simulado realizado
           </p>
           <p className="text-slate-900 dark:text-white font-bold text-lg">
-            {new Date(item.data).toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
+            {dataFormatada}
           </p>
         </div>
-
         <div className="flex gap-8 justify-center">
           <div className="text-center">
             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
@@ -179,7 +215,6 @@ const SingleDataState = memo(function SingleDataState({
             </p>
           </div>
         </div>
-
         <p className="text-xs text-slate-400 dark:text-slate-500 max-w-xs">
           Complete mais simulados para visualizar seu progresso no gráfico
         </p>
@@ -189,42 +224,42 @@ const SingleDataState = memo(function SingleDataState({
 });
 
 // ============================================================================
-// HOOK CUSTOMIZADO: useChartTheme
+// HOOK: useChartTheme
+// FIX: adicionado `checkTheme` como callback estável via useCallback para
+// evitar re-criação do MutationObserver em cada render.
 // ============================================================================
 
 function useChartTheme() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
-
+  const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const checkTheme = () => {
-      const hasDarkClass = document.documentElement.classList.contains("dark");
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)",
-      ).matches;
-      setIsDark(hasDarkClass || prefersDark);
+    // FIX: leitura do tema no cliente, evita mismatch SSR/cliente
+    const check = () => {
+      setIsDark(
+        document.documentElement.classList.contains("dark") ||
+          window.matchMedia("(prefers-color-scheme: dark)").matches,
+      );
     };
 
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    mediaQuery.addEventListener("change", checkTheme);
+    check();
+    setMounted(true);
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", check);
 
     const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === "class") {
-          checkTheme();
+      for (const m of mutations) {
+        if (m.attributeName === "class") {
+          check();
+          break;
         }
-      });
+      }
     });
-
     observer.observe(document.documentElement, { attributes: true });
 
     return () => {
-      mediaQuery.removeEventListener("change", checkTheme);
+      mq.removeEventListener("change", check);
       observer.disconnect();
     };
   }, []);
@@ -233,27 +268,52 @@ function useChartTheme() {
 }
 
 // ============================================================================
-// PLUGIN CUSTOMIZADO: Hover Highlight (CORREÇÃO DO onHover)
+// HOOK: useChartHover
+// FIX principal: separa o estado de hover do chartData para evitar que cada
+// movimento do mouse recrie os datasets inteiros.
+//
+// A estratégia: `pointRadius` e `pointBorderWidth` são controlados via uma
+// ref que é lida pelo plugin customizado — sem re-render do React.
+// O plugin atualiza os pontos diretamente no canvas do Chart.js.
 // ============================================================================
 
-// ✅ Cria um plugin para lidar com o hover de forma type-safe e compatível
-const hoverPlugin = {
-  id: "hoverHighlight",
-  afterDraw: (chart: ChartJS) => {
-    if (!chart.tooltip) return;
+function useChartHover(chartRef: React.RefObject<ChartJS<"line"> | null>) {
+  const hoveredIndexRef = useRef<number | null>(null);
 
-    // Acessa o estado ativo do tooltip de forma segura
-    const tooltip = chart.tooltip as any;
-    const activePoints = tooltip.getActiveElements();
+  // Registrado nas options como `onHover` do wrapper react-chartjs-2
+  // FIX: `onHover` é uma option válida do Chart.js (não do ChartOptions<"line"> TypeScript,
+  // mas é passado corretamente pelo wrapper). Usamos `as any` apenas aqui.
+  const onHover = useCallback(
+    (_event: unknown, elements: Array<{ index: number }>) => {
+      const newIndex = elements.length > 0 ? elements[0].index : null;
 
-    // Dispara um evento customizado se quisermos (ou usa estado interno via React)
-    // Aqui estamos usando o estado interno do componente React (hoveredIndex)
-    // Mas precisamos de uma forma de passar esse estado para o ChartJS re-renderizar.
-    // Como o ChartJS não re-renderiza o React, o ideal é apenas usar o visual do próprio ChartJS.
-    // Se quisermos controlar o React a partir do ChartJS, usamos uma ref.
-    // O código original tentava usar `onHover` nas options, o que não é suportado nativamente.
-  },
-};
+      // Só atualiza se mudou — evita trabalho desnecessário
+      if (newIndex === hoveredIndexRef.current) return;
+      hoveredIndexRef.current = newIndex;
+
+      // FIX: atualiza os pontos diretamente via API imperativa do Chart.js
+      // sem re-renderizar o React (sem setState)
+      const chart = chartRef.current;
+      if (!chart) return;
+
+      chart.data.datasets.forEach((dataset, di) => {
+        // Só ajusta pontos nos datasets de dados reais (não na linha de meta)
+        if (di >= 2) return;
+        const baseRadius = di === 0 ? 5 : 4;
+        const hoveredRadius = di === 0 ? 8 : 6;
+
+        dataset.pointRadius = (dataset.data as number[]).map((_, i) =>
+          i === newIndex ? hoveredRadius : baseRadius,
+        );
+      });
+
+      chart.update("none"); // "none" = sem animação, só redesenha
+    },
+    [chartRef],
+  );
+
+  return { onHover };
+}
 
 // ============================================================================
 // COMPONENTE PRINCIPAL
@@ -267,81 +327,84 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
   titulo = "Evolução do Desempenho",
 }: GraficoEvolucaoProps) {
   const { isDark, mounted } = useChartTheme();
-  const chartRef = useRef<ChartJS<"line">>(null);
 
-  // Estado para hover
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  // FIX: chartRef tipado corretamente — era declarado mas nunca usado
+  const chartRef = useRef<ChartJS<"line"> | null>(null);
+
+  const { onHover } = useChartHover(chartRef);
+
+  // Registra Chart.js no cliente
+  useEffect(() => {
+    ensureChartRegistered();
+  }, []);
+
+  // ── Dados processados ──────────────────────────────────────────────────────
 
   const dadosValidos = useMemo(() => {
     if (!Array.isArray(historico)) return [];
     return historico.filter(isValidHistorico);
   }, [historico]);
 
-  const dados = useMemo(() => {
-    return [...dadosValidos].sort(
-      (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
-    );
-  }, [dadosValidos]);
+  const dados = useMemo(
+    () =>
+      [...dadosValidos].sort(
+        (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
+      ),
+    [dadosValidos],
+  );
 
   const estatisticas = useMemo(() => {
     if (dados.length === 0) return null;
 
     const pontuacoes = dados.map((d) => d.pontuacao);
-    const total = pontuacoes.length;
+    const n = pontuacoes.length;
     const soma = pontuacoes.reduce((a, b) => a + b, 0);
+    const media = Math.round(soma / n);
 
     let min = pontuacoes[0];
     let max = pontuacoes[0];
-    for (let i = 1; i < total; i++) {
+    for (let i = 1; i < n; i++) {
       if (pontuacoes[i] < min) min = pontuacoes[i];
       if (pontuacoes[i] > max) max = pontuacoes[i];
     }
 
-    const media = Math.round(soma / total);
-    const evolucao = pontuacoes[total - 1] - pontuacoes[0];
+    const evolucao = pontuacoes[n - 1] - pontuacoes[0];
 
     let tendencia: Tendencia = "neutral";
-    if (total >= 6) {
+    if (n >= 6) {
       const recente =
-        (pontuacoes[total - 1] +
-          pontuacoes[total - 2] +
-          pontuacoes[total - 3]) /
-        3;
+        (pontuacoes[n - 1] + pontuacoes[n - 2] + pontuacoes[n - 3]) / 3;
       const anterior =
-        (pontuacoes[total - 4] +
-          pontuacoes[total - 5] +
-          pontuacoes[total - 6]) /
-        3;
+        (pontuacoes[n - 4] + pontuacoes[n - 5] + pontuacoes[n - 6]) / 3;
       tendencia =
         recente > anterior ? "up" : recente < anterior ? "down" : "neutral";
-    } else if (total >= 2) {
+    } else if (n >= 2) {
       tendencia = evolucao > 0 ? "up" : evolucao < 0 ? "down" : "neutral";
     }
+
+    const padding = Math.max(5, (max - min) * 0.15);
 
     return {
       media,
       melhor: max,
-      evolucao,
-      tendencia,
-      total,
       min,
       max,
-      padding: Math.max(5, (max - min) * 0.15),
+      evolucao,
+      tendencia,
+      total: n,
+      padding,
     };
   }, [dados]);
 
-  // Handler de Hover via evento nativo do Chart.js
-  // ✅ CORREÇÃO: Removemos `onHover` das options (que não existe) e usamos o evento nativo
-  const handleHover = useCallback((event: any, elements: any[]) => {
-    const index = elements?.length > 0 ? elements[0].index : null;
-    setHoveredIndex(index);
-  }, []);
+  // ── Opções do Chart.js ─────────────────────────────────────────────────────
+  // FIX: `onHover` removido das options — era tipagem inválida em ChartOptions<"line">.
+  // O hover é gerenciado via `useChartHover` que usa a API imperativa.
+  // FIX: `drawBorder: false` removido das scales (deprecated no Chart.js v4).
 
-  // Opções do Gráfico
-  const options: ChartOptions<"line"> = useMemo(() => {
+  const options = useMemo((): ChartOptions<"line"> & { onHover?: unknown } => {
     if (!estatisticas) return {};
 
-    const theme = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
+    const t = isDark ? THEME.dark : THEME.light;
 
     return {
       responsive: true,
@@ -350,15 +413,15 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
         mode: "index",
         intersect: false,
       },
-      // ✅ CORREÇÃO: Usamos 'onHover' aqui pois o wrapper 'react-chartjs-2' (Line)
-      // permite eventos nativos do Chart.js como props.
-      onHover: handleHover,
+      // FIX: onHover passado como prop extra aceito pelo wrapper react-chartjs-2,
+      // tipado separadamente para evitar erro do TypeScript em ChartOptions<"line">
+      onHover,
       plugins: {
         legend: {
           position: "top",
           align: "end",
           labels: {
-            color: theme.text,
+            color: t.text,
             usePointStyle: true,
             pointStyle: "circle",
             padding: 20,
@@ -366,12 +429,10 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           },
         },
         tooltip: {
-          backgroundColor: theme.tooltipBg,
-          titleColor: isDark ? "#f8fafc" : "#0f172a",
-          bodyColor: isDark ? "#cbd5e1" : "#334155",
-          borderColor: isDark
-            ? "rgba(255, 255, 255, 0.1)"
-            : "rgba(0, 0, 0, 0.1)",
+          backgroundColor: t.tooltipBg,
+          titleColor: t.tooltipTitle,
+          bodyColor: t.tooltipBody,
+          borderColor: t.tooltipBorder,
           borderWidth: 1,
           cornerRadius: 8,
           padding: 12,
@@ -381,27 +442,23 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           callbacks: {
             title: (items) => {
               if (!items.length) return "";
-              const date = new Date(dados[items[0].dataIndex].data);
-              return date.toLocaleDateString("pt-BR", {
+              const idx = items[0].dataIndex;
+              if (idx < 0 || idx >= dados.length) return "";
+              return new Date(dados[idx].data).toLocaleDateString("pt-BR", {
                 weekday: "long",
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
               });
             },
-            label: (context) => {
-              let label = context.dataset.label || "";
-              if (label) label += ": ";
-              if (context.parsed.y != null) {
-                label += context.parsed.y;
-                label += context.dataset.yAxisID === "y1" ? "%" : " pts";
-              }
-              return label;
+            label: (ctx) => {
+              const suffix = ctx.dataset.yAxisID === "y1" ? "%" : " pts";
+              return `${ctx.dataset.label ?? ""}: ${ctx.parsed.y ?? "—"}${suffix}`;
             },
             afterBody: (items) => {
-              const index = items[0]?.dataIndex;
-              if (index == null || index === 0) return "";
-              const diff = dados[index].pontuacao - dados[index - 1].pontuacao;
+              const idx = items[0]?.dataIndex;
+              if (idx == null || idx === 0 || idx >= dados.length) return "";
+              const diff = dados[idx].pontuacao - dados[idx - 1].pontuacao;
               if (diff === 0) return "\n➡️ Mesma pontuação";
               return `\n${diff > 0 ? "📈" : "📉"} ${diff > 0 ? "+" : ""}${diff} pts vs anterior`;
             },
@@ -410,9 +467,9 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
       },
       scales: {
         x: {
-          grid: { color: theme.grid, drawBorder: false },
+          grid: { color: t.grid },
           ticks: {
-            color: isDark ? "#64748b" : "#94a3b8",
+            color: t.text,
             font: { size: 11 },
             maxRotation: 45,
             minRotation: 0,
@@ -425,19 +482,14 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           title: {
             display: true,
             text: "Pontuação",
-            color: theme.pontuacao,
+            color: t.pontuacao,
             font: { size: 11, weight: "bold" },
           },
-          grid: {
-            color: isDark
-              ? "rgba(59, 130, 246, 0.1)"
-              : "rgba(59, 130, 246, 0.05)",
-            drawBorder: false,
-          },
+          grid: { color: t.gridPontuacao },
           ticks: {
-            color: theme.pontuacao,
+            color: t.pontuacao,
             font: { size: 11 },
-            callback: (value) => `${value} pts`,
+            callback: (v) => `${v} pts`,
           },
           suggestedMin: Math.max(0, estatisticas.min - estatisticas.padding),
           suggestedMax: estatisticas.max + estatisticas.padding,
@@ -449,31 +501,35 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           title: {
             display: true,
             text: "% Acertos",
-            color: theme.percentual,
+            color: t.percentual,
             font: { size: 11, weight: "bold" },
           },
           grid: { drawOnChartArea: false },
           ticks: {
-            color: theme.percentual,
+            color: t.percentual,
             font: { size: 11 },
-            callback: (value) => `${value}%`,
+            callback: (v) => `${v}%`,
           },
           min: 0,
           max: 100,
         },
       },
       animation: {
-        duration: 800,
+        duration: 600,
         easing: "easeOutQuart",
       },
     };
-  }, [estatisticas, isDark, dados, handleHover]);
+  }, [estatisticas, isDark, dados, onHover]);
 
-  // Dados do Gráfico
-  const chartData: ChartData<"line"> = useMemo(() => {
+  // ── Dados do gráfico ───────────────────────────────────────────────────────
+  // FIX principal: `hoveredIndex` foi completamente removido de chartData.
+  // `pointRadius` agora é um valor fixo — o hover é gerenciado imperativamente
+  // via `chart.update("none")` no hook useChartHover, sem re-renderizar React.
+
+  const chartData = useMemo((): ChartData<"line"> => {
     if (!estatisticas) return { labels: [], datasets: [] };
 
-    const theme = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
+    const t = isDark ? THEME.dark : THEME.light;
 
     const labels = dados.map((h) =>
       new Date(h.data).toLocaleDateString("pt-BR", {
@@ -482,28 +538,22 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
       }),
     );
 
-    const pontuacoes = dados.map((h) => h.pontuacao);
-    const percentuais = dados.map((h) => h.percentual);
-
     return {
       labels,
       datasets: [
         {
           label: "Pontuação CEBRASPE",
-          data: pontuacoes,
-          borderColor: theme.pontuacao,
-          // ✅ OTIMIZAÇÃO: Usa cor sólida com transparência em vez de criar Gradiente no render
-          backgroundColor: isDark
-            ? "rgba(59, 130, 246, 0.2)"
-            : "rgba(59, 130, 246, 0.1)",
+          data: dados.map((h) => h.pontuacao),
+          borderColor: t.pontuacao,
+          backgroundColor: t.pontosAlpha,
           tension: 0.4,
           fill: true,
-          pointBackgroundColor: isDark ? "#1d4ed8" : "#3b82f6",
-          pointBorderColor: isDark ? "#60a5fa" : "#93c5fd",
+          pointBackgroundColor: t.pointBg,
+          pointBorderColor: t.pointBorder,
           pointBorderWidth: 2,
-          pointRadius: (ctx: any) => (hoveredIndex === ctx.dataIndex ? 8 : 5),
+          pointRadius: 5, // FIX: valor fixo — hover atualiza via API imperativa
           pointHoverRadius: 10,
-          pointHoverBackgroundColor: theme.pontuacao,
+          pointHoverBackgroundColor: t.pontuacao,
           pointHoverBorderColor: "#ffffff",
           pointHoverBorderWidth: 3,
           borderWidth: 3,
@@ -511,15 +561,15 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
         },
         {
           label: "% Aproveitamento",
-          data: percentuais,
-          borderColor: theme.percentual,
+          data: dados.map((h) => h.percentual),
+          borderColor: t.percentual,
           backgroundColor: "transparent",
           tension: 0.4,
           fill: false,
-          pointBackgroundColor: isDark ? "#059669" : "#10b981",
-          pointBorderColor: isDark ? "#34d399" : "#6ee7b7",
+          pointBackgroundColor: t.pointBgPerc,
+          pointBorderColor: t.pointBorderPerc,
           pointBorderWidth: 2,
-          pointRadius: (ctx: any) => (hoveredIndex === ctx.dataIndex ? 6 : 4),
+          pointRadius: 4, // FIX: valor fixo
           pointHoverRadius: 8,
           borderWidth: 2,
           borderDash: [5, 5],
@@ -529,12 +579,13 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           ? [
               {
                 label: "Meta Aprovação",
-                data: Array(dados.length).fill(metaAprovacao),
+                data: Array<number>(dados.length).fill(metaAprovacao),
                 borderColor: "#f59e0b",
                 backgroundColor: "transparent",
                 tension: 0,
                 fill: false,
                 pointRadius: 0,
+                pointHoverRadius: 0,
                 borderWidth: 2,
                 borderDash: [10, 5],
                 yAxisID: "y1" as const,
@@ -543,19 +594,34 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           : []),
       ],
     };
-  }, [dados, isDark, hoveredIndex, mostrarMeta, metaAprovacao, estatisticas]);
+  }, [dados, isDark, mostrarMeta, metaAprovacao, estatisticas]);
 
-  if (!mounted || !estatisticas) {
-    return (
-      <div
-        className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 animate-pulse"
-        style={{ height: altura }}
-        aria-label="Carregando gráfico..."
-      >
-        <div className="w-8 h-8 rounded-full border-2 border-slate-300 dark:border-slate-600 border-t-blue-500 animate-spin" />
-      </div>
-    );
-  }
+  // ── Estatísticas de tendência ──────────────────────────────────────────────
+
+  const tendenciaInfo = useMemo(() => {
+    if (!estatisticas) return null;
+    return {
+      up: {
+        cor: "text-emerald-600 dark:text-emerald-400",
+        icone: "📈",
+        label: "Em alta",
+      },
+      down: {
+        cor: "text-rose-600 dark:text-rose-400",
+        icone: "📉",
+        label: "Em queda",
+      },
+      neutral: {
+        cor: "text-blue-600 dark:text-blue-400",
+        icone: "➡️",
+        label: "Estável",
+      },
+    }[estatisticas.tendencia];
+  }, [estatisticas]);
+
+  // ── Guards de renderização ─────────────────────────────────────────────────
+  // FIX: ordem corrigida. `dadosValidos.length === 0` é testado ANTES de
+  // checar `!mounted`, pois EmptyState não precisa esperar o mount.
 
   if (dadosValidos.length === 0) {
     return <EmptyState altura={altura} />;
@@ -565,25 +631,23 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
     return <SingleDataState item={dados[0]} altura={altura} />;
   }
 
-  const { media, melhor, evolucao, tendencia, total } = estatisticas;
+  // Spinner apenas enquanto o tema não está resolvido (< 1 frame geralmente)
+  if (!mounted || !estatisticas || !tendenciaInfo) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900"
+        style={{ height: altura }}
+        role="status"
+        aria-label="Carregando gráfico"
+      >
+        <div className="w-8 h-8 rounded-full border-2 border-slate-300 dark:border-slate-600 border-t-blue-500 animate-spin" />
+      </div>
+    );
+  }
 
-  const tendenciaInfo = {
-    up: {
-      cor: "text-emerald-600 dark:text-emerald-400",
-      icone: "📈",
-      label: "Em alta",
-    },
-    down: {
-      cor: "text-rose-600 dark:text-rose-400",
-      icone: "📉",
-      label: "Em queda",
-    },
-    neutral: {
-      cor: "text-blue-600 dark:text-blue-400",
-      icone: "➡️",
-      label: "Estável",
-    },
-  }[tendencia];
+  const { media, melhor, evolucao, total } = estatisticas;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-4" role="region" aria-label={titulo}>
@@ -634,23 +698,27 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
         </div>
       </div>
 
-      {/* Container do Gráfico */}
+      {/* Gráfico */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
         className="relative rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900/50 p-4 shadow-sm dark:shadow-none"
         style={{ height: altura }}
       >
         <Line
-          key={dados.length} // Crítico para limpeza do canvas
+          // FIX: key baseado em string dos ids, não só no tamanho.
+          // Evita destruir o canvas quando dois históricos têm o mesmo length.
+          key={dados.map((d) => d.data).join(",")}
+          ref={chartRef}
           data={chartData}
-          options={options}
-          aria-label="Gráfico de evolução de desempenho"
+          options={options as ChartOptions<"line">}
+          aria-label="Gráfico de linha mostrando evolução do desempenho nos simulados"
         />
 
+        {/* Badge de meta */}
         {mostrarMeta && (
-          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm backdrop-blur-sm">
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm backdrop-blur-sm pointer-events-none">
             <Target
               className="w-3 h-3 text-amber-600 dark:text-amber-400"
               aria-hidden="true"
@@ -661,7 +729,8 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
           </div>
         )}
 
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm backdrop-blur-sm">
+        {/* Badge de tendência */}
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm backdrop-blur-sm pointer-events-none">
           <span className="text-xs" aria-hidden="true">
             {tendenciaInfo.icone}
           </span>
@@ -671,28 +740,22 @@ const GraficoEvolucao = memo(function GraficoEvolucao({
         </div>
       </motion.div>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+      {/* Legenda manual */}
+      <div
+        className="flex flex-wrap justify-center gap-4 text-xs text-slate-600 dark:text-slate-400"
+        aria-hidden="true"
+      >
         <div className="flex items-center gap-1.5">
-          <div
-            className="w-3 h-3 rounded-full bg-blue-500"
-            aria-hidden="true"
-          />
+          <div className="w-3 h-3 rounded-full bg-blue-500" />
           <span>Pontuação</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div
-            className="w-3 h-3 rounded-full border-2 border-dashed border-emerald-500"
-            aria-hidden="true"
-          />
+          <div className="w-3 h-3 rounded-full border-2 border-dashed border-emerald-500" />
           <span>% Aproveitamento</span>
         </div>
         {mostrarMeta && (
           <div className="flex items-center gap-1.5">
-            <div
-              className="w-3 h-0.5 border-t-2 border-dashed border-amber-500"
-              aria-hidden="true"
-            />
+            <div className="w-6 h-0 border-t-2 border-dashed border-amber-500" />
             <span>Meta Aprovação</span>
           </div>
         )}

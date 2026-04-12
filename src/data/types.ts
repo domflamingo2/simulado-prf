@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 // ═══════════════════════════════════════════════════════════
 // TIPOS BASE DO SISTEMA
 // ═══════════════════════════════════════════════════════════
@@ -313,3 +315,175 @@ export const DISCIPLINAS_ORDEM: Disciplina[] = [
   "INFORMATICA",
   "LEGISLACAO_PRF",
 ];
+
+// ═══════════════════════════════════════════════════════════
+// ZOD SCHEMAS (VALIDAÇÃO)
+// ═══════════════════════════════════════════════════════════
+
+// Schema para validar questões respondidas
+const QuestaoRespondidaSchema: z.ZodType<QuestaoRespondida> = z.object({
+  id: z.string(),
+  disciplina: z.enum([
+    "PORTUGUES",
+    "ETICA",
+    "RACIOCINIO_LOGICO",
+    "DIREITO_CONSTITUCIONAL",
+    "DIREITO_ADMINISTRATIVO",
+    "ADMINISTRACAO",
+    "ARQUIVOLOGIA",
+    "INFORMATICA",
+    "LEGISLACAO_PRF",
+  ]),
+  enunciado: z.string(),
+  resposta: z.enum(["CERTO", "ERRADO"]),
+  explicacao: z.string(),
+  dificuldade: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  tags: z.array(z.string()).optional(),
+  ano: z.number().optional(),
+  banca: z.string().optional(),
+  fonte_legal: z.array(z.string()).optional(),
+  banca_referencia: z.string().optional(),
+  assunto: z.string().optional(),
+  respostaUsuario: z.enum(["CERTO", "ERRADO"]).nullable().optional(),
+  tempoGasto: z.number().optional(),
+  revisar: z.boolean().optional(),
+  anotacao: z.string().optional(),
+});
+
+// Schema para estatísticas detalhadas
+const EstatisticasDisciplinaSchema: z.ZodType<EstatisticasDisciplina> =
+  z.object({
+    total: z.number(),
+    acertos: z.number(),
+    erros: z.number(),
+    brancos: z.number(),
+    percentual: z.number(), // Aceita negativo (ex: -18.33)
+    pontuacao: z.number(),
+  });
+
+const EstatisticasSimuladoSchema: z.ZodType<EstatisticasSimulado> = z.object({
+  totalQuestoes: z.number(),
+  acertos: z.number(),
+  erros: z.number(),
+  brancos: z.number(),
+  pontuacao: z.number(),
+  percentual: z.number(),
+  tempoTotal: z.number(),
+  tempoMedioPorQuestao: z.number(),
+  desempenhoPorDisciplina: z.record(z.string(), EstatisticasDisciplinaSchema),
+  taxaResposta: z.number(),
+});
+
+// Schema principal do Histórico1
+export const HistoricoSimuladoSchema: z.ZodType<HistoricoSimulado> = z.object({
+  id: z.string(),
+  data: z.string(),
+  modo: z.enum([
+    "COMPLETO",
+    "TURBO",
+    "ADAPTATIVO",
+    "DISCIPLINA",
+    "ERROS",
+    "TREINO",
+  ]),
+  disciplina: z
+    .enum([
+      "PORTUGUES",
+      "ETICA",
+      "RACIOCINIO_LOGICO",
+      "DIREITO_CONSTITUCIONAL",
+      "DIREITO_ADMINISTRATIVO",
+      "ADMINISTRACAO",
+      "ARQUIVOLOGIA",
+      "INFORMATICA",
+      "LEGISLACAO_PRF",
+    ])
+    .optional(),
+  estatisticas: EstatisticasSimuladoSchema,
+  questoes: z.array(QuestaoRespondidaSchema),
+  xpGanho: z.number().optional(),
+  conquistas: z
+    .array(
+      z.enum([
+        "primeiro",
+        "streak-3",
+        "streak-7",
+        "streak-30",
+        "cebraspe-master",
+        "polivalente",
+        "velocista",
+        "perfeccionista",
+        "persistent",
+        "nivel-5",
+        "nivel-10",
+        "nivel-max",
+      ]),
+    )
+    .optional(),
+});
+
+// Schema de Progresso do Usuário
+export const UserProgressSchema: z.ZodType<UserProgress> = z.object({
+  nivel: z.number(),
+  xpTotal: z.number(),
+  xpAtual: z.number(),
+  xpParaProximoNivel: z.number(),
+  streakDias: z.number(),
+  ultimoDiaEstudo: z.string().nullable(),
+  maiorStreak: z.number(),
+  badges: z.array(
+    z.object({
+      id: z.enum([
+        "primeiro",
+        "streak-3",
+        "streak-7",
+        "streak-30",
+        "cebraspe-master",
+        "polivalente",
+        "velocista",
+        "perfeccionista",
+        "persistent",
+        "nivel-5",
+        "nivel-10",
+        "nivel-max",
+      ]),
+      unlockedAt: z.string(),
+    }),
+  ),
+  conquistas: z.object({
+    simuladosCompletos: z.number(),
+    simuladosTurbo: z.number(),
+    simuladosAdaptativos: z.number(),
+    treinosDisciplina: z.number(),
+    revisoesErros: z.number(),
+    totalQuestoesRespondidas: z.number(),
+    totalAcertos: z.number(),
+    totalErros: z.number(),
+    recordes: z.object({
+      turboMaisRapido: z.number().nullable(),
+      melhorPontuacao: z.number(),
+    }),
+    disciplinasDominadas: z.array(
+      z.enum([
+        "PORTUGUES",
+        "ETICA",
+        "RACIOCINIO_LOGICO",
+        "DIREITO_CONSTITUCIONAL",
+        "DIREITO_ADMINISTRATIVO",
+        "ADMINISTRACAO",
+        "ARQUIVOLOGIA",
+        "INFORMATICA",
+        "LEGISLACAO_PRF",
+      ]),
+    ),
+  }),
+});
+
+// Schema de Configurações
+export const UserSettingsSchema: z.ZodType<UserSettings> = z.object({
+  tema: z.enum(["dark", "light", "system"]),
+  somEnabled: z.boolean(),
+  animacoesEnabled: z.boolean(),
+  tempoPadraoProva: z.number(),
+  mostrarExplicacaoImediata: z.boolean(),
+});

@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -36,44 +35,28 @@ import {
 } from "react";
 
 import Footer from "@/components/layout/Footer";
-
-// ============================================================================
-// IMPORTS DE COMPONENTES UI
-// ============================================================================
 import AlertaDesempenho from "@/components/ui/AlertaDesempenho";
 import Badge, { NewBadgeNotification } from "@/components/ui/Badge";
 import { GlassCard } from "@/components/ui/GlassCard";
 import ModoCard from "@/components/ui/ModoCard";
 import ProgressRing from "@/components/ui/ProgressRing";
 import StatCard from "@/components/ui/StatCard";
-
-// ============================================================================
-// IMPORTS DE COMPONENTES DO DASHBOARD
-// ============================================================================
-import EmptyStateDashboard from "@/components/dashboard/EmptyStateDashboard";
-import SecaoGraficoEvolucao from "@/components/dashboard/SecaoGraficoEvolucao";
-
-// ============================================================================
-// IMPORTS DE DADOS E HOOKS
-// ============================================================================
 import { NIVEIS } from "@/data/gamificacao";
 import { HistoricoSimulado } from "@/data/types";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { classificarDesempenho } from "@/lib/simulado-logic";
-import { mapHistoricoParaGrafico } from "@/utils/mapHistoricoParaGrafico";
 
 // ============================================================================
-// LAZY LOAD DE COMPONENTES PESADOS
+// LAZY LOAD
 // ============================================================================
 const Confetti = lazy(() =>
-  import("@/components/ui/Confetti").catch(() => ({ default: () => null })),
+  import("@/components/ui/Confetti").catch(() => ({ default: () => null }))
 );
 
 // ============================================================================
 // TYPES
 // ============================================================================
-
 type ModoEstudoItem = {
   href: string;
   icon: LucideIcon;
@@ -97,9 +80,25 @@ type BadgeType =
   | "nivel-5";
 
 // ============================================================================
-// CONSTANTES E CONFIGURAÇÕES
+// VALIDAÇÃO DE ITEM DO HISTÓRICO
 // ============================================================================
+function isHistoricoValido(h: unknown): h is HistoricoSimulado {
+  if (!h || typeof h !== "object") return false;
+  const item = h as Record<string, unknown>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.modo === "string" &&
+    typeof item.data === "string" &&
+    item.estatisticas !== null &&
+    typeof item.estatisticas === "object" &&
+    typeof (item.estatisticas as Record<string, unknown>).pontuacao === "number" &&
+    Array.isArray(item.questoes)
+  );
+}
 
+// ============================================================================
+// CONSTANTES
+// ============================================================================
 const MODOS_ESTUDO: ModoEstudoItem[] = [
   {
     href: "/simulado?modo=completo",
@@ -191,38 +190,62 @@ const BADGE_LABELS: Record<BadgeType, string> = {
   "nivel-5": "Nível 5",
 };
 
+const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = {
+  emerald: {
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
+    text: "text-emerald-400",
+  },
+  rose: {
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/20",
+    text: "text-rose-400",
+  },
+  slate: {
+    bg: "bg-slate-500/10",
+    border: "border-slate-500/20",
+    text: "text-slate-400",
+  },
+};
+
+// Chaves exatas do localStorage
+const LS_KEYS = {
+  historico: "prf_historico",
+  progresso: "prf_user_progress",
+  erros: "prf_erros",
+  config: "prf_config",
+} as const;
+
 // ============================================================================
 // HELPERS
 // ============================================================================
+const getBadgeLabel = (badgeId: string): string =>
+  BADGE_LABELS[badgeId as BadgeType] || badgeId;
 
-const getBadgeLabel = (badgeId: string): string => {
-  return BADGE_LABELS[badgeId as BadgeType] || badgeId;
-};
-
-const useDebouncedCallback = <T extends (...args: any[]) => void>(
+function useDebouncedCallback<T extends (...args: unknown[]) => void>(
   callback: T,
-  delay: number = 300,
-) => {
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
+  delay = 300
+) {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
   return useCallback(
     (...args: Parameters<T>) => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => callback(...args), delay);
     },
-    [callback, delay],
+    [callback, delay]
   );
-};
+}
 
 // ============================================================================
 // COMPONENTE PRINCIPAL
 // ============================================================================
-
 export default function Dashboard() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
 
-  // Estados de UI
+  // ── Estados de UI ──────────────────────────────────────────────────────────
   const [mounted, setMounted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showNewBadge, setShowNewBadge] = useState<string | null>(null);
@@ -230,176 +253,198 @@ export default function Dashboard() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
-  // Hooks personalizados
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const { progress, novasConquistas, showLevelUp, dismissLevelUp } =
     useGamificacao();
 
-  const { value: historicoStorage, setValue: setHistoricoStorage } =
-    useLocalStorage<HistoricoSimulado[]>({
-      key: "prf_historico",
-      defaultValue: [],
-    });
+  const { value: historicoRaw, setValue: setHistoricoStorage } = useLocalStorage<
+    HistoricoSimulado[]
+  >({
+    key: LS_KEYS.historico,
+    defaultValue: [],
+  });
 
-  // Refs para controle de sincronização
-  const lastSyncRef = useRef<number>(0);
-  const isUpdatingRef = useRef(false);
+  // ── Normalização do histórico: sempre array, sempre válido ─────────────────
+  // FIX: historicoRaw pode ser null, undefined, ou conter itens inválidos vindos
+  // de versões antigas do app. Normalizamos uma vez aqui e usamos em todo o componente.
+  const historicoNormalizado = useMemo<HistoricoSimulado[]>(() => {
+    if (!Array.isArray(historicoRaw)) return [];
+    return historicoRaw.filter(isHistoricoValido);
+  }, [historicoRaw]);
 
-  // ============================================================================
-  // EFFECTS
-  // ============================================================================
+  // Ref para evitar loops de sincronização entre abas
+  const syncLockRef = useRef(false);
 
-  // Hydration
+  // ── EFFECTS ────────────────────────────────────────────────────────────────
+
+  // Hydration guard
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Confetti e Badges via URL params
+  // URL params → conquista desbloqueada
   useEffect(() => {
     if (!mounted) return;
-
     const params = new URLSearchParams(window.location.search);
     const conquista = params.get("conquista");
+    if (!conquista) return;
 
-    if (conquista) {
-      setShowNewBadge(conquista);
-      setShowConfetti(true);
-      window.history.replaceState({}, "", window.location.pathname);
+    setShowNewBadge(conquista);
+    setShowConfetti(true);
+    window.history.replaceState({}, "", window.location.pathname);
 
-      const timer = setTimeout(() => setShowConfetti(false), 4000);
-      return () => clearTimeout(timer);
-    }
+    const t = setTimeout(() => setShowConfetti(false), 4000);
+    return () => clearTimeout(t);
   }, [mounted]);
 
-  // Sincronização entre abas (LocalStorage)
+  // Sincronização entre abas
   useEffect(() => {
     if (!mounted) return;
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key !== "prf_historico" || !e.newValue || isUpdatingRef.current)
+      if (e.key !== LS_KEYS.historico || !e.newValue || syncLockRef.current)
         return;
-
-      const now = Date.now();
-      if (now - lastSyncRef.current < 1000) return; // Debounce de 1s
-
-      lastSyncRef.current = now;
-
       try {
         const parsed = JSON.parse(e.newValue);
-        if (
-          Array.isArray(parsed) &&
-          JSON.stringify(parsed) !== JSON.stringify(historicoStorage)
-        ) {
-          isUpdatingRef.current = true;
-          setHistoricoStorage(parsed);
-          setTimeout(() => {
-            isUpdatingRef.current = false;
-          }, 100);
-        }
-      } catch (err) {
-        console.error("Erro ao sincronizar storage:", err);
+        if (!Array.isArray(parsed)) return;
+        // Evita re-render desnecessário se os dados são os mesmos
+        const isSame =
+          JSON.stringify(parsed) === JSON.stringify(historicoRaw);
+        if (isSame) return;
+        syncLockRef.current = true;
+        setHistoricoStorage(parsed);
+        // Libera o lock após o ciclo de render
+        requestAnimationFrame(() => {
+          syncLockRef.current = false;
+        });
+      } catch {
+        // parse error: ignora silenciosamente
       }
     };
 
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [mounted, historicoStorage, setHistoricoStorage]);
+  }, [mounted, historicoRaw, setHistoricoStorage]);
 
-  // Novas conquistas do hook de gamificação
+  // Novas conquistas vindas do hook de gamificação
   useEffect(() => {
-    if (novasConquistas.length > 0 && !showNewBadge && mounted) {
-      setShowConfetti(true);
-      setShowNewBadge(novasConquistas[0]);
-
-      const timer = setTimeout(() => setShowConfetti(false), 4000);
-      return () => clearTimeout(timer);
-    }
+    if (novasConquistas.length === 0 || showNewBadge || !mounted) return;
+    setShowConfetti(true);
+    setShowNewBadge(novasConquistas[0]);
+    const t = setTimeout(() => setShowConfetti(false), 4000);
+    return () => clearTimeout(t);
   }, [novasConquistas, showNewBadge, mounted]);
 
-  // ============================================================================
-  // MEMOS - LÓGICA DE NEGÓCIOS
-  // ============================================================================
+  // Atalhos de teclado
+  useEffect(() => {
+    if (!mounted) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      switch (e.key.toLowerCase()) {
+        case "n":
+          e.preventDefault();
+          router.push("/simulado?modo=completo");
+          break;
+        case "t":
+          e.preventDefault();
+          router.push("/simulado?modo=turbo");
+          break;
+        case "e":
+          e.preventDefault();
+          router.push("/erros");
+          break;
+        case "s":
+          e.preventDefault();
+          document.getElementById("search-modos")?.focus();
+          break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mounted, router]);
 
-  // Histórico filtrado por período
-  const historicoFiltrado = useMemo(() => {
-    if (!historicoStorage?.length) return [];
-    if (periodoFiltro === "todos") return historicoStorage;
+  // ── MEMOS ──────────────────────────────────────────────────────────────────
 
-    const dias = parseInt(periodoFiltro);
+  // FIX: hasValidData agora usa o histórico já normalizado
+  const hasValidData = historicoNormalizado.length > 0;
+
+  // Histórico filtrado por período (já normalizado)
+  const historicoFiltrado = useMemo<HistoricoSimulado[]>(() => {
+    if (!hasValidData) return [];
+    if (periodoFiltro === "todos") return historicoNormalizado;
+
+    const dias = parseInt(periodoFiltro, 10);
     const dataLimite = new Date();
     dataLimite.setDate(dataLimite.getDate() - dias);
 
-    return historicoStorage.filter((h) => {
+    return historicoNormalizado.filter((h) => {
       try {
         return new Date(h.data) >= dataLimite;
       } catch {
         return false;
       }
     });
-  }, [historicoStorage, periodoFiltro]);
+  }, [historicoNormalizado, periodoFiltro, hasValidData]);
 
   // Estatísticas calculadas
+  // FIX: Cálculo de percentual corrigido. A pontuação CEBRASPE vai de -N a +N,
+  // onde N = total de questões. Percentual = (pontuacao + total) / (2 * total) * 100
   const estatisticas = useMemo(() => {
-    if (!historicoFiltrado?.length) return null;
+    if (historicoFiltrado.length === 0) return null;
 
-    const ultimos7 = historicoFiltrado.slice(0, 7);
     const total = historicoFiltrado.length;
+    const ultimos7 = historicoFiltrado.slice(0, Math.min(7, total));
 
-    const calcularMedia = (arr: HistoricoSimulado[]) =>
-      !arr.length
+    const mediaArray = (arr: HistoricoSimulado[]) =>
+      arr.length === 0
         ? 0
-        : arr.reduce((acc, h) => acc + (h.estatisticas?.pontuacao ?? 0), 0) /
+        : arr.reduce((acc, h) => acc + h.estatisticas.pontuacao, 0) /
           arr.length;
 
-    const mediaGeral = calcularMedia(historicoFiltrado);
-    const media7Dias = calcularMedia(ultimos7);
+    const mediaGeral = mediaArray(historicoFiltrado);
+    const media7Dias = mediaArray(ultimos7);
 
-    const tendencia =
-      media7Dias > mediaGeral
+    const tendencia: "up" | "down" | "stable" =
+      media7Dias > mediaGeral + 0.5
         ? "up"
-        : media7Dias < mediaGeral
-          ? "down"
-          : "stable";
+        : media7Dias < mediaGeral - 0.5
+        ? "down"
+        : "stable";
 
-    const pontuacoes = historicoFiltrado
-      .map((h) => h.estatisticas?.pontuacao)
-      .filter((p): p is number => typeof p === "number" && !isNaN(p));
+    const pontuacoes = historicoFiltrado.map((h) => h.estatisticas.pontuacao);
+    const melhor = Math.max(...pontuacoes);
+    const pior = Math.min(...pontuacoes);
 
-    const melhor = pontuacoes.length ? Math.max(...pontuacoes) : 0;
-    const pior = pontuacoes.length ? Math.min(...pontuacoes) : 0;
-
-    // Cálculo da disciplina mais fraca
+    // Disciplina mais fraca
     const disciplinaStats = new Map<
       string,
       { acertos: number; total: number }
     >();
-
-    historicoFiltrado.forEach((h) => {
-      if (!Array.isArray(h.questoes)) return;
-      h.questoes.forEach((q) => {
-        if (!q?.disciplina) return;
+    for (const h of historicoFiltrado) {
+      for (const q of h.questoes) {
+        if (!q?.disciplina) continue;
         if (!disciplinaStats.has(q.disciplina)) {
           disciplinaStats.set(q.disciplina, { acertos: 0, total: 0 });
         }
-        const stats = disciplinaStats.get(q.disciplina)!;
-        stats.total++;
-        if (q.respostaUsuario === q.resposta) stats.acertos++;
-      });
-    });
+        const s = disciplinaStats.get(q.disciplina)!;
+        s.total++;
+        if (q.respostaUsuario === q.resposta) s.acertos++;
+      }
+    }
 
-    const disciplinaMaisFraca = Array.from(disciplinaStats.entries()).sort(
-      ([, a], [, b]) => a.acertos / a.total - b.acertos / b.total,
-    )[0];
+    const disciplinaFracaEntry = Array.from(disciplinaStats.entries())
+      .filter(([, s]) => s.total >= 3) // ignora disciplinas com poucos dados
+      .sort(([, a], [, b]) => a.acertos / a.total - b.acertos / b.total)[0];
 
     const ultimoSimulado = historicoFiltrado[0];
-    const ultimaPontuacao = ultimoSimulado?.estatisticas?.pontuacao ?? 0;
-    const ultimoTotalQuestoes = ultimoSimulado?.questoes?.length ?? 60;
+    const ultimaPontuacao = ultimoSimulado.estatisticas.pontuacao;
+    const ultimoTotalQuestoes = ultimoSimulado.questoes.length || 60;
+    // FIX: fórmula correta para escala CEBRASPE
     const ultimoPercentual =
-      ultimoTotalQuestoes > 0
-        ? ((ultimaPontuacao + ultimoTotalQuestoes) /
-            (2 * ultimoTotalQuestoes)) *
-          100
-        : 0;
+      ((ultimaPontuacao + ultimoTotalQuestoes) / (2 * ultimoTotalQuestoes)) *
+      100;
 
     return {
       ultimo: ultimoSimulado,
@@ -409,62 +454,70 @@ export default function Dashboard() {
       melhor,
       pior,
       total,
-      classificacao: classificarDesempenho(ultimoPercentual, 60),
-      disciplinaFraca: disciplinaMaisFraca
+      classificacao: classificarDesempenho(
+        Math.max(0, Math.min(100, ultimoPercentual)),
+        ultimoTotalQuestoes
+      ),
+      disciplinaFraca: disciplinaFracaEntry
         ? {
             nome:
-              DISCIPLINAS_NOME[disciplinaMaisFraca[0]] ||
-              disciplinaMaisFraca[0],
+              DISCIPLINAS_NOME[disciplinaFracaEntry[0]] ||
+              disciplinaFracaEntry[0],
             aproveitamento:
-              (disciplinaMaisFraca[1].acertos / disciplinaMaisFraca[1].total) *
+              (disciplinaFracaEntry[1].acertos /
+                disciplinaFracaEntry[1].total) *
               100,
           }
         : null,
     };
   }, [historicoFiltrado]);
 
-  // Nível e progresso de gamificação
+  // Nível atual
   const nivelAtual = useMemo(
-    () => NIVEIS.find((n) => n.nivel === progress?.nivel) || NIVEIS[0],
-    [progress?.nivel],
+    () =>
+      NIVEIS.find((n) => n.nivel === (progress?.nivel ?? 1)) ?? NIVEIS[0],
+    [progress?.nivel]
   );
 
+  // Progresso do nível em % (0–100)
+  // FIX: evita divisão por zero e NaN quando xpParaProximoNivel = 0
   const progressoNivel = useMemo(() => {
-    const total =
-      (progress?.xpAtual ?? 0) + (progress?.xpParaProximoNivel ?? 100);
-    return total > 0 ? ((progress?.xpAtual ?? 0) / total) * 100 : 0;
+    const xpAtual = progress?.xpAtual ?? 0;
+    const xpProximo = progress?.xpParaProximoNivel ?? 100;
+    if (xpProximo <= 0) return 100;
+    return Math.min(100, (xpAtual / (xpAtual + xpProximo)) * 100);
   }, [progress?.xpAtual, progress?.xpParaProximoNivel]);
 
-  // Filtro de busca dos modos de estudo
+  // Modos filtrados por busca
   const modosFiltrados = useMemo(() => {
-    if (!searchTerm.trim()) return MODOS_ESTUDO;
-    const term = searchTerm.toLowerCase().trim();
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return MODOS_ESTUDO;
     return MODOS_ESTUDO.filter(
       (m) =>
         m.title.toLowerCase().includes(term) ||
         m.description.toLowerCase().includes(term) ||
-        m.tag.toLowerCase().includes(term),
+        m.tag.toLowerCase().includes(term)
     );
   }, [searchTerm]);
 
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
+  // ── HANDLERS ───────────────────────────────────────────────────────────────
 
   const handleIniciarPrimeiroSimulado = useDebouncedCallback(() => {
     router.push("/simulado?modo=completo");
-  }, 500);
+  }, 300);
 
+  // FIX: exportar usando as chaves corretas do LS_KEYS
   const exportarDados = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
+    setExportError(null);
 
     try {
       const dados = {
-        historico: localStorage.getItem("prf_historico"),
-        progresso: localStorage.getItem("prf_user_progress"),
-        erros: localStorage.getItem("prf_erros"),
-        config: localStorage.getItem("prf_config"),
+        [LS_KEYS.historico]: localStorage.getItem(LS_KEYS.historico),
+        [LS_KEYS.progresso]: localStorage.getItem(LS_KEYS.progresso),
+        [LS_KEYS.erros]: localStorage.getItem(LS_KEYS.erros),
+        [LS_KEYS.config]: localStorage.getItem(LS_KEYS.config),
         timestamp: new Date().toISOString(),
         versao: "2.0",
         app: "prf-simulado",
@@ -474,14 +527,20 @@ export default function Dashboard() {
         type: "application/json",
       });
 
-      // File System Access API (moderno) ou fallback
+      const dateStr = new Date().toISOString().split("T")[0];
+
       if (
         "showSaveFilePicker" in window &&
-        typeof window.showSaveFilePicker === "function"
+        typeof (window as Window & { showSaveFilePicker?: unknown })
+          .showSaveFilePicker === "function"
       ) {
         try {
-          const handle = await (window as any).showSaveFilePicker({
-            suggestedName: `prf-backup-${new Date().toISOString().split("T")[0]}.json`,
+          const handle = await (
+            window as Window & {
+              showSaveFilePicker: (o: object) => Promise<FileSystemFileHandle>;
+            }
+          ).showSaveFilePicker({
+            suggestedName: `prf-backup-${dateStr}.json`,
             types: [
               {
                 description: "JSON",
@@ -492,15 +551,16 @@ export default function Dashboard() {
           const writable = await handle.createWritable();
           await writable.write(blob);
           await writable.close();
-        } catch (err: any) {
-          if (err.name !== "AbortError") throw err;
+        } catch (err) {
+          if ((err as { name?: string }).name !== "AbortError") throw err;
+          // AbortError = usuário cancelou → não é erro
         }
       } else {
-        // Fallback para navegadores antigos
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `prf-backup-${new Date().toISOString().split("T")[0]}.json`;
+        const a = Object.assign(document.createElement("a"), {
+          href: url,
+          download: `prf-backup-${dateStr}.json`,
+        });
         document.body.appendChild(a);
         a.click();
         requestAnimationFrame(() => {
@@ -512,79 +572,84 @@ export default function Dashboard() {
       setShowExportModal(false);
     } catch (err) {
       console.error("Erro ao exportar:", err);
-      alert("Erro ao exportar dados.");
+      setExportError("Não foi possível exportar. Tente novamente.");
     } finally {
       setIsExporting(false);
     }
   }, [isExporting]);
 
+  // FIX: importar com validação robusta e chaves corretas
   const importarDados = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
       try {
-        if (!file.type.includes("json") && !file.name.endsWith(".json")) {
-          throw new Error("O arquivo deve ser um JSON válido");
+        if (!file.name.endsWith(".json")) {
+          throw new Error("O arquivo deve ser um JSON (.json).");
         }
         if (file.size > 10 * 1024 * 1024) {
-          throw new Error("Arquivo muito grande (máx. 10MB)");
+          throw new Error("Arquivo muito grande (máx. 10 MB).");
         }
 
         const text = await file.text();
-        let dados: Record<string, unknown> = JSON.parse(text);
+        let dados: Record<string, unknown>;
+        try {
+          dados = JSON.parse(text);
+        } catch {
+          throw new Error("Arquivo JSON inválido ou corrompido.");
+        }
 
-        if (!dados.versao || typeof dados.versao !== "string") {
-          throw new Error("Arquivo inválido: versão não encontrada");
+        if (typeof dados.versao !== "string") {
+          throw new Error("Arquivo inválido: campo 'versao' não encontrado.");
         }
         if (dados.app !== "prf-simulado") {
-          throw new Error("Arquivo não pertence a este aplicativo");
+          throw new Error("Este arquivo não pertence ao PRF Simulado.");
         }
 
-        if (confirm("Isso substituirá seus dados atuais. Deseja continuar?")) {
-          const keysToImport = [
-            "prf_historico",
-            "prf_user_progress",
-            "prf_erros",
-            "prf_config",
-          ];
-
-          keysToImport.forEach((key) => {
-            const value = dados[key.replace("prf_", "")] || dados[key];
-            if (value && typeof value === "string") {
-              localStorage.setItem(key, value);
-            }
-          });
-
-          window.location.reload();
+        if (
+          !window.confirm(
+            "Isso substituirá todos os seus dados atuais. Deseja continuar?"
+          )
+        ) {
+          return;
         }
+
+        // FIX: usa as chaves exatas definidas em LS_KEYS
+        for (const key of Object.values(LS_KEYS)) {
+          const value = dados[key];
+          if (typeof value === "string") {
+            localStorage.setItem(key, value);
+          }
+        }
+
+        window.location.reload();
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Erro ao importar");
+        alert(
+          err instanceof Error ? err.message : "Erro desconhecido ao importar."
+        );
+      } finally {
+        e.target.value = "";
       }
-
-      e.target.value = "";
     },
-    [],
+    []
   );
 
-  // ============================================================================
-  // RENDERIZAÇÃO
-  // ============================================================================
+  // ── RENDER GUARDS ──────────────────────────────────────────────────────────
 
-  // Skeleton loading
   if (!mounted) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 animate-pulse">
           <div className="w-12 h-12 rounded-xl bg-slate-800" />
           <div className="w-48 h-4 rounded bg-slate-800" />
+          <div className="w-32 h-3 rounded bg-slate-800" />
         </div>
       </div>
     );
   }
 
-  const hasData = historicoFiltrado.length > 0;
-
+  // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white selection:bg-blue-500/30">
       {/* Confetti */}
@@ -592,7 +657,7 @@ export default function Dashboard() {
         <Confetti trigger={showConfetti && !prefersReducedMotion} />
       </Suspense>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
@@ -612,7 +677,7 @@ export default function Dashboard() {
             </Link>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              {progress?.streakDias > 0 && (
+              {(progress?.streakDias ?? 0) > 0 && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -620,7 +685,7 @@ export default function Dashboard() {
                 >
                   <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400" />
                   <span className="text-xs sm:text-sm font-bold text-orange-300">
-                    {progress.streakDias} dias
+                    {progress!.streakDias} dias
                   </span>
                 </motion.div>
               )}
@@ -628,29 +693,69 @@ export default function Dashboard() {
               <div
                 className="px-2 sm:px-3 py-1.5 rounded-full border text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all hover:scale-105"
                 style={{
-                  backgroundColor: `${nivelAtual?.cor || "#3b82f6"}15`,
-                  borderColor: `${nivelAtual?.cor || "#3b82f6"}40`,
-                  color: nivelAtual?.cor || "#3b82f6",
+                  backgroundColor: `${nivelAtual?.cor ?? "#3b82f6"}15`,
+                  borderColor: `${nivelAtual?.cor ?? "#3b82f6"}40`,
+                  color: nivelAtual?.cor ?? "#3b82f6",
                 }}
               >
                 <Trophy className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">
-                  {nivelAtual?.nome || "Iniciante"}
+                  {nivelAtual?.nome ?? "Iniciante"}
                 </span>
-                <span className="sm:hidden">Nv.{progress?.nivel || 1}</span>
+                <span className="sm:hidden">Nv.{progress?.nivel ?? 1}</span>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* ── Main ── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {!hasData ? (
-          <EmptyStateDashboard onIniciar={handleIniciarPrimeiroSimulado} />
+        {!hasValidData ? (
+          /* ── Tela de boas-vindas ── */
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="w-full max-w-lg"
+            >
+              <div className="mb-8 flex justify-center">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-600/20 border border-white/10 flex items-center justify-center shadow-2xl shadow-blue-500/20">
+                  <Target className="w-10 h-10 text-blue-400" />
+                </div>
+              </div>
+
+              <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
+                Bem-vindo ao PRF Simulado
+              </h1>
+              <p className="text-slate-400 mb-8 text-lg leading-relaxed">
+                Você ainda não possui histórico de simulados. Comece sua jornada
+                agora para acompanhar seu desempenho e ganhar conquistas.
+              </p>
+
+              {/* Modos de estudo também na tela de boas-vindas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 text-left">
+                {MODOS_ESTUDO.slice(0, 4).map((modo, i) => (
+                  <ModoCard key={modo.href} {...modo} index={i} />
+                ))}
+              </div>
+
+              <button
+                onClick={handleIniciarPrimeiroSimulado}
+                className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl font-bold text-white transition-all duration-200 shadow-lg shadow-blue-600/20 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 group-hover:from-blue-500 group-hover:to-purple-500" />
+                <div className="relative flex items-center gap-2.5 z-10">
+                  <Play className="w-5 h-5 fill-white" />
+                  <span>Começar Agora</span>
+                </div>
+              </button>
+            </motion.div>
+          </div>
         ) : (
           <>
-            {/* Filtros de Período */}
+            {/* ── Filtros de Período ── */}
             <nav
               aria-label="Filtro de período"
               className="flex flex-wrap items-center gap-2"
@@ -658,12 +763,14 @@ export default function Dashboard() {
               <span className="text-xs text-slate-500 font-medium">
                 Período:
               </span>
-              {[
-                { value: "7" as const, label: "7 dias" },
-                { value: "30" as const, label: "30 dias" },
-                { value: "90" as const, label: "3 meses" },
-                { value: "todos" as const, label: "Todo histórico" },
-              ].map((p) => (
+              {(
+                [
+                  { value: "7" as const, label: "7 dias" },
+                  { value: "30" as const, label: "30 dias" },
+                  { value: "90" as const, label: "3 meses" },
+                  { value: "todos" as const, label: "Todo histórico" },
+                ] as const
+              ).map((p) => (
                 <button
                   key={p.value}
                   onClick={() => setPeriodoFiltro(p.value)}
@@ -677,9 +784,16 @@ export default function Dashboard() {
                   {p.label}
                 </button>
               ))}
+
+              {/* FIX: aviso quando não há dados no período selecionado */}
+              {periodoFiltro !== "todos" && historicoFiltrado.length === 0 && (
+                <span className="text-xs text-amber-400/80 ml-2">
+                  Nenhum simulado neste período
+                </span>
+              )}
             </nav>
 
-            {/* Cards Principais */}
+            {/* ── Cards Principais ── */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
               {/* Card de Nível */}
               <GlassCard className="p-5 sm:p-6" glow="purple">
@@ -688,11 +802,11 @@ export default function Dashboard() {
                     progress={progressoNivel}
                     size={90}
                     strokeWidth={8}
-                    color={nivelAtual?.cor || "#3b82f6"}
+                    color={nivelAtual?.cor ?? "#3b82f6"}
                   >
                     <div className="text-center">
                       <span className="text-3xl font-bold text-white">
-                        {progress?.nivel || 1}
+                        {progress?.nivel ?? 1}
                       </span>
                       <span className="text-[10px] text-slate-400 block">
                         NÍVEL
@@ -701,28 +815,26 @@ export default function Dashboard() {
                   </ProgressRing>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-bold text-white mb-1">
-                      {nivelAtual?.nome || "Iniciante"}
+                      {nivelAtual?.nome ?? "Iniciante"}
                     </h2>
                     <div className="w-full bg-slate-800 rounded-full h-2.5 mb-2 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full"
-                        style={{
-                          backgroundColor: nivelAtual?.cor || "#3b82f6",
-                        }}
+                        style={{ backgroundColor: nivelAtual?.cor ?? "#3b82f6" }}
                         initial={{ width: 0 }}
                         animate={{ width: `${progressoNivel}%` }}
                         transition={{ duration: 1, ease: "easeOut" }}
                       />
                     </div>
                     <p className="text-xs text-slate-400">
-                      {(progress?.xpParaProximoNivel || 0).toLocaleString()} XP
-                      para próximo nível
+                      {(progress?.xpParaProximoNivel ?? 0).toLocaleString("pt-BR")} XP
+                      para o próximo nível
                     </p>
                   </div>
                 </div>
               </GlassCard>
 
-              {/* Stats Cards */}
+              {/* Stats */}
               {estatisticas ? (
                 <div className="xl:col-span-2 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <StatCard
@@ -735,9 +847,12 @@ export default function Dashboard() {
                       estatisticas.tendencia !== "stable"
                         ? {
                             value: Math.abs(
-                              ((estatisticas.media7Dias - estatisticas.media) /
-                                (estatisticas.media || 1)) *
-                                100,
+                              estatisticas.media > 0
+                                ? ((estatisticas.media7Dias -
+                                    estatisticas.media) /
+                                    estatisticas.media) *
+                                    100
+                                : 0
                             ),
                             positive: estatisticas.tendencia === "up",
                           }
@@ -748,7 +863,7 @@ export default function Dashboard() {
                     icon={Trophy}
                     label="Melhor Pontuação"
                     value={estatisticas.melhor}
-                    subvalue={`de ${estatisticas.pior} (pior)`}
+                    subvalue={`pior: ${estatisticas.pior}`}
                     variant="purple"
                     glow
                   />
@@ -765,39 +880,34 @@ export default function Dashboard() {
                   />
                   <StatCard
                     icon={Clock}
-                    label="Último Simulado"
+                    label="Último"
                     value={new Date(
-                      estatisticas.ultimo?.data || Date.now(),
+                      estatisticas.ultimo.data
                     ).toLocaleDateString("pt-BR", {
                       day: "2-digit",
                       month: "short",
                     })}
-                    subvalue={`${estatisticas.ultimo?.estatisticas?.pontuacao || 0} pts`}
+                    subvalue={`${estatisticas.ultimo.estatisticas.pontuacao} pts`}
                     variant="cyan"
                   />
                 </div>
               ) : (
-                <div className="xl:col-span-2 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="h-24 bg-slate-800/50 rounded-xl animate-pulse"
-                    />
-                  ))}
+                // FIX: skeleton só aparece quando o período não tem dados,
+                // não quando o histórico inteiro está carregando
+                <div className="xl:col-span-2 flex items-center justify-center">
+                  <p className="text-sm text-slate-500">
+                    Nenhum dado para o período selecionado.
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Alertas de Desempenho */}
-            <div
-              className="space-y-3"
-              role="region"
-              aria-label="Alertas de desempenho"
-            >
+            {/* ── Alertas ── */}
+            <div className="space-y-3" role="region" aria-label="Alertas de desempenho">
               {estatisticas?.classificacao?.nivel === "critico" && (
                 <AlertaDesempenho
                   tipo="critico"
-                  mensagem="Seu último simulado foi significativamente abaixo da média."
+                  mensagem="Seu último simulado ficou significativamente abaixo da média."
                   acao={{ label: "Revisar Erros", href: "/erros" }}
                 />
               )}
@@ -805,19 +915,19 @@ export default function Dashboard() {
                 estatisticas.disciplinaFraca.aproveitamento < 50 && (
                   <AlertaDesempenho
                     tipo="alerta"
-                    mensagem={`${estatisticas.disciplinaFraca.nome} está com aproveitamento baixo.`}
-                    acao={{ label: "Treinar", href: "/treino" }}
+                    mensagem={`${estatisticas.disciplinaFraca.nome} está com aproveitamento baixo (${estatisticas.disciplinaFraca.aproveitamento.toFixed(0)}%).`}
+                    acao={{ label: "Treinar agora", href: "/treino" }}
                   />
                 )}
-              {(progress?.streakDias || 0) >= 3 && (
+              {(progress?.streakDias ?? 0) >= 3 && (
                 <AlertaDesempenho
                   tipo="info"
-                  mensagem={`Sequência de ${progress.streakDias} dias! Mantenha o ritmo.`}
+                  mensagem={`Sequência de ${progress!.streakDias} dias! Continue assim.`}
                 />
               )}
             </div>
 
-            {/* Conquistas */}
+            {/* ── Conquistas ── */}
             <GlassCard className="p-5 sm:p-6">
               <div className="flex items-center justify-between gap-4 mb-5">
                 <div className="flex items-center gap-3">
@@ -829,7 +939,7 @@ export default function Dashboard() {
                       Conquistas
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {progress?.badges?.length || 0} de {BADGES_DISPLAY.length}{" "}
+                      {progress?.badges?.length ?? 0} de {BADGES_DISPLAY.length}{" "}
                       desbloqueadas
                     </p>
                   </div>
@@ -843,43 +953,49 @@ export default function Dashboard() {
                 </Link>
               </div>
 
-              <div className="relative">
-                <div className="flex gap-3 overflow-x-auto pb-3 pt-1 px-1 -mx-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent sm:grid sm:grid-cols-6 sm:overflow-visible sm:pb-0 sm:pt-0 sm:px-0 sm:mx-0">
-                  {BADGES_DISPLAY.map((badge, index) => {
-                    const isUnlocked =
-                      progress?.badges?.some((b) => b.id === badge) || false;
-                    return (
-                      <motion.div
-                        key={badge}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.08, duration: 0.3 }}
-                        whileHover={
-                          isUnlocked ? { scale: 1.08, y: -3 } : { scale: 1.02 }
-                        }
-                        className={`flex-shrink-0 relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-300 ${
-                          isUnlocked
-                            ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-amber-500/30 shadow-lg shadow-black/20"
-                            : "bg-slate-900/30 border border-slate-800/50 opacity-60 grayscale"
+              <div className="flex gap-3 overflow-x-auto pb-3 pt-1 px-1 -mx-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent sm:grid sm:grid-cols-6 sm:overflow-visible sm:pb-0 sm:pt-0 sm:px-0 sm:mx-0">
+                {BADGES_DISPLAY.map((badge, index) => {
+                  const isUnlocked =
+                    progress?.badges?.some((b) => b.id === badge) ?? false;
+                  return (
+                    <motion.div
+                      key={badge}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.07, duration: 0.3 }}
+                      whileHover={
+                        isUnlocked
+                          ? { scale: 1.08, y: -3 }
+                          : { scale: 1.02 }
+                      }
+                      className={`flex-shrink-0 relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-300 ${
+                        isUnlocked
+                          ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-amber-500/30 shadow-lg shadow-black/20"
+                          : "bg-slate-900/30 border border-slate-800/50 opacity-60 grayscale"
+                      }`}
+                    >
+                      <div className="relative">
+                        <Badge
+                          type={badge}
+                          unlocked={isUnlocked}
+                          size="md"
+                        />
+                        {isUnlocked && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                            <CheckCircle2 className="w-2 h-2 text-slate-900" />
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[10px] font-medium text-center leading-tight max-w-[70px] ${
+                          isUnlocked ? "text-slate-300" : "text-slate-600"
                         }`}
                       >
-                        <div className="relative">
-                          <Badge type={badge} unlocked={isUnlocked} size="md" />
-                          {isUnlocked && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
-                              <CheckCircle2 className="w-2 h-2 text-slate-900" />
-                            </div>
-                          )}
-                        </div>
-                        <span
-                          className={`text-[10px] font-medium text-center leading-tight max-w-[70px] ${isUnlocked ? "text-slate-300" : "text-slate-600"}`}
-                        >
-                          {getBadgeLabel(badge)}
-                        </span>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                        {getBadgeLabel(badge)}
+                      </span>
+                    </motion.div>
+                  );
+                })}
               </div>
 
               <div className="mt-5 pt-5 border-t border-slate-800/50">
@@ -887,9 +1003,9 @@ export default function Dashboard() {
                   <span className="text-slate-400">Progresso geral</span>
                   <span className="font-bold text-amber-400">
                     {Math.round(
-                      ((progress?.badges?.length || 0) /
+                      ((progress?.badges?.length ?? 0) /
                         BADGES_DISPLAY.length) *
-                        100,
+                        100
                     )}
                     %
                   </span>
@@ -899,7 +1015,11 @@ export default function Dashboard() {
                     className="h-full bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-400 rounded-full shadow-lg shadow-amber-500/20"
                     initial={{ width: 0 }}
                     animate={{
-                      width: `${((progress?.badges?.length || 0) / BADGES_DISPLAY.length) * 100}%`,
+                      width: `${
+                        ((progress?.badges?.length ?? 0) /
+                          BADGES_DISPLAY.length) *
+                        100
+                      }%`,
                     }}
                     transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
                   />
@@ -907,39 +1027,41 @@ export default function Dashboard() {
               </div>
             </GlassCard>
 
-            {/* Gráfico de Evolução */}
-            {historicoFiltrado.length > 1 && (
-              <SecaoGraficoEvolucao
-                historico={mapHistoricoParaGrafico(historicoFiltrado)}
-              />
-            )}
-
-            {/* Busca de Modos */}
+            {/* ── Busca de Modos ── */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
               <input
                 id="search-modos"
                 type="text"
-                placeholder="Buscar modos de estudo... (Ctrl+S)"
+                placeholder="Buscar modos de estudo… (Ctrl+S)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                  aria-label="Limpar busca"
+                >
+                  ×
+                </button>
+              )}
             </div>
 
-            {/* Modos de Estudo */}
+            {/* ── Modos de Estudo ── */}
             <section aria-label="Modos de estudo">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-200">
                 <Star className="w-5 h-5 text-amber-400" /> Escolha seu Modo
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-500 ml-auto font-mono">
-                  <Keyboard className="w-3 h-3" /> Atalhos: Ctrl+N, Ctrl+T,
-                  Ctrl+E
+                  <Keyboard className="w-3 h-3" /> Ctrl+N, Ctrl+T, Ctrl+E,
+                  Ctrl+S
                 </span>
               </h2>
 
               {modosFiltrados.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
-                  <p className="text-sm">Nenhum modo encontrado</p>
+                  <p className="text-sm">Nenhum modo encontrado para "{searchTerm}"</p>
                   <button
                     onClick={() => setSearchTerm("")}
                     className="text-blue-400 text-xs mt-2 hover:underline"
@@ -956,56 +1078,58 @@ export default function Dashboard() {
               )}
             </section>
 
-            {/* Cards Inferiores: Regras e Backup */}
+            {/* ── Cards Inferiores ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Regra CEBRASPE */}
               <GlassCard className="p-5" variant="info">
                 <h3 className="font-bold text-base mb-4 flex items-center gap-2 text-slate-200">
-                  <Clock className="w-5 h-5 text-blue-400" /> Regra de Pontuação
-                  CEBRASPE
+                  <Clock className="w-5 h-5 text-blue-400" /> Pontuação CEBRASPE
                 </h3>
                 <div className="space-y-2">
-                  {[
-                    {
-                      label: "Acerto",
-                      value: "+1",
-                      color: "emerald",
-                      desc: "Ganha 1 ponto",
-                    },
-                    {
-                      label: "Erro",
-                      value: "-1",
-                      color: "rose",
-                      desc: "Perde 1 ponto",
-                    },
-                    {
-                      label: "Em branco",
-                      value: "0",
-                      color: "slate",
-                      desc: "Não altera",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.label}
-                      className={`flex items-center justify-between p-3 rounded-lg bg-${item.color}-500/10 border border-${item.color}-500/20`}
-                    >
-                      <div>
-                        <span
-                          className={`text-${item.color}-400 text-sm font-medium block`}
-                        >
-                          {item.label}
-                        </span>
-                        <span className="text-[10px] text-slate-500">
-                          {item.desc}
+                  {(
+                    [
+                      {
+                        label: "Acerto",
+                        value: "+1",
+                        colorKey: "emerald",
+                        desc: "Ganha 1 ponto",
+                      },
+                      {
+                        label: "Erro",
+                        value: "−1",
+                        colorKey: "rose",
+                        desc: "Perde 1 ponto",
+                      },
+                      {
+                        label: "Em branco",
+                        value: "0",
+                        colorKey: "slate",
+                        desc: "Não altera",
+                      },
+                    ] as const
+                  ).map((item) => {
+                    const colors = COLOR_MAP[item.colorKey];
+                    return (
+                      <div
+                        key={item.label}
+                        className={`flex items-center justify-between p-3 rounded-lg ${colors.bg} border ${colors.border}`}
+                      >
+                        <div>
+                          <span
+                            className={`text-sm font-medium block ${colors.text}`}
+                          >
+                            {item.label}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            {item.desc}
+                          </span>
+                        </div>
+                        <span className={`font-bold text-lg ${colors.text}`}>
+                          {item.value}
                         </span>
                       </div>
-                      <span
-                        className={`font-bold text-lg text-${item.color}-400`}
-                      >
-                        {item.value}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </GlassCard>
 
@@ -1015,18 +1139,28 @@ export default function Dashboard() {
                   <Settings className="w-5 h-5 text-purple-400" /> Backup e
                   Sincronização
                 </h3>
+
+                {exportError && (
+                  <p className="text-xs text-rose-400 mb-3 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                    {exportError}
+                  </p>
+                )}
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={() => setShowExportModal(true)}
+                    onClick={() => {
+                      setExportError(null);
+                      setShowExportModal(true);
+                    }}
                     disabled={isExporting}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:bg-blue-500/30 transition-all text-sm font-medium disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:bg-blue-500/30 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isExporting ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Download className="w-4 h-4" />
                     )}
-                    {isExporting ? "Exportando..." : "Exportar Dados"}
+                    {isExporting ? "Exportando…" : "Exportar Dados"}
                   </button>
                   <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-700/50 border border-slate-600 text-slate-300 hover:bg-slate-700 cursor-pointer transition-all text-sm font-medium">
                     <Upload className="w-4 h-4" /> Importar
@@ -1038,13 +1172,16 @@ export default function Dashboard() {
                     />
                   </label>
                 </div>
+                <p className="text-[10px] text-slate-600 mt-3">
+                  {historicoNormalizado.length} simulados salvos localmente
+                </p>
               </GlassCard>
             </div>
           </>
         )}
       </main>
 
-      {/* Modal de Exportação */}
+      {/* ── Modal de Exportação ── */}
       <AnimatePresence>
         {showExportModal && (
           <motion.div
@@ -1055,9 +1192,10 @@ export default function Dashboard() {
             onClick={() => !isExporting && setShowExportModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
               className="bg-slate-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
             >
@@ -1065,19 +1203,31 @@ export default function Dashboard() {
                 Exportar Dados
               </h3>
               <p className="text-sm text-slate-400 mb-4">
-                Seus dados serão salvos em um arquivo JSON.
+                Seus dados serão salvos em um arquivo JSON que pode ser
+                reimportado neste app.
               </p>
-              <div className="bg-slate-800/50 rounded-lg p-3 mb-4 text-xs text-slate-500 font-mono">
-                {historicoFiltrado?.length || 0} simulados •{" "}
-                {progress?.badges?.length || 0} conquistas
+              <div className="bg-slate-800/50 rounded-lg p-3 mb-4 text-xs text-slate-500 font-mono space-y-1">
+                <p>{historicoNormalizado.length} simulados</p>
+                <p>{progress?.badges?.length ?? 0} conquistas desbloqueadas</p>
+                <p>Streak: {progress?.streakDias ?? 0} dias</p>
               </div>
+
+              {exportError && (
+                <p className="text-xs text-rose-400 mb-3 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                  {exportError}
+                </p>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={exportarDados}
                   disabled={isExporting}
-                  className="flex-1 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white font-medium transition-colors"
+                  className="flex-1 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 disabled:cursor-not-allowed text-white font-medium transition-colors flex items-center justify-center gap-2"
                 >
-                  {isExporting ? "Exportando..." : "Confirmar"}
+                  {isExporting && (
+                    <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  )}
+                  {isExporting ? "Exportando…" : "Confirmar"}
                 </button>
                 <button
                   onClick={() => setShowExportModal(false)}
@@ -1092,17 +1242,17 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Notificação de Nova Conquista */}
+      {/* ── Nova Conquista ── */}
       <AnimatePresence>
         {showNewBadge && (
           <NewBadgeNotification
-            badgeType={showNewBadge as any}
+            badgeType={showNewBadge as BadgeType}
             onClose={() => setShowNewBadge(null)}
           />
         )}
       </AnimatePresence>
 
-      {/* Modal de Level Up */}
+      {/* ── Level Up Modal ── */}
       <AnimatePresence>
         {showLevelUp && (
           <motion.div
@@ -1113,10 +1263,10 @@ export default function Dashboard() {
             onClick={dismissLevelUp}
           >
             <motion.div
-              initial={{ scale: 0.5, y: 100 }}
+              initial={{ scale: 0.5, y: 80 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.5, y: 100 }}
-              transition={{ type: "spring", damping: 15 }}
+              exit={{ scale: 0.5, y: 80 }}
+              transition={{ type: "spring", damping: 18, stiffness: 200 }}
               className="text-center max-w-sm w-full"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1124,10 +1274,10 @@ export default function Dashboard() {
                 animate={
                   prefersReducedMotion
                     ? {}
-                    : { rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }
+                    : { rotate: [0, 12, -12, 0], scale: [1, 1.2, 1] }
                 }
-                transition={{ duration: 0.5, repeat: 2 }}
-                className="text-7xl mb-6"
+                transition={{ duration: 0.6, repeat: 2 }}
+                className="text-7xl mb-6 select-none"
               >
                 🎉
               </motion.div>
@@ -1137,13 +1287,13 @@ export default function Dashboard() {
               <p className="text-lg text-slate-300 mb-4">Você alcançou</p>
               <div
                 className="inline-block px-8 py-4 rounded-2xl bg-slate-800/80 border-2 mb-6"
-                style={{ borderColor: nivelAtual?.cor || "#3b82f6" }}
+                style={{ borderColor: nivelAtual?.cor ?? "#3b82f6" }}
               >
                 <span className="text-3xl font-bold text-white block">
-                  {nivelAtual?.nome || "Novo Nível"}
+                  {nivelAtual?.nome ?? "Novo Nível"}
                 </span>
                 <span className="text-sm text-slate-400">
-                  Nível {progress?.nivel || 1}
+                  Nível {progress?.nivel ?? 1}
                 </span>
               </div>
               <button
@@ -1157,7 +1307,6 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Footer  */}
       <Footer />
     </div>
   );

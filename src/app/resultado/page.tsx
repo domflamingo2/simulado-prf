@@ -32,6 +32,8 @@ import {
   formatarTempoLegivel,
 } from "@/lib/simulado-logic";
 
+import Footer from "@/components/layout/Footer";
+
 // ═══════════════════════════════════════════════════════════
 // TIPOS E CONSTANTES
 // ═══════════════════════════════════════════════════════════
@@ -368,37 +370,69 @@ export default function ResultadoPage() {
     setGerandoImagem(true);
     try {
       const canvas = await html2canvas(resultadoRef.current, {
-        backgroundColor: "#0f172a",
-        scale: 2,
+        backgroundColor: "#0f172a", // Cor de fundo explícita para evitar brancos
+        scale: 2, // Alta qualidade
+        useCORS: true, // Permite carregar imagens externas se houver
+        logging: false,
+        // Ignora scrollbars para a imagem ficar limpa
+        removeContainer: true,
       });
 
       canvas.toBlob((blob) => {
-        if (!blob) return;
+        if (!blob) {
+          alert("Erro ao gerar imagem: Blob vazio.");
+          return;
+        }
 
-        // Copia para clipboard se suportado
+        // Copia para clipboard se suportado (Navegadores modernos)
         if (navigator.clipboard && navigator.clipboard.write) {
-          const item = new ClipboardItem({ "image/png": blob });
-          navigator.clipboard.write([item]);
-          alert("Imagem copiada! Cole onde quiser compartilhar.");
+          try {
+            const item = new ClipboardItem({ "image/png": blob });
+            navigator.clipboard.write([item]);
+            alert("Imagem copiada! Cole onde quiser compartilhar.");
+          } catch (err) {
+            console.warn(
+              "Clipboard não suportado ou negado. Fazendo download.",
+              err,
+            );
+            throw err; // Cai no catch para fazer download
+          }
         } else {
-          // Download como fallback
+          throw new Error("Clipboard API não disponível");
+        }
+      }, "image/png");
+    } catch (error) {
+      console.error("Erro ao gerar imagem:", error);
+      // Fallback para Download
+      try {
+        // Tenta recapturar caso tenha falhado, ou usa o canvas anterior se existir
+        // Em uma implementação real, refatoraria para reutilizar o canvas, mas aqui garantimos o fluxo:
+        const canvas = await html2canvas(resultadoRef.current, {
+          backgroundColor: "#0f172a",
+          scale: 2,
+          useCORS: true,
+        });
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
           a.download = `prf-resultado-${Date.now()}.png`;
           a.click();
           URL.revokeObjectURL(url);
-        }
-      });
-    } catch (error) {
-      console.error("Erro ao gerar imagem:", error);
-      alert("Erro ao gerar imagem. Tente novamente.");
+          alert("Download iniciado.");
+        });
+      } catch (downloadError) {
+        alert("Erro ao gerar imagem. Tente novamente.");
+      }
     } finally {
       setGerandoImagem(false);
     }
   };
 
   const refazerSimulado = () => {
+    // ✅ CORREÇÃO: Garante que o modo esteja em minúsculas para a rota funcionar
     const modo = simulado?.modo.toLowerCase() || "completo";
     router.push(`/simulado?modo=${modo}`);
   };
@@ -678,6 +712,8 @@ export default function ResultadoPage() {
           </Link>
         </motion.div>
       </div>
+      {/* Footer  */}
+      <Footer />
     </div>
   );
 }

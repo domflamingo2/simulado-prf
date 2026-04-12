@@ -10,6 +10,7 @@ import {
   Flag,
   Loader2,
   Save,
+  X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -29,7 +30,7 @@ const GlassCard = lazy(() =>
   })),
 );
 
-// Imports síncronos de hooks/utilitários
+// Imports síncronos
 import { questoes, TEMPO_PROVA_MINUTOS } from "@/data/questoes";
 import { HistoricoSimulado, Questao, QuestaoRespondida } from "@/data/types";
 import { useGamificacao } from "@/hooks/useGamificacao";
@@ -41,7 +42,7 @@ import {
 import { calcularEstatisticas, selecionarQuestoes } from "@/lib/simulado-logic";
 
 // ═══════════════════════════════════════════════════════════
-// CONSTANTES E TIPOS
+// CONSTANTES
 // ═══════════════════════════════════════════════════════════
 
 type ModoSimulado = "completo" | "turbo" | "adaptativo";
@@ -50,8 +51,33 @@ const CONFIG = {
   XP_POR_QUESTAO: 1,
   XP_POR_ACERTO: 10,
   TEMPO_ANALISE_IA: 2000,
-  AUTO_SALVAR_INTERVALO: 30000, // 30s
+  AUTO_SALVAR_INTERVALO: 30000,
   CHAVE_PROGRESSO: "prf_simulado_progresso",
+  EXPIRACAO_PROGRESSO: 24 * 60 * 60 * 1000, // 24 horas
+} as const;
+
+const MODOS_CONFIG = {
+  completo: {
+    nome: "COMPLETO",
+    cor: "blue",
+    bgCor: "bg-blue-500/20",
+    textCor: "text-blue-400",
+    barCor: "bg-blue-500",
+  },
+  turbo: {
+    nome: "TURBO",
+    cor: "amber",
+    bgCor: "bg-amber-500/20",
+    textCor: "text-amber-400",
+    barCor: "bg-amber-500",
+  },
+  adaptativo: {
+    nome: "ADAPTATIVO",
+    cor: "purple",
+    bgCor: "bg-purple-500/20",
+    textCor: "text-purple-400",
+    barCor: "bg-purple-500",
+  },
 } as const;
 
 interface SimuladoState {
@@ -60,6 +86,7 @@ interface SimuladoState {
   tempoInicio: number;
   modo: ModoSimulado;
   marcadasParaRevisao: number[];
+  ultimoAutoSave: number;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -74,6 +101,7 @@ function LoadingScreen({
   analise?: ReturnType<typeof gerarAnaliseAdaptativa>;
 }) {
   const isAdaptativo = modo === "adaptativo";
+  const config = MODOS_CONFIG[modo];
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
@@ -214,11 +242,15 @@ function ConfirmExitModal({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      onClick={onCancel}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
         className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full"
       >
         <div className="flex items-center gap-3 mb-4">
@@ -250,6 +282,27 @@ function ConfirmExitModal({
   );
 }
 
+function SuccessNotification({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 50 }}
+      className="fixed bottom-24 right-4 z-50 bg-emerald-500/90 backdrop-blur-md rounded-lg px-4 py-2 shadow-lg"
+    >
+      <div className="flex items-center gap-2 text-white">
+        <CheckCircle className="w-4 h-4" />
+        <span className="text-sm">Simulado finalizado com sucesso!</span>
+      </div>
+    </motion.div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════
@@ -267,47 +320,85 @@ export default function SimuladoPage() {
   > | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [shakeQuestao, setShakeQuestao] = useState<number | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   const { adicionarXP, registrarAtividade } = useGamificacao();
   const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
+  const isSavingRef = useRef(false);
 
-  // Recupera progresso salvo ou inicia novo
-  useEffect(() => {
-    const chave = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
-    const salvo = localStorage.getItem(chave);
+  const config = MODOS_CONFIG[modo];
+  const tempoMaximo = modo === "turbo" ? 40 * 60 : TEMPO_PROVA_MINUTOS * 60;
 
-    if (salvo) {
+  // ============================================================================
+  // FUNÇÕES DE UTILITÁRIO
+  // ============================================================================
+
+  const salvarProgresso = useCallback(
+    (estado: SimuladoState | null) => {
+      if (!estado || isSavingRef.current) return;
+
+      isSavingRef.current = true;
       try {
-        const parsed: SimuladoState = JSON.parse(salvo);
-        // Verifica se é do mesmo modo e não expirou (24h)
-        const expirado = Date.now() - parsed.tempoInicio > 24 * 60 * 60 * 1000;
-
-        if (
-          !expirado &&
-          parsed.modo === modo &&
-          confirm("Continuar simulado anterior?")
-        ) {
-          setState(parsed);
-          setLoading(false);
-          return;
-        } else {
-          localStorage.removeItem(chave);
-        }
-      } catch {
-        localStorage.removeItem(chave);
+        const chave = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
+        const progressoParaSalvar = {
+          ...estado,
+          ultimoAutoSave: Date.now(),
+        };
+        localStorage.setItem(chave, JSON.stringify(progressoParaSalvar));
+      } catch (error) {
+        console.error("Erro ao salvar progresso:", error);
+      } finally {
+        isSavingRef.current = false;
       }
-    }
+    },
+    [modo],
+  );
 
-    // Inicia novo simulado
+  const limparProgresso = useCallback(() => {
+    const chave = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
+    localStorage.removeItem(chave);
+  }, [modo]);
+
+  // ============================================================================
+  // INICIALIZAÇÃO
+  // ============================================================================
+
+  useEffect(() => {
     const inicializar = async () => {
+      const chave = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
+      const salvo = localStorage.getItem(chave);
+
+      if (salvo) {
+        try {
+          const parsed: SimuladoState = JSON.parse(salvo);
+          const expirado =
+            Date.now() - parsed.tempoInicio > CONFIG.EXPIRACAO_PROGRESSO;
+
+          if (!expirado && parsed.modo === modo) {
+            const continuar = window.confirm(
+              "Você tem um simulado em andamento. Deseja continuar de onde parou?",
+            );
+            if (continuar) {
+              setState(parsed);
+              setLoading(false);
+              return;
+            }
+          }
+          limparProgresso();
+        } catch {
+          limparProgresso();
+        }
+      }
+
+      // Iniciar novo simulado
       try {
         let selecionadas: Questao[] = [];
         let metadados: SelecaoAdaptativaResult["metadados"] | null = null;
 
         if (modo === "adaptativo") {
-          const historico = JSON.parse(
-            localStorage.getItem("prf_historico") || "[]",
-          );
+          const historicoRaw = localStorage.getItem("prf_historico");
+          const historico = historicoRaw ? JSON.parse(historicoRaw) : [];
           const analise = gerarAnaliseAdaptativa(historico, questoes);
           setAnaliseIA(analise);
 
@@ -335,11 +426,11 @@ export default function SimuladoPage() {
           tempoInicio: Date.now(),
           modo,
           marcadasParaRevisao: [],
+          ultimoAutoSave: Date.now(),
         };
 
         setState(novoState);
 
-        // Salva metadados do modo adaptativo para resultado
         if (metadados) {
           sessionStorage.setItem(
             "prf_simulado_metadados",
@@ -356,31 +447,32 @@ export default function SimuladoPage() {
     };
 
     inicializar();
-  }, [modo, router]);
+  }, [modo, router, limparProgresso]);
 
-  // Auto-salvar a cada 30s
+  // ============================================================================
+  // AUTO-SALVAMENTO
+  // ============================================================================
+
   useEffect(() => {
     if (!state) return;
 
     autoSaveRef.current = setInterval(() => {
-      localStorage.setItem(
-        `${CONFIG.CHAVE_PROGRESSO}_${modo}`,
-        JSON.stringify(state),
-      );
+      salvarProgresso(state);
     }, CONFIG.AUTO_SALVAR_INTERVALO);
 
     return () => {
       if (autoSaveRef.current) clearInterval(autoSaveRef.current);
     };
-  }, [state, modo]);
+  }, [state, salvarProgresso]);
 
-  // Confirmação de saída
+  // Salvar ao sair da página
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (
         state &&
         state.questoes.some((q) => q.respostaUsuario !== undefined)
       ) {
+        salvarProgresso(state);
         e.preventDefault();
         e.returnValue = "";
       }
@@ -388,25 +480,24 @@ export default function SimuladoPage() {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [state]);
+  }, [state, salvarProgresso]);
 
-  // Pausa visibilidade
+  // Salvar ao esconder a aba
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden && autoSaveRef.current) {
-        // Salva imediatamente ao sair
-        localStorage.setItem(
-          `${CONFIG.CHAVE_PROGRESSO}_${modo}`,
-          JSON.stringify(state),
-        );
+    const handleVisibilityChange = () => {
+      if (document.hidden && state) {
+        salvarProgresso(state);
       }
     };
-    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, [state, modo]);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [state, salvarProgresso]);
 
-  // Handlers
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
   const handleResposta = useCallback(
     (resposta: "CERTO" | "ERRADO" | null) => {
       if (!state) return;
@@ -418,16 +509,13 @@ export default function SimuladoPage() {
 
       setState((prev) => (prev ? { ...prev, questoes: novasQuestoes } : null));
 
-      // XP por questão
       adicionarXP(CONFIG.XP_POR_QUESTAO);
 
-      // Shake se errou
       if (resposta !== questaoAtual.resposta) {
         setShakeQuestao(state.questaoAtual);
         setTimeout(() => setShakeQuestao(null), 500);
       }
 
-      // Avança automaticamente após 300ms (feedback visual)
       setTimeout(() => {
         if (state.questaoAtual < state.questoes.length - 1) {
           setState((prev) =>
@@ -440,15 +528,15 @@ export default function SimuladoPage() {
   );
 
   const handleNavegar = useCallback(
-    (direcao: "anterior" | "proxima" | number) => {
+    (destino: "anterior" | "proxima" | number) => {
       if (!state) return;
 
       let novoIndex: number;
-      if (typeof direcao === "number") {
-        novoIndex = direcao;
+      if (typeof destino === "number") {
+        novoIndex = Math.min(Math.max(0, destino), state.questoes.length - 1);
       } else {
         novoIndex =
-          direcao === "anterior"
+          destino === "anterior"
             ? Math.max(0, state.questaoAtual - 1)
             : Math.min(state.questoes.length - 1, state.questaoAtual + 1);
       }
@@ -462,10 +550,9 @@ export default function SimuladoPage() {
     if (!state) return;
 
     const numero = state.questaoAtual + 1;
-    const jaMarcada = state.marcadasParaRevisao.includes(numero);
-
     setState((prev) => {
       if (!prev) return null;
+      const jaMarcada = prev.marcadasParaRevisao.includes(numero);
       return {
         ...prev,
         marcadasParaRevisao: jaMarcada
@@ -475,70 +562,111 @@ export default function SimuladoPage() {
     });
   }, [state]);
 
-  const finalizarSimulado = useCallback(() => {
-    if (!state) return;
+  const finalizarSimulado = useCallback(async () => {
+    if (!state || isFinalizing) return;
 
-    const tempoTotal = Math.floor((Date.now() - state.tempoInicio) / 1000);
-    const estatisticas = calcularEstatisticas(state.questoes, tempoTotal);
+    setIsFinalizing(true);
 
-    // XP bônus
-    adicionarXP(estatisticas.acertos * CONFIG.XP_POR_ACERTO);
+    try {
+      const tempoTotal = Math.floor((Date.now() - state.tempoInicio) / 1000);
+      const estatisticas = calcularEstatisticas(state.questoes, tempoTotal);
 
-    const historico: HistoricoSimulado = {
-      id: Date.now().toString(),
-      data: new Date().toISOString(),
-      modo:
+      adicionarXP(estatisticas.acertos * CONFIG.XP_POR_ACERTO);
+
+      const modoEnum =
         modo === "turbo"
           ? "TURBO"
           : modo === "adaptativo"
             ? "ADAPTATIVO"
-            : "COMPLETO",
-      estatisticas,
-      questoes: state.questoes,
-    };
+            : "COMPLETO";
 
-    // Salva histórico
-    const historicoExistente = JSON.parse(
-      localStorage.getItem("prf_historico") || "[]",
-    );
-    localStorage.setItem(
-      "prf_historico",
-      JSON.stringify([historico, ...historicoExistente]),
-    );
-    localStorage.setItem("prf_ultimo_simulado", JSON.stringify(historico));
+      const historico: HistoricoSimulado = {
+        id: `sim_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        data: new Date().toISOString(),
+        modo: modoEnum,
+        estatisticas: {
+          pontuacao: estatisticas.pontuacao,
+          acertos: estatisticas.acertos,
+          erros: estatisticas.erros,
+          brancos: estatisticas.brancos,
+          percentual: estatisticas.percentual,
+          tempoTotal: estatisticas.tempoTotal,
+          totalQuestoes: estatisticas.totalQuestoes,
+          tempoMedioPorQuestao: estatisticas.tempoMedioPorQuestao,
+          desempenhoPorDisciplina: estatisticas.desempenhoPorDisciplina,
+          taxaResposta: estatisticas.taxaResposta,
+        },
+        questoes: state.questoes.map((q) => ({
+          ...q,
+          disciplina: q.disciplina || "Geral",
+        })),
+        xpGanho: estatisticas.acertos * CONFIG.XP_POR_ACERTO,
+      };
 
-    // Limpa progresso parcial
-    localStorage.removeItem(`${CONFIG.CHAVE_PROGRESSO}_${modo}`);
+      const historicoExistenteRaw = localStorage.getItem("prf_historico");
+      const historicoExistente = historicoExistenteRaw
+        ? JSON.parse(historicoExistenteRaw)
+        : [];
 
-    // Registra atividade
-    registrarAtividade("simulado", {
-      pontuacao: estatisticas.pontuacao,
-      modo: historico.modo,
-      tempo: tempoTotal,
-    });
+      const novoHistorico = [historico, ...historicoExistente];
+      localStorage.setItem("prf_historico", JSON.stringify(novoHistorico));
 
-    router.push("/resultado");
-  }, [state, modo, adicionarXP, registrarAtividade, router]);
+      // Disparar evento de storage
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "prf_historico",
+          newValue: JSON.stringify(novoHistorico),
+        }),
+      );
+
+      // Registrar atividade
+      registrarAtividade("simulado", {
+        pontuacao: estatisticas.pontuacao,
+        modo: modoEnum,
+        tempo: tempoTotal,
+      });
+
+      // Limpar progresso
+      limparProgresso();
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push("/resultado");
+      }, 1500);
+    } catch (error) {
+      console.error("Erro ao finalizar simulado:", error);
+      alert("Erro ao salvar resultados. Seu progresso foi salvo localmente.");
+      router.push("/");
+    } finally {
+      setIsFinalizing(false);
+    }
+  }, [
+    state,
+    modo,
+    adicionarXP,
+    registrarAtividade,
+    router,
+    limparProgresso,
+    isFinalizing,
+  ]);
 
   const handleSair = useCallback(() => {
-    if (!state) return;
-
-    const respondidas = state.questoes.filter(
-      (q) => q.respostaUsuario !== undefined,
-    ).length;
-
-    if (respondidas > 0) {
-      // Salva antes de sair
-      localStorage.setItem(
-        `${CONFIG.CHAVE_PROGRESSO}_${modo}`,
-        JSON.stringify(state),
-      );
+    if (state) {
+      const respondidas = state.questoes.filter(
+        (q) => q.respostaUsuario !== undefined,
+      ).length;
+      if (respondidas > 0) {
+        salvarProgresso(state);
+      }
+      limparProgresso();
     }
-
     router.push("/");
-  }, [state, modo, router]);
+  }, [state, router, salvarProgresso, limparProgresso]);
 
-  // Render
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   if (loading) {
     return <LoadingScreen modo={modo} analise={analiseIA || undefined} />;
   }
@@ -555,48 +683,55 @@ export default function SimuladoPage() {
   const respondidas = state.questoes.filter(
     (q) => q.respostaUsuario !== undefined,
   ).length;
-  const tempoMaximo = modo === "turbo" ? 40 * 60 : TEMPO_PROVA_MINUTOS * 60;
+  const percentualProgresso = (respondidas / state.questoes.length) * 100;
+  const questoesRevisao = state.marcadasParaRevisao.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-32">
-      {/* Confirmação de saída */}
-      {showExitConfirm && (
-        <ConfirmExitModal
-          respondidas={respondidas}
-          total={state.questoes.length}
-          onConfirm={handleSair}
-          onCancel={() => setShowExitConfirm(false)}
-        />
-      )}
+      <AnimatePresence>
+        {showExitConfirm && (
+          <ConfirmExitModal
+            respondidas={respondidas}
+            total={state.questoes.length}
+            onConfirm={handleSair}
+            onCancel={() => setShowExitConfirm(false)}
+          />
+        )}
+        {showSuccess && (
+          <SuccessNotification onClose={() => setShowSuccess(false)} />
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowExitConfirm(true)}
                 className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
                 aria-label="Sair do simulado"
               >
-                <ChevronLeft className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
 
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold
-                  ${modo === "adaptativo" ? "bg-purple-500/20 text-purple-400" : ""}
-                  ${modo === "turbo" ? "bg-amber-500/20 text-amber-400" : ""}
-                  ${modo === "completo" ? "bg-blue-500/20 text-blue-400" : ""}
-                `}
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-bold ${config.bgCor} ${config.textCor}`}
               >
-                {modo === "adaptativo" && "🧠 ADAPTATIVO"}
-                {modo === "turbo" && "⚡ TURBO"}
-                {modo === "completo" && "📋 COMPLETO"}
-              </span>
+                {config.nome}
+                {modo === "adaptativo" && " 🧠"}
+                {modo === "turbo" && " ⚡"}
+              </div>
 
               <span className="text-sm text-slate-400 hidden sm:inline">
                 Questão {state.questaoAtual + 1} / {state.questoes.length}
               </span>
+
+              {questoesRevisao > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs">
+                  {questoesRevisao} para revisão
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -618,31 +753,31 @@ export default function SimuladoPage() {
                 />
               </button>
 
-              {modo === "adaptativo" && (
-                <span className="text-xs text-purple-400 hidden sm:inline">
-                  Personalizado
-                </span>
-              )}
+              <div className="text-xs text-slate-500 hidden lg:block">
+                {Math.floor(tempoMaximo / 60)}min restantes
+              </div>
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div className="mt-3 h-1 bg-slate-800 rounded-full overflow-hidden">
-            <motion.div
-              className={`h-full rounded-full ${
-                modo === "adaptativo" ? "bg-purple-500" : "bg-blue-500"
-              }`}
-              initial={{ width: 0 }}
-              animate={{
-                width: `${(respondidas / state.questoes.length) * 100}%`,
-              }}
-              transition={{ duration: 0.3 }}
-            />
+          {/* Progress bars */}
+          <div className="mt-3 space-y-1">
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${config.barCor}`}
+                initial={{ width: 0 }}
+                animate={{ width: `${percentualProgresso}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-slate-500">
+              <span>{respondidas} respondidas</span>
+              <span>{percentualProgresso.toFixed(0)}%</span>
+            </div>
           </div>
         </div>
       </header>
-      
-      {/* Conteúdo */}
+
+      {/* Conteúdo principal */}
       <main className="max-w-3xl mx-auto p-4 sm:p-6 pt-6">
         <AnimatePresence mode="wait">
           <motion.div
@@ -681,51 +816,53 @@ export default function SimuladoPage() {
 
       {/* Navegação inferior */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-white/10 p-4 z-30">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-          <button
-            onClick={() => handleNavegar("anterior")}
-            disabled={state.questaoAtual === 0}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Anterior</span>
-          </button>
-
-          <NavigationDots
-            total={state.questoes.length}
-            atual={state.questaoAtual}
-            questoes={state.questoes}
-            onNavigate={handleNavegar}
-          />
-
-          {state.questaoAtual < state.questoes.length - 1 ? (
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-between gap-4">
             <button
-              onClick={() => handleNavegar("proxima")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors text-sm font-medium"
+              onClick={() => handleNavegar("anterior")}
+              disabled={state.questaoAtual === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium"
             >
-              <span className="hidden sm:inline">Próxima</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Anterior</span>
             </button>
-          ) : (
-            <button
-              onClick={() => {
-                if (confirm("Deseja finalizar o simulado?")) {
-                  finalizarSimulado();
-                }
-              }}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-colors shadow-lg shadow-emerald-500/25"
-            >
-              <CheckCircle className="w-5 h-5" />
-              Finalizar
-            </button>
-          )}
-        </div>
 
-        {/* Indicador mobile de questões */}
-        <div className="md:hidden mt-3 text-center text-xs text-slate-500">
-          {respondidas} de {state.questoes.length} respondidas
-          {respondidas > 0 &&
-            ` • ${Math.round((respondidas / state.questoes.length) * 100)}%`}
+            <NavigationDots
+              total={state.questoes.length}
+              atual={state.questaoAtual}
+              questoes={state.questoes}
+              onNavigate={handleNavegar}
+            />
+
+            {state.questaoAtual < state.questoes.length - 1 ? (
+              <button
+                onClick={() => handleNavegar("proxima")}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors text-sm font-medium"
+              >
+                <span className="hidden sm:inline">Próxima</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={finalizarSimulado}
+                disabled={isFinalizing}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-colors shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isFinalizing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-5 h-5" />
+                )}
+                {isFinalizing ? "Finalizando..." : "Finalizar"}
+              </button>
+            )}
+          </div>
+
+          {/* Indicador mobile */}
+          <div className="md:hidden mt-3 text-center text-xs text-slate-500">
+            {respondidas} de {state.questoes.length} respondidas
+            {respondidas > 0 && ` • ${percentualProgresso.toFixed(0)}%`}
+          </div>
         </div>
       </div>
 
@@ -737,7 +874,7 @@ export default function SimuladoPage() {
       >
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-400">
           <Save className="w-3 h-3" />
-          Auto-salvando...
+          <span>Auto-salvando...</span>
         </div>
       </motion.div>
     </div>
