@@ -2,11 +2,9 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  Award,
   BarChart3,
   BookOpen,
   CheckCircle2,
-  ChevronRight as ChevronRightIcon,
   Clock,
   Download,
   Flame,
@@ -36,7 +34,7 @@ import {
 
 import Footer from "@/components/layout/Footer";
 import AlertaDesempenho from "@/components/ui/AlertaDesempenho";
-import Badge, { NewBadgeNotification } from "@/components/ui/Badge";
+import { NewBadgeNotification } from "@/components/ui/Badge";
 import { GlassCard } from "@/components/ui/GlassCard";
 import ModoCard from "@/components/ui/ModoCard";
 import ProgressRing from "@/components/ui/ProgressRing";
@@ -51,7 +49,7 @@ import { classificarDesempenho } from "@/lib/simulado-logic";
 // LAZY LOAD
 // ============================================================================
 const Confetti = lazy(() =>
-  import("@/components/ui/Confetti").catch(() => ({ default: () => null }))
+  import("@/components/ui/Confetti").catch(() => ({ default: () => null })),
 );
 
 // ============================================================================
@@ -91,7 +89,8 @@ function isHistoricoValido(h: unknown): h is HistoricoSimulado {
     typeof item.data === "string" &&
     item.estatisticas !== null &&
     typeof item.estatisticas === "object" &&
-    typeof (item.estatisticas as Record<string, unknown>).pontuacao === "number" &&
+    typeof (item.estatisticas as Record<string, unknown>).pontuacao ===
+      "number" &&
     Array.isArray(item.questoes)
   );
 }
@@ -160,15 +159,6 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
 ];
 
-const BADGES_DISPLAY: readonly BadgeType[] = [
-  "primeiro",
-  "streak-7",
-  "velocista",
-  "cebraspe-master",
-  "polivalente",
-  "nivel-5",
-] as const;
-
 const DISCIPLINAS_NOME: Record<string, string> = {
   PORTUGUES: "Português",
   ETICA: "Ética",
@@ -190,23 +180,24 @@ const BADGE_LABELS: Record<BadgeType, string> = {
   "nivel-5": "Nível 5",
 };
 
-const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = {
-  emerald: {
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/20",
-    text: "text-emerald-400",
-  },
-  rose: {
-    bg: "bg-rose-500/10",
-    border: "border-rose-500/20",
-    text: "text-rose-400",
-  },
-  slate: {
-    bg: "bg-slate-500/10",
-    border: "border-slate-500/20",
-    text: "text-slate-400",
-  },
-};
+const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> =
+  {
+    emerald: {
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+      text: "text-emerald-400",
+    },
+    rose: {
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+      text: "text-rose-400",
+    },
+    slate: {
+      bg: "bg-slate-500/10",
+      border: "border-slate-500/20",
+      text: "text-slate-400",
+    },
+  };
 
 // Chaves exatas do localStorage
 const LS_KEYS = {
@@ -224,17 +215,17 @@ const getBadgeLabel = (badgeId: string): string =>
 
 function useDebouncedCallback<T extends (...args: unknown[]) => void>(
   callback: T,
-  delay = 300
+  delay = 300,
 ) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined
+    undefined,
   );
   return useCallback(
     (...args: Parameters<T>) => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => callback(...args), delay);
     },
-    [callback, delay]
+    [callback, delay],
   );
 }
 
@@ -256,15 +247,13 @@ export default function Dashboard() {
   const [exportError, setExportError] = useState<string | null>(null);
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
-  const { progress, novasConquistas, showLevelUp, dismissLevelUp } =
-    useGamificacao();
+  const { progress, showLevelUp, dismissLevelUp } = useGamificacao();
 
-  const { value: historicoRaw, setValue: setHistoricoStorage } = useLocalStorage<
-    HistoricoSimulado[]
-  >({
-    key: LS_KEYS.historico,
-    defaultValue: [],
-  });
+  const { value: historicoRaw, setValue: setHistoricoStorage } =
+    useLocalStorage<HistoricoSimulado[]>({
+      key: LS_KEYS.historico,
+      defaultValue: [],
+    });
 
   // ── Normalização do histórico: sempre array, sempre válido ─────────────────
   // FIX: historicoRaw pode ser null, undefined, ou conter itens inválidos vindos
@@ -310,8 +299,7 @@ export default function Dashboard() {
         const parsed = JSON.parse(e.newValue);
         if (!Array.isArray(parsed)) return;
         // Evita re-render desnecessário se os dados são os mesmos
-        const isSame =
-          JSON.stringify(parsed) === JSON.stringify(historicoRaw);
+        const isSame = JSON.stringify(parsed) === JSON.stringify(historicoRaw);
         if (isSame) return;
         syncLockRef.current = true;
         setHistoricoStorage(parsed);
@@ -327,15 +315,6 @@ export default function Dashboard() {
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, [mounted, historicoRaw, setHistoricoStorage]);
-
-  // Novas conquistas vindas do hook de gamificação
-  useEffect(() => {
-    if (novasConquistas.length === 0 || showNewBadge || !mounted) return;
-    setShowConfetti(true);
-    setShowNewBadge(novasConquistas[0]);
-    const t = setTimeout(() => setShowConfetti(false), 4000);
-    return () => clearTimeout(t);
-  }, [novasConquistas, showNewBadge, mounted]);
 
   // Atalhos de teclado
   useEffect(() => {
@@ -410,8 +389,8 @@ export default function Dashboard() {
       media7Dias > mediaGeral + 0.5
         ? "up"
         : media7Dias < mediaGeral - 0.5
-        ? "down"
-        : "stable";
+          ? "down"
+          : "stable";
 
     const pontuacoes = historicoFiltrado.map((h) => h.estatisticas.pontuacao);
     const melhor = Math.max(...pontuacoes);
@@ -456,7 +435,7 @@ export default function Dashboard() {
       total,
       classificacao: classificarDesempenho(
         Math.max(0, Math.min(100, ultimoPercentual)),
-        ultimoTotalQuestoes
+        ultimoTotalQuestoes,
       ),
       disciplinaFraca: disciplinaFracaEntry
         ? {
@@ -474,9 +453,8 @@ export default function Dashboard() {
 
   // Nível atual
   const nivelAtual = useMemo(
-    () =>
-      NIVEIS.find((n) => n.nivel === (progress?.nivel ?? 1)) ?? NIVEIS[0],
-    [progress?.nivel]
+    () => NIVEIS.find((n) => n.nivel === (progress?.nivel ?? 1)) ?? NIVEIS[0],
+    [progress?.nivel],
   );
 
   // Progresso do nível em % (0–100)
@@ -496,7 +474,7 @@ export default function Dashboard() {
       (m) =>
         m.title.toLowerCase().includes(term) ||
         m.description.toLowerCase().includes(term) ||
-        m.tag.toLowerCase().includes(term)
+        m.tag.toLowerCase().includes(term),
     );
   }, [searchTerm]);
 
@@ -609,7 +587,7 @@ export default function Dashboard() {
 
         if (
           !window.confirm(
-            "Isso substituirá todos os seus dados atuais. Deseja continuar?"
+            "Isso substituirá todos os seus dados atuais. Deseja continuar?",
           )
         ) {
           return;
@@ -626,13 +604,13 @@ export default function Dashboard() {
         window.location.reload();
       } catch (err) {
         alert(
-          err instanceof Error ? err.message : "Erro desconhecido ao importar."
+          err instanceof Error ? err.message : "Erro desconhecido ao importar.",
         );
       } finally {
         e.target.value = "";
       }
     },
-    []
+    [],
   );
 
   // ── RENDER GUARDS ──────────────────────────────────────────────────────────
@@ -730,8 +708,8 @@ export default function Dashboard() {
                 Bem-vindo ao PRF Simulado
               </h1>
               <p className="text-slate-400 mb-8 text-lg leading-relaxed">
-                Você ainda não possui histórico de simulados. Comece sua jornada
-                agora para acompanhar seu desempenho e ganhar conquistas.
+                Você ainda não possui histórico de simulados. Comece sua
+                jornada.
               </p>
 
               {/* Modos de estudo também na tela de boas-vindas */}
@@ -820,15 +798,19 @@ export default function Dashboard() {
                     <div className="w-full bg-slate-800 rounded-full h-2.5 mb-2 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full"
-                        style={{ backgroundColor: nivelAtual?.cor ?? "#3b82f6" }}
+                        style={{
+                          backgroundColor: nivelAtual?.cor ?? "#3b82f6",
+                        }}
                         initial={{ width: 0 }}
                         animate={{ width: `${progressoNivel}%` }}
                         transition={{ duration: 1, ease: "easeOut" }}
                       />
                     </div>
                     <p className="text-xs text-slate-400">
-                      {(progress?.xpParaProximoNivel ?? 0).toLocaleString("pt-BR")} XP
-                      para o próximo nível
+                      {(progress?.xpParaProximoNivel ?? 0).toLocaleString(
+                        "pt-BR",
+                      )}{" "}
+                      XP para o próximo nível
                     </p>
                   </div>
                 </div>
@@ -852,7 +834,7 @@ export default function Dashboard() {
                                     estatisticas.media) /
                                     estatisticas.media) *
                                     100
-                                : 0
+                                : 0,
                             ),
                             positive: estatisticas.tendencia === "up",
                           }
@@ -882,7 +864,7 @@ export default function Dashboard() {
                     icon={Clock}
                     label="Último"
                     value={new Date(
-                      estatisticas.ultimo.data
+                      estatisticas.ultimo.data,
                     ).toLocaleDateString("pt-BR", {
                       day: "2-digit",
                       month: "short",
@@ -903,7 +885,11 @@ export default function Dashboard() {
             </div>
 
             {/* ── Alertas ── */}
-            <div className="space-y-3" role="region" aria-label="Alertas de desempenho">
+            <div
+              className="space-y-3"
+              role="region"
+              aria-label="Alertas de desempenho"
+            >
               {estatisticas?.classificacao?.nivel === "critico" && (
                 <AlertaDesempenho
                   tipo="critico"
@@ -926,106 +912,6 @@ export default function Dashboard() {
                 />
               )}
             </div>
-
-            {/* ── Conquistas ── */}
-            <GlassCard className="p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-4 mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/20">
-                    <Award className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-100">
-                      Conquistas
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {progress?.badges?.length ?? 0} de {BADGES_DISPLAY.length}{" "}
-                      desbloqueadas
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/conquistas"
-                  className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all"
-                >
-                  Ver todas
-                  <ChevronRightIcon className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </div>
-
-              <div className="flex gap-3 overflow-x-auto pb-3 pt-1 px-1 -mx-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent sm:grid sm:grid-cols-6 sm:overflow-visible sm:pb-0 sm:pt-0 sm:px-0 sm:mx-0">
-                {BADGES_DISPLAY.map((badge, index) => {
-                  const isUnlocked =
-                    progress?.badges?.some((b) => b.id === badge) ?? false;
-                  return (
-                    <motion.div
-                      key={badge}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.07, duration: 0.3 }}
-                      whileHover={
-                        isUnlocked
-                          ? { scale: 1.08, y: -3 }
-                          : { scale: 1.02 }
-                      }
-                      className={`flex-shrink-0 relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-300 ${
-                        isUnlocked
-                          ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-amber-500/30 shadow-lg shadow-black/20"
-                          : "bg-slate-900/30 border border-slate-800/50 opacity-60 grayscale"
-                      }`}
-                    >
-                      <div className="relative">
-                        <Badge
-                          type={badge}
-                          unlocked={isUnlocked}
-                          size="md"
-                        />
-                        {isUnlocked && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
-                            <CheckCircle2 className="w-2 h-2 text-slate-900" />
-                          </div>
-                        )}
-                      </div>
-                      <span
-                        className={`text-[10px] font-medium text-center leading-tight max-w-[70px] ${
-                          isUnlocked ? "text-slate-300" : "text-slate-600"
-                        }`}
-                      >
-                        {getBadgeLabel(badge)}
-                      </span>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-5 pt-5 border-t border-slate-800/50">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-slate-400">Progresso geral</span>
-                  <span className="font-bold text-amber-400">
-                    {Math.round(
-                      ((progress?.badges?.length ?? 0) /
-                        BADGES_DISPLAY.length) *
-                        100
-                    )}
-                    %
-                  </span>
-                </div>
-                <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-400 rounded-full shadow-lg shadow-amber-500/20"
-                    initial={{ width: 0 }}
-                    animate={{
-                      width: `${
-                        ((progress?.badges?.length ?? 0) /
-                          BADGES_DISPLAY.length) *
-                        100
-                      }%`,
-                    }}
-                    transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-                  />
-                </div>
-              </div>
-            </GlassCard>
 
             {/* ── Busca de Modos ── */}
             <div className="relative">
@@ -1061,7 +947,9 @@ export default function Dashboard() {
 
               {modosFiltrados.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
-                  <p className="text-sm">Nenhum modo encontrado para "{searchTerm}"</p>
+                  <p className="text-sm">
+                    Nenhum modo encontrado para "{searchTerm}"
+                  </p>
                   <button
                     onClick={() => setSearchTerm("")}
                     className="text-blue-400 text-xs mt-2 hover:underline"
@@ -1208,7 +1096,6 @@ export default function Dashboard() {
               </p>
               <div className="bg-slate-800/50 rounded-lg p-3 mb-4 text-xs text-slate-500 font-mono space-y-1">
                 <p>{historicoNormalizado.length} simulados</p>
-                <p>{progress?.badges?.length ?? 0} conquistas desbloqueadas</p>
                 <p>Streak: {progress?.streakDias ?? 0} dias</p>
               </div>
 

@@ -9,7 +9,8 @@ import {
   recursos,
   tecnologias,
 } from "@/config/footer";
-import { motion, useReducedMotion } from "framer-motion";
+
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import {
   ArrowUpRight,
   Coffee,
@@ -20,39 +21,60 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 
 const Footer = () => {
   const anoAtual = new Date().getFullYear();
   const shouldReduceMotion = useReducedMotion();
 
-  const frase = useMemo(() => {
-    return frasesMotivacionais[
-      Math.floor(Math.random() * frasesMotivacionais.length)
-    ];
+  // ✅ ZERO HYDRATION ISSUE
+  const [frase, setFrase] = useState(frasesMotivacionais[0]);
+
+  useEffect(() => {
+    const random =
+      frasesMotivacionais[
+        Math.floor(Math.random() * frasesMotivacionais.length)
+      ];
+    setFrase(random);
   }, []);
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: shouldReduceMotion ? 0 : 20 },
-    whileInView: { opacity: 1, y: 0 },
-    transition: { duration: shouldReduceMotion ? 0 : 0.5 },
+  // 🎬 animação base (TIPADA CORRETAMENTE)
+  const fadeInUp: Variants = {
+    initial: {
+      opacity: 0,
+      y: shouldReduceMotion ? 0 : 16,
+    },
+    whileInView: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.4,
+        ease: [0.16, 1, 0.3, 1], // 🔥 easing premium
+      },
+    },
   };
 
   return (
     <footer className="relative border-t border-slate-800 bg-gradient-to-b from-slate-950 via-slate-950 to-black overflow-hidden mt-24">
-      {/* Background */}
+      {/* 🌌 BACKGROUND */}
       <div className="absolute inset-0 opacity-40 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[28rem] h-[28rem] bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-[28rem] h-[28rem] bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-indigo-500/10 rounded-full blur-3xl" />
       </div>
 
-      {/* Grid pattern */}
+      {/* GRID */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.04)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,black,transparent)] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-14">
           {/* SOBRE */}
-          <motion.div {...fadeInUp} className="space-y-5">
+          <motion.div
+            variants={fadeInUp}
+            initial="initial"
+            whileInView="whileInView"
+            viewport={{ once: true, margin: "-50px" }}
+            className="space-y-5"
+          >
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="absolute inset-0 bg-blue-500/30 blur-md rounded-xl" />
@@ -78,13 +100,16 @@ const Footer = () => {
               +5.000 questões • Atualizado 2026
             </div>
 
-            <div className="text-xs text-blue-400 italic">{frase}</div>
+            {/* 💬 FRASE */}
+            <div className="text-xs text-blue-400 italic transition-opacity duration-300">
+              {frase}
+            </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
               {tecnologias.map((tech) => (
                 <span
                   key={tech}
-                  className="text-[10px] px-2 py-1 rounded bg-slate-800/60 text-slate-400"
+                  className="text-[10px] px-2 py-1 rounded bg-slate-800/60 text-slate-400 hover:text-slate-200 transition"
                 >
                   {tech}
                 </span>
@@ -93,16 +118,21 @@ const Footer = () => {
           </motion.div>
 
           {/* LINKS */}
-          <motion.div {...fadeInUp}>
+          <motion.div
+            variants={fadeInUp}
+            initial="initial"
+            whileInView="whileInView"
+            viewport={{ once: true }}
+          >
             <h3 className="footer-title">Links</h3>
             <ul className="footer-list">
               {linksRapidos.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="footer-link">
-                    <span className="flex items-center gap-2">
+                  <Link href={link.href} className="footer-link group">
+                    <span className="flex items-center gap-2 group-hover:text-white transition">
                       {link.icon} {link.label}
                     </span>
-                    <ArrowUpRight className="footer-arrow" />
+                    <ArrowUpRight className="footer-arrow group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </Link>
                 </li>
               ))}
@@ -110,11 +140,19 @@ const Footer = () => {
           </motion.div>
 
           {/* RECURSOS */}
-          <motion.div {...fadeInUp}>
+          <motion.div
+            variants={fadeInUp}
+            initial="initial"
+            whileInView="whileInView"
+            viewport={{ once: true }}
+          >
             <h3 className="footer-title">Recursos</h3>
             <ul className="footer-list">
               {recursos.map((item) => (
-                <li key={item} className="text-slate-400 text-sm">
+                <li
+                  key={item}
+                  className="text-slate-400 text-sm hover:text-slate-200 transition"
+                >
                   {item}
                 </li>
               ))}
@@ -122,12 +160,20 @@ const Footer = () => {
           </motion.div>
 
           {/* LEGAL */}
-          <motion.div {...fadeInUp}>
+          <motion.div
+            variants={fadeInUp}
+            initial="initial"
+            whileInView="whileInView"
+            viewport={{ once: true }}
+          >
             <h3 className="footer-title">Legal</h3>
             <ul className="footer-list">
               {legal.map((item) => (
                 <li key={item.label}>
-                  <Link href={item.href} className="footer-link">
+                  <Link
+                    href={item.href}
+                    className="footer-link hover:text-white transition"
+                  >
                     {item.label}
                   </Link>
                 </li>
@@ -136,12 +182,12 @@ const Footer = () => {
           </motion.div>
         </div>
 
-        {/* Divider */}
+        {/* DIVIDER */}
         <div className="my-10 h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
 
         {/* DEV BADGE */}
         <div className="flex justify-center mb-6">
-          <div className="px-4 py-2 rounded-full bg-slate-900/80 border border-slate-700 shadow-lg backdrop-blur-md">
+          <div className="px-4 py-2 rounded-full bg-slate-900/80 border border-slate-700 shadow-lg backdrop-blur-md hover:scale-[1.02] transition-transform">
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <Coffee className="w-3.5 h-3.5 text-amber-400" />
               Desenvolvido com <Heart className="w-3 text-red-400" /> por{" "}

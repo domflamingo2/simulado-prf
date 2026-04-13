@@ -81,7 +81,7 @@ export interface SimuladoConfig {
 
 const CHAVE_PROGRESSO = "prf_simulado_progresso";
 const CHAVE_HISTORICO = "prf_historico";
-const CHAVE_ULTIMO_SIMULADO = "prf_ultimo_simula1do";
+const CHAVE_ULTIMO_SIMULADO = "prf_ultimo_simulado";
 
 const ESTRUTURA_PRF: Record<Disciplina, { nome: string; questoes: number }> = {
   PORTUGUES: { nome: "Língua Portuguesa", questoes: 12 },
