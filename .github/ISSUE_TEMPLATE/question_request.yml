@@ -1,5 +1,5 @@
 name: 📚 Nova questão
-description: Adicione uma nova questão ao banco de simulados (Certo ou Errado)
+description: Adicione uma nova questão ao banco de simulados (Certo ou Errado).
 title: "[QUESTION] "
 labels: ["question"]
 
