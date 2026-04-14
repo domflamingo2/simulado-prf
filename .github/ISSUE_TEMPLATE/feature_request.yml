@@ -1,37 +1,62 @@
 name: ⭐ Sugestão de funcionalidade
 description: Sugira uma nova funcionalidade para o sistema de simulados
 title: "[FEATURE] "
-labels: ["feature request"]
+labels: ["enhancement"]
 
 body:
   - type: textarea
     id: feature-description
     attributes:
-      label: 📌 Descreva a funcionalidade
-      description: O que você gostaria que fosse adicionado ao sistema?
+      label: 📌 Descrição da funcionalidade
+      description: Explique claramente o que você gostaria que fosse adicionado.
       placeholder: |
         Exemplo:
-          "Gostaria que o usuário pudesse pausar o simulado e continuar depois."
+        "Permitir pausar o simulado e continuar depois de onde parou."
     validations:
       required: true
 
   - type: textarea
-    id: objective
+    id: problem
     attributes:
-      label: 🎯 Qual problema isso resolve?
-      description: Explique por que essa funcionalidade seria útil.
+      label: ⚠️ Problema atual
+      description: Qual problema essa funcionalidade resolve?
       placeholder: |
         Exemplo:
-          "Atualmente, se o usuário fechar a página, ele perde todo o progresso."
+        "Atualmente, ao sair da página, o progresso do usuário é perdido."
+    validations:
+      required: true
 
   - type: textarea
-    id: implementation-idea
+    id: solution
     attributes:
-      label: 💡 Ideia de implementação
-      description: Se tiver alguma ideia de como fazer, coloque aqui.
+      label: 💡 Solução sugerida
+      description: Como você imagina que isso funcione?
       placeholder: |
         Exemplo:
-          "Salvar automaticamente as respostas no localStorage ou banco de dados."
+        "Salvar automaticamente as respostas no banco/localStorage e restaurar ao voltar."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternativas consideradas
+      description: Existe outra forma de resolver isso?
+      placeholder: |
+        Exemplo:
+        "Salvar apenas ao clicar em 'Finalizar', mas isso não resolve saídas inesperadas."
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: 🚀 Impacto esperado
+      description: Qual o impacto dessa funcionalidade?
+      options:
+        - Alto (funcionalidade essencial)
+        - Médio (melhora significativa)
+        - Baixo (melhoria opcional)
+    validations:
+      required: true
 
   - type: dropdown
     id: area
@@ -39,16 +64,27 @@ body:
       label: 🗂️ Área do projeto
       options:
         - Simulado
-        - Questões
+        - Banco de Questões
         - Ranking
         - Login / Conta
         - Painel Admin
         - Interface / UI
         - Backend / API
+        - Performance
         - Mobile
         - Outro
     validations:
       required: true
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: 🧩 Complexidade (estimativa)
+      description: Se tiver noção, selecione.
+      options:
+        - Baixa
+        - Média
+        - Alta
 
   - type: checkboxes
     id: acknowledgements
@@ -56,9 +92,9 @@ body:
       label: ✅ Confirmações
       description: Leia antes de enviar.
       options:
-        - label: Pesquisei as issues existentes e esta sugestão não é duplicada.
+        - label: Pesquisei issues existentes e esta sugestão não é duplicada.
           required: true
-        - label: Escrevi um título curto e claro.
+        - label: Escrevi um título claro e objetivo.
           required: true
-        - label: Preenchi todas as informações solicitadas.
+        - label: Descrevi corretamente o problema e a solução.
           required: true
