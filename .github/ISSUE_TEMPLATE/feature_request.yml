@@ -1,0 +1,64 @@
+name: ⭐ Sugestão de funcionalidade
+description: Sugira uma nova funcionalidade para o sistema de simulados
+title: "[FEATURE] "
+labels: ["feature request"]
+
+body:
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: 📌 Descreva a funcionalidade
+      description: O que você gostaria que fosse adicionado ao sistema?
+      placeholder: |
+        Exemplo:
+          "Gostaria que o usuário pudesse pausar o simulado e continuar depois."
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: 🎯 Qual problema isso resolve?
+      description: Explique por que essa funcionalidade seria útil.
+      placeholder: |
+        Exemplo:
+          "Atualmente, se o usuário fechar a página, ele perde todo o progresso."
+
+  - type: textarea
+    id: implementation-idea
+    attributes:
+      label: 💡 Ideia de implementação
+      description: Se tiver alguma ideia de como fazer, coloque aqui.
+      placeholder: |
+        Exemplo:
+          "Salvar automaticamente as respostas no localStorage ou banco de dados."
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 🗂️ Área do projeto
+      options:
+        - Simulado
+        - Questões
+        - Ranking
+        - Login / Conta
+        - Painel Admin
+        - Interface / UI
+        - Backend / API
+        - Mobile
+        - Outro
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: ✅ Confirmações
+      description: Leia antes de enviar.
+      options:
+        - label: Pesquisei as issues existentes e esta sugestão não é duplicada.
+          required: true
+        - label: Escrevi um título curto e claro.
+          required: true
+        - label: Preenchi todas as informações solicitadas.
+          required: true

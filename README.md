@@ -35,24 +35,24 @@ Este projeto e um exemplo real de como a IA pode acelerar o desenvolvimento:
 - 🎨 UI/UX criada com auxilio de IA
 - 🧠 Logica e analise adaptativa com IA
 - ⚡ Otimizacoes e melhorias continuas com IA
-- 📚 **Geracao de questoes com IA**
+- 📚 **Geracao de questões com IA**
 
 👉 Ou seja:  
 **um projeto moderno, inteligente e construido com as ferramentas do futuro.**
 
 ---
 
-## ⚠️ Sobre as Questoes (IMPORTANTE)
+## ⚠️ Sobre as Questões (IMPORTANTE)
 
-> 🤖 As questoes utilizadas na plataforma foram geradas com apoio de Inteligencia Artificial.
+> 🤖 As questões utilizadas na plataforma foram geradas com apoio de Inteligencia Artificial.
 
 Isso significa que:
 
-- 📌 Algumas questoes podem conter **imprecisoes ou divergencias**
+- 📌 Algumas questões podem conter **imprecisoes ou divergencias**
 - 📌 E **altamente recomendado revisar o conteudo**
 - 📌 Use como ferramenta de treino, nao como fonte unica de verdade
 
-📂 Localizacao das questoes no projeto:
+📂 Localização das questões no projeto:
 
 ```bash
 src/data/questoes.ts

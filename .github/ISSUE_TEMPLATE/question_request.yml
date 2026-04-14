@@ -1,0 +1,52 @@
+name: 📚 Nova questão
+description: Adicione uma nova questão ao banco de simulados (Certo ou Errado)
+title: "[QUESTION] "
+labels: ["question"]
+
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: 📖 Matéria
+      options:
+        - Português
+        - Matemática
+        - Informática
+        - Administração
+        - Direito
+        - Atualidades
+        - Outra
+    validations:
+      required: true
+
+  - type: textarea
+    id: statement
+    attributes:
+      label: 📝 Enunciado
+      description: Escreva a afirmação que será julgada como certa ou errada.
+      placeholder: |
+        Exemplo:
+        "A Constituição Federal de 1988 permite a prisão civil por dívida, em qualquer caso."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: correct-answer
+    attributes:
+      label: ✅ Resposta correta
+      options:
+        - Certo
+        - Errado
+    validations:
+      required: true
+
+  - type: textarea
+    id: explanation
+    attributes:
+      label: 🧠 Explicação da resposta
+      description: Explique por que está certo ou errado.
+      placeholder: |
+        Exemplo:
+        "A CF/88 só permite prisão civil em caso de dívida de alimentos."
+    validations:
+      required: true
