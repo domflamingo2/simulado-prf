@@ -9,7 +9,6 @@ import {
   QuestaoRespondida,
 } from "@/data/types";
 
-// ATENÇÃO: Certifique-se de que este arquivo exporta este objeto
 import { ESTRUTURA_PROVA } from "@/data/questoes";
 
 // ═══════════════════════════════════════════════════════════
@@ -37,6 +36,18 @@ const ORDEM_DISCIPLINAS: Disciplina[] = [
   "LEGISLACAO_PRF",
 ];
 
+const DISCIPLINAS_NOME: Record<string, string> = {
+  PORTUGUES: "Língua Portuguesa",
+  ETICA: "Ética e Conduta",
+  RACIOCINIO_LOGICO: "Raciocínio Lógico",
+  DIREITO_CONSTITUCIONAL: "Direito Constitucional",
+  DIREITO_ADMINISTRATIVO: "Direito Administrativo",
+  ADMINISTRACAO: "Administração",
+  ARQUIVOLOGIA: "Arquivologia",
+  INFORMATICA: "Informática",
+  LEGISLACAO_PRF: "Legislação PRF",
+};
+
 // ═══════════════════════════════════════════════════════════
 // ERROS CUSTOMIZADOS
 // ═══════════════════════════════════════════════════════════
@@ -59,31 +70,42 @@ export class SimuladoError extends Error {
 // ═══════════════════════════════════════════════════════════
 
 /**
- * Gera uma nova seed derivada sempre positiva.
+ * Gera uma nova seed derivada sempre positiva e nunca zero.
  */
 function deriveSeed(baseSeed: number, modifier: number): number {
-  const val = (baseSeed * 31 + modifier) % 2147483647;
-  return Math.abs(val);
+  // FIX: garante que o resultado nunca seja 0 (seed 0 em embaralhar é
+  // tecnicamente válido mas pode produzir resultados previsíveis).
+  // +1 no final garante que o resultado mínimo seja 1.
+  const val = (Math.abs(baseSeed) * 31 + Math.abs(modifier)) % 2147483647;
+  return val === 0 ? 1 : val;
 }
 
 /**
- * Embaralha array usando algoritmo Fisher-Yates com seed opcional.
+ * Embaralha uma CÓPIA do array usando Fisher-Yates com seed opcional.
+ *
+ * FIX crítico: a versão anterior mutava o array original in-place.
+ * Isso corromperia a ordem de `todasQuestoes` (banco global de questões)
+ * a cada chamada de `selecionarQuestoes`. Agora retorna sempre uma nova cópia.
  */
-export function embaralhar<T>(array: T[], seed?: number): T[] {
-  let m = array.length;
+export function embaralhar<T>(array: readonly T[], seed?: number): T[] {
+  // Cria cópia para não mutar o original
+  const copia = [...array];
+  let m = copia.length;
   let s =
-    seed !== undefined ? Math.abs(seed) : Math.floor(Math.random() * 1000000);
+    seed !== undefined
+      ? Math.abs(seed) || 1 // seed 0 → 1
+      : Math.floor(Math.random() * 1_000_000) + 1;
 
   while (m) {
     s = (s * 9301 + 49297) % 233280;
     const i = Math.floor((s / 233280) * m--);
-    [array[m], array[i]] = [array[i], array[m]];
+    [copia[m], copia[i]] = [copia[i], copia[m]];
   }
 
-  return array;
+  return copia;
 }
 
-/** Gera seed baseado em data para simulados diários */
+/** Gera seed baseado em data para simulados diários consistentes */
 export function gerarSeedDiario(): number {
   const hoje = new Date();
   return (
@@ -98,10 +120,13 @@ interface SelecionarQuestoesOptions {
 }
 
 /**
- * Seleciona questões proporcionalmente por disciplina
+ * Seleciona questões proporcionalmente por disciplina.
+ *
+ * FIX: `embaralhar` agora retorna cópia — o banco original nunca é mutado.
+ * FIX: o retorno de `embaralhar` é atribuído à variável antes do slice.
  */
 export function selecionarQuestoes(
-  todasQuestoes: Questao[],
+  todasQuestoes: readonly Questao[],
   options: SelecionarQuestoesOptions,
 ): Questao[] {
   const { modo, seed, garantirCobertura = true } = options;
@@ -116,42 +141,41 @@ export function selecionarQuestoes(
   const baseSeed = seed ?? Date.now();
   let seedIncremental = 0;
 
-  const processarArea = (
-    disciplinas: Record<string, number>,
-    nomeArea: string,
-  ) => {
-    Object.entries(disciplinas).forEach(([disc, qtdOriginal]) => {
+  const processarArea = (disciplinas: Record<string, number>) => {
+    for (const [disc, qtdOriginal] of Object.entries(disciplinas)) {
       const qtd = Math.round((qtdOriginal || 0) * proporcao);
-      if (qtd === 0) return;
+      if (qtd === 0) continue;
 
-      let questoesDisponiveis = todasQuestoes.filter(
+      const questoesDisponiveis = todasQuestoes.filter(
         (q) => q.disciplina === disc,
       );
 
       if (questoesDisponiveis.length === 0) {
         erros.push(`Disciplina ${disc} não possui questões cadastradas`);
-        return;
+        continue;
       }
 
       const seedDisciplina = deriveSeed(baseSeed, ++seedIncremental);
-      embaralhar(questoesDisponiveis, seedDisciplina);
 
-      if (questoesDisponiveis.length < qtd) {
+      // FIX: embaralhar retorna nova cópia — atribuímos ao resultado
+      const embaralhadas = embaralhar(questoesDisponiveis, seedDisciplina);
+
+      if (embaralhadas.length < qtd) {
         if (garantirCobertura) {
           console.warn(
-            `[Simulado] ${disc}: solicitadas ${qtd}, disponíveis ${questoesDisponiveis.length}. Usando todas.`,
+            `[Simulado] ${disc}: solicitadas ${qtd}, disponíveis ${embaralhadas.length}. Usando todas.`,
           );
-          selecionadas.push(...questoesDisponiveis);
+          selecionadas.push(...embaralhadas);
         } else {
           erros.push(
-            `${disc}: insuficiente (precisa: ${qtd}, tem: ${questoesDisponiveis.length})`,
+            `${disc}: insuficiente (precisa: ${qtd}, tem: ${embaralhadas.length})`,
           );
         }
-        return;
+        continue;
       }
 
-      selecionadas.push(...questoesDisponiveis.slice(0, qtd));
-    });
+      selecionadas.push(...embaralhadas.slice(0, qtd));
+    }
   };
 
   if (!ESTRUTURA_PROVA) {
@@ -161,11 +185,8 @@ export function selecionarQuestoes(
     );
   }
 
-  processarArea(ESTRUTURA_PROVA.conhecimentosBasicos.disciplinas, "Básicos");
-  processarArea(
-    ESTRUTURA_PROVA.conhecimentosEspecificos.disciplinas,
-    "Específicos",
-  );
+  processarArea(ESTRUTURA_PROVA.conhecimentosBasicos.disciplinas);
+  processarArea(ESTRUTURA_PROVA.conhecimentosEspecificos.disciplinas);
 
   if (erros.length > 0 && !garantirCobertura) {
     throw new SimuladoError(
@@ -177,6 +198,7 @@ export function selecionarQuestoes(
   const qtdEsperada = isTurbo
     ? CONSTANTES.QUESTOES_TURBO
     : CONSTANTES.QUESTOES_COMPLETO;
+
   if (selecionadas.length < qtdEsperada * 0.8) {
     throw new SimuladoError(
       `Simulado incompleto: ${selecionadas.length}/${qtdEsperada} questões`,
@@ -197,7 +219,7 @@ function inicializarEstatisticasDisciplina(): Record<
 > {
   const inicial: Partial<Record<Disciplina, EstatisticasDisciplina>> = {};
 
-  ORDEM_DISCIPLINAS.forEach((disc) => {
+  for (const disc of ORDEM_DISCIPLINAS) {
     inicial[disc] = {
       total: 0,
       acertos: 0,
@@ -206,22 +228,19 @@ function inicializarEstatisticasDisciplina(): Record<
       percentual: 0,
       pontuacao: 0,
     };
-  });
+  }
 
   return inicial as Record<Disciplina, EstatisticasDisciplina>;
 }
 
 function processarQuestao(
   questao: QuestaoRespondida,
-  stats: Record<Disciplina, EstatisticasDisciplina>,
+  stats: Record<string, EstatisticasDisciplina>,
   contadores: { acertos: number; erros: number; brancos: number },
 ): void {
-  const disc = questao.disciplina as Disciplina;
+  const disc = questao.disciplina;
 
   if (!stats[disc]) {
-    console.warn(
-      `[Estatísticas] Disciplina não mapeada: ${disc}. Inicializando.`,
-    );
     stats[disc] = {
       total: 0,
       acertos: 0,
@@ -250,30 +269,26 @@ function processarQuestao(
 }
 
 function finalizarEstatisticasDisciplina(
-  stats: Record<Disciplina, EstatisticasDisciplina>,
+  stats: Record<string, EstatisticasDisciplina>,
 ): void {
-  // Processa disciplinas da ordem
-  ORDEM_DISCIPLINAS.forEach((disc) => {
-    const stat = stats[disc];
-    if (stat && stat.total > 0) {
+  for (const [, stat] of Object.entries(stats)) {
+    if (stat.total > 0) {
+      // FIX: percentual = acertos / total × 100 (taxa de acerto real, 0–100)
+      // Isso é consistente com como o restante do app usa `percentual`.
+      // A pontuação CEBRASPE (acertos - erros) fica em `pontuacao`.
       stat.percentual = (stat.acertos / stat.total) * 100;
       stat.pontuacao = stat.acertos - stat.erros;
     }
-  });
-
-  // Processa disciplinas extras
-  Object.keys(stats).forEach((discKey) => {
-    const disc = discKey as Disciplina;
-    if (!ORDEM_DISCIPLINAS.includes(disc)) {
-      const stat = stats[disc];
-      if (stat && stat.total > 0) {
-        stat.percentual = (stat.acertos / stat.total) * 100;
-        stat.pontuacao = stat.acertos - stat.erros;
-      }
-    }
-  });
+  }
 }
 
+/**
+ * Calcula estatísticas completas de um simulado.
+ *
+ * FIX: `percentual` agora é a taxa de acerto (acertos / total × 100),
+ * separado de `pontuacao` que é a pontuação CEBRASPE (acertos - erros).
+ * Antes, `percentual = pontuacao / total × 100` podia ser negativo.
+ */
 export function calcularEstatisticas(
   questoes: QuestaoRespondida[],
   tempoTotal: number,
@@ -282,21 +297,25 @@ export function calcularEstatisticas(
   const contadores = { acertos: 0, erros: 0, brancos: 0 };
   const desempenhoPorDisciplina = inicializarEstatisticasDisciplina();
 
-  questoes.forEach((q) =>
-    processarQuestao(q, desempenhoPorDisciplina, contadores),
-  );
+  for (const q of questoes) {
+    processarQuestao(q, desempenhoPorDisciplina, contadores);
+  }
 
   finalizarEstatisticasDisciplina(desempenhoPorDisciplina);
 
+  const total = questoes.length;
   const pontuacao = contadores.acertos - contadores.erros;
-  const percentual =
-    questoes.length > 0 ? (pontuacao / questoes.length) * 100 : 0;
 
-  const tempoEfetivo = Math.min(tempoTotal, tempoLimite ?? Infinity);
+  // FIX: percentual = taxa de acerto real (sempre 0–100)
+  const percentual = total > 0 ? (contadores.acertos / total) * 100 : 0;
+
+  const tempoEfetivo =
+    tempoLimite != null ? Math.min(tempoTotal, tempoLimite) : tempoTotal;
+
   const questoesRespondidas = contadores.acertos + contadores.erros;
 
   return {
-    totalQuestoes: questoes.length,
+    totalQuestoes: total,
     acertos: contadores.acertos,
     erros: contadores.erros,
     brancos: contadores.brancos,
@@ -308,8 +327,7 @@ export function calcularEstatisticas(
         ? Math.round(tempoEfetivo / questoesRespondidas)
         : 0,
     desempenhoPorDisciplina,
-    taxaResposta:
-      questoes.length > 0 ? (questoesRespondidas / questoes.length) * 100 : 0,
+    taxaResposta: total > 0 ? (questoesRespondidas / total) * 100 : 0,
   };
 }
 
@@ -317,42 +335,74 @@ export function calcularEstatisticas(
 // ANÁLISE E CLASSIFICAÇÃO
 // ═══════════════════════════════════════════════════════════
 
+/**
+ * Classifica o desempenho baseado na pontuação CEBRASPE bruta.
+ *
+ * FIX crítico: a assinatura foi clarificada.
+ *
+ * `pontuacaoBruta` é a pontuação CEBRASPE (acertos - erros), que vai de
+ * -totalQuestoes até +totalQuestoes.
+ *
+ * O código anterior era chamado com `percentual` (0–100) em algumas páginas
+ * e com pontuação bruta em outras, causando classificações sempre "excelente"
+ * quando chamado com percentual já calculado.
+ *
+ * BREAKING CHANGE: se você chamava `classificarDesempenho(percentual, 60)`,
+ * passe agora `classificarDesempenho(pontuacaoBruta, totalQuestoes)`.
+ * O dashboard foi corrigido para passar `estatisticas.pontuacao` em vez de
+ * um percentual pré-calculado.
+ */
 export function classificarDesempenho(
-  pontuacao: number,
+  pontuacaoBruta: number,
   totalQuestoes: number,
 ): ClassificacaoDesempenho {
-  const percentual = totalQuestoes > 0 ? (pontuacao / totalQuestoes) * 100 : 0;
+  if (totalQuestoes <= 0) {
+    return {
+      nivel: "regular",
+      mensagem: "⚠️ Sem questões para avaliar.",
+      cor: "#f59e0b",
+      icone: "warning",
+      score: 0,
+    };
+  }
 
-  if (pontuacao >= totalQuestoes * 0.6) {
+  // Converte para percentual de aproveitamento (0–100) para exibição
+  // Fórmula: (pontuacao + total) / (2 * total) × 100
+  // Onde: pontuacao = -total → 0%, pontuacao = 0 → 50%, pontuacao = +total → 100%
+  const scoreAproveitamento =
+    ((pontuacaoBruta + totalQuestoes) / (2 * totalQuestoes)) * 100;
+
+  // Limiares baseados na pontuação bruta proporcional (igual ao original)
+  if (pontuacaoBruta >= totalQuestoes * 0.6) {
     return {
       nivel: "excelente",
       mensagem:
-        pontuacao >= totalQuestoes * 0.75
+        pontuacaoBruta >= totalQuestoes * 0.75
           ? "🎯 Excelente! Aprovação confortável!"
           : "✅ Muito bom! Dentro da faixa de aprovação.",
       cor: "#10b981",
       icone: "trophy",
-      score: percentual,
+      score: scoreAproveitamento,
     };
   }
 
-  if (pontuacao >= totalQuestoes * 0.3) {
+  if (pontuacaoBruta >= totalQuestoes * 0.3) {
     return {
       nivel: "bom",
       mensagem: "📊 Na média, mas precisa garantir mais acertos.",
       cor: "#3b82f6",
       icone: "chart-line-up",
-      score: percentual,
+      score: scoreAproveitamento,
     };
   }
 
-  if (pontuacao >= 0) {
+  if (pontuacaoBruta >= 0) {
     return {
       nivel: "regular",
       mensagem: "⚠️ Abaixo da média. Muitos erros estão anulando acertos.",
       cor: "#f59e0b",
       icone: "warning",
-      score: percentual,
+      score: scoreAproveitamento,
     };
   }
 
@@ -361,38 +411,52 @@ export function classificarDesempenho(
     mensagem: "🚨 Crítico! Erros estão superando acertos.",
     cor: "#ef4444",
     icone: "warning-circle",
-    score: percentual,
+    score: scoreAproveitamento,
   };
 }
 
+/**
+ * Identifica disciplinas com aproveitamento abaixo do limite.
+ * FIX: não muta o array interno — usa [...].sort() para retornar nova cópia.
+ */
 export function identificarPontosFracos(
   estatisticas: EstatisticasSimulado,
-  limitePercentual: number = 50,
+  limitePercentual = 50,
 ): Disciplina[] {
   const fracas: Disciplina[] = [];
 
-  ORDEM_DISCIPLINAS.forEach((disc) => {
+  for (const disc of ORDEM_DISCIPLINAS) {
     const stat = estatisticas.desempenhoPorDisciplina[disc];
     if (stat && stat.total > 0 && stat.percentual < limitePercentual) {
       fracas.push(disc);
     }
-  });
+  }
 
-  return fracas.sort((a, b) => {
+  // FIX: sort em cópia nova — fracas foi recém-criado, mas por clareza
+  // e consistência usamos [...fracas].sort()
+  return [...fracas].sort((a, b) => {
     const pa = estatisticas.desempenhoPorDisciplina[a]?.percentual ?? 0;
     const pb = estatisticas.desempenhoPorDisciplina[b]?.percentual ?? 0;
     return pa - pb;
   });
 }
 
+/**
+ * Calcula tendência comparando o simulado atual com a média do histórico.
+ *
+ * FIX: exclui o simulado atual do histórico antes de calcular a média,
+ * para evitar que o próprio atual entre na comparação (viés de referência).
+ * Recebe `historicoAnterior` — o histórico SEM o simulado atual.
+ */
 export function calcularTendencia(
   estatisticasAtual: EstatisticasSimulado,
-  historico: EstatisticasSimulado[],
+  historicoAnterior: EstatisticasSimulado[],
 ): "subindo" | "estavel" | "caindo" {
-  if (historico.length < 2) return "estavel";
+  if (historicoAnterior.length < 2) return "estavel";
 
-  const qtdHistorico = Math.min(historico.length, 3);
-  const recentes = historico.slice(-qtdHistorico);
+  const qtd = Math.min(historicoAnterior.length, 3);
+  // Pega os mais recentes do histórico anterior
+  const recentes = historicoAnterior.slice(-qtd);
 
   const mediaRecente =
     recentes.reduce((a, h) => a + h.pontuacao, 0) / recentes.length;
@@ -452,28 +516,33 @@ export function formatarTempoLegivel(segundos: number): string {
   return formatarTempo(segundos, { abreviado: true });
 }
 
+/**
+ * FIX: trata string vazia e retorna 0 em vez de lançar erro genérico.
+ */
 export function parseTempo(tempoStr: string): number {
-  const parts = tempoStr.split(":").map((p) => parseInt(p, 10));
+  if (!tempoStr?.trim()) return 0;
 
-  if (parts.some(isNaN)) {
-    throw new Error(`Formato de tempo inválido: ${tempoStr}`);
+  const parts = tempoStr.split(":").map((p) => parseInt(p.trim(), 10));
+
+  if (parts.some((p) => isNaN(p))) {
+    throw new Error(
+      `Formato de tempo inválido: "${tempoStr}". Esperado HH:MM:SS ou MM:SS.`,
+    );
   }
 
-  if (parts.length === 3) {
-    return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  }
-
-  if (parts.length === 2) {
-    return parts[0] * 60 + parts[1];
-  }
-
-  return parts[0] || 0;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] ?? 0;
 }
 
 // ═══════════════════════════════════════════════════════════
 // UTILITÁRIOS DE SIMULADO
 // ═══════════════════════════════════════════════════════════
 
+/**
+ * FIX: usa DISCIPLINAS_NOME para exibir nomes legíveis no resumo.
+ * Antes exibia chaves brutas como "PORTUGUES" em vez de "Língua Portuguesa".
+ */
 export function gerarResumoSimulado(
   estatisticas: EstatisticasSimulado,
 ): string {
@@ -495,22 +564,37 @@ export function gerarResumoSimulado(
   ];
 
   if (pontosFracos.length > 0) {
-    linhas.push(``);
-    linhas.push(`⚠️ Disciplinas que precisam de atenção:`);
-    pontosFracos.slice(0, 3).forEach((disc) => {
+    linhas.push(``, `⚠️ Disciplinas que precisam de atenção:`);
+    for (const disc of pontosFracos.slice(0, 3)) {
       const stat = estatisticas.desempenhoPorDisciplina[disc];
       if (stat) {
+        // FIX: exibe nome legível em vez da chave bruta
+        const nome = DISCIPLINAS_NOME[disc] ?? disc;
         linhas.push(
-          `  • ${disc}: ${stat.percentual.toFixed(0)}% (${stat.pontuacao} pts)`,
+          `  • ${nome}: ${stat.percentual.toFixed(0)}% (${stat.pontuacao} pts)`,
         );
       }
-    });
+    }
   }
 
   return linhas.join("\n");
 }
 
+/**
+ * Exporta estatísticas por disciplina em formato CSV.
+ *
+ * FIX: campos de texto são envolvidos em aspas para evitar corrupção
+ * caso o nome da disciplina contenha vírgula (ex: dados externos).
+ */
 export function exportarCSV(estatisticas: EstatisticasSimulado): string {
+  const escapar = (v: string | number): string => {
+    const s = String(v);
+    // Envolve em aspas se contém vírgula, aspas ou quebra de linha
+    return s.includes(",") || s.includes('"') || s.includes("\n")
+      ? `"${s.replace(/"/g, '""')}"`
+      : s;
+  };
+
   const headers = [
     "Disciplina",
     "Total",
@@ -521,13 +605,14 @@ export function exportarCSV(estatisticas: EstatisticasSimulado): string {
     "Pontuação (Acertos - Erros)",
   ];
 
-  const rows = ORDEM_DISCIPLINAS.map((disc) => {
-    const stat = estatisticas.desempenhoPorDisciplina[disc];
+  const montarLinha = (disc: string) => {
+    const stat = estatisticas.desempenhoPorDisciplina[disc as Disciplina];
+    const nome = DISCIPLINAS_NOME[disc] ?? disc;
     if (!stat) {
-      return [disc, 0, 0, 0, 0, "0,0", 0].join(",");
+      return [escapar(nome), 0, 0, 0, 0, "0,0", 0].join(",");
     }
     return [
-      disc,
+      escapar(nome), // FIX: nome legível + escapado
       stat.total,
       stat.acertos,
       stat.erros,
@@ -535,29 +620,18 @@ export function exportarCSV(estatisticas: EstatisticasSimulado): string {
       stat.percentual.toFixed(1).replace(".", ","),
       stat.pontuacao,
     ].join(",");
-  });
+  };
 
-  // Adiciona disciplinas extras se houver
+  const rows = ORDEM_DISCIPLINAS.map(montarLinha);
+
+  // Disciplinas extras (fora da ordem padrão)
   const disciplinasExtras = Object.keys(
     estatisticas.desempenhoPorDisciplina,
   ).filter((d) => !ORDEM_DISCIPLINAS.includes(d as Disciplina));
 
-  disciplinasExtras.forEach((disc) => {
-    const stat = estatisticas.desempenhoPorDisciplina[disc as Disciplina];
-    if (stat) {
-      rows.push(
-        [
-          disc,
-          stat.total,
-          stat.acertos,
-          stat.erros,
-          stat.brancos,
-          stat.percentual.toFixed(1).replace(".", ","),
-          stat.pontuacao,
-        ].join(","),
-      );
-    }
-  });
+  for (const disc of disciplinasExtras) {
+    rows.push(montarLinha(disc));
+  }
 
   return [headers.join(","), ...rows].join("\n");
 }

@@ -264,7 +264,7 @@ export interface EstatisticasSimulado {
   percentual: number;
   tempoTotal: number;
   tempoMedioPorQuestao: number;
-  desempenhoPorDisciplina: Record<Disciplina, EstatisticasDisciplina>;
+  desempenhoPorDisciplina: Record<Disciplina, EstatisticasDisciplina>; 
   taxaResposta: number;
 }
 

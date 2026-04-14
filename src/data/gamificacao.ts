@@ -4,6 +4,11 @@ import { BadgeType, Disciplina, NivelInfo, UserProgress } from "./types";
 // CONFIGURAÇÃO DE NÍVEIS
 // ═══════════════════════════════════════════════════════════
 
+/**
+ * Tabela de níveis ordenada do menor para o maior.
+ * xpMin e xpMax são inclusivos no limite inferior e exclusivos no superior.
+ * Ex: nível 1 vai de 0 (inclusive) a 99 XP; nível 2 começa em 100.
+ */
 export const NIVEIS: NivelInfo[] = [
   {
     nivel: 1,
@@ -85,17 +90,19 @@ export const NIVEIS: NivelInfo[] = [
     cor: "#ffd700",
     icone: "🏆",
   },
-];
+] as const;
 
 // ═══════════════════════════════════════════════════════════
 // CONFIGURAÇÃO DE XP
 // ═══════════════════════════════════════════════════════════
 
 export const XP_REWARDS = {
-  // Base
+  // Questão individual
   QUESTAO_RESPONDIDA: 1,
   ACERTO: 10,
-  ERRO: 2,
+  // FIX: ERRO removido como recompensa de XP — errar não deveria dar XP positivo.
+  // A penalidade já existe na pontuação CEBRASPE. XP representa progresso de estudo.
+  // Se quiser penalizar XP por erro, use valor negativo e trate no hook com Math.max(0, total).
 
   // Modos de estudo
   SIMULADO_COMPLETO: 50,
@@ -115,19 +122,21 @@ export const XP_REWARDS = {
   NOVO_RECORDE_VELOCIDADE: 50,
   DISCIPLINA_DOMINADA: 100,
   PROVA_PERFEITA: 200,
-};
+} as const;
 
 // ═══════════════════════════════════════════════════════════
 // CONFIGURAÇÃO DE BADGES
 // ═══════════════════════════════════════════════════════════
 
-// Definição explícita do tipo de extras para evitar erros de TypeScript
 interface BadgeExtras {
   simuladoPontuacao?: number;
   simuladoAcertos?: number;
-  simuladoTotal?: number; // ✅ Adicionado para verificar Prova Perfeita dinamicamente
+  /** Total de questões do simulado — necessário para verificar prova perfeita */
+  simuladoTotal?: number;
   turboTempo?: number;
-  disciplinaStats?: Record<Disciplina, { acertos: number; total: number }>;
+  disciplinaStats?: Partial<
+    Record<Disciplina, { acertos: number; total: number }>
+  >;
 }
 
 export const BADGES_CONFIG: Record<
@@ -135,7 +144,7 @@ export const BADGES_CONFIG: Record<
   {
     titulo: string;
     descricao: string;
-    condicao: (progress: UserProgress, dadosExtras?: BadgeExtras) => boolean;
+    condicao: (progress: UserProgress, extras?: BadgeExtras) => boolean;
   }
 > = {
   primeiro: {
@@ -143,82 +152,110 @@ export const BADGES_CONFIG: Record<
     descricao: "Complete seu primeiro simulado",
     condicao: (p) => p.conquistas.simuladosCompletos >= 1,
   },
+
   "streak-3": {
     titulo: "Consistência",
     descricao: "3 dias de estudo consecutivos",
     condicao: (p) => p.streakDias >= 3,
   },
+
   "streak-7": {
     titulo: "Fogo no Papel",
     descricao: "7 dias de estudo consecutivos",
     condicao: (p) => p.streakDias >= 7,
   },
+
   "streak-30": {
     titulo: "Máquina de Estudos",
     descricao: "30 dias de estudo consecutivos",
     condicao: (p) => p.streakDias >= 30,
   },
+
+  // FIX: condição real baseada em `simuladoPontuacao` e histórico de simulados.
+  // Verifica se o simulado atual teve pontuação >= 60 E o usuário já completou >= 3 simulados.
+  // Para histórico completo (3 simulados com 60+), precisaria de `dadosExtras` com array
+  // do histórico — por ora, usa a pontuação atual + contador como proxy razoável.
   "cebraspe-master": {
     titulo: "Cebraspe Master",
-    descricao: "60+ pontos em 3 simulados completos",
-    // Nota: Isso exigiria acesso ao histórico completo, não apenas ao progresso agregado.
-    // Mantive false, mas em um app real, isso viria via 'dadosExtras' ou uma query separada.
-    condicao: () => false,
+    descricao: "60+ pontos em um simulado, tendo completado 3 ou mais",
+    condicao: (p, extras) =>
+      p.conquistas.simuladosCompletos >= 3 &&
+      (extras?.simuladoPontuacao ?? 0) >= 60,
   },
+
+  // FIX: verifica apenas disciplinas com `total > 0` — disciplinas nunca respondidas
+  // não devem bloquear o badge. Requer ao menos 5 disciplinas com dados para evitar
+  // desbloqueio prematuro em treinos com poucas disciplinas.
   polivalente: {
     titulo: "Polivalente",
-    descricao: "70%+ de aproveitamento em todas as disciplinas",
-    // ✅ CORREÇÃO: Agora verifica o objeto 'disciplinaStats' passado nos extras
-    condicao: (p, extras) => {
+    descricao:
+      "70%+ de aproveitamento em todas as disciplinas respondidas (mín. 5)",
+    condicao: (_p, extras) => {
       if (!extras?.disciplinaStats) return false;
-      const disciplinas = Object.keys(extras.disciplinaStats) as Disciplina[];
 
-      // Verifica se há pelo menos 9 disciplinas (todas as principais)
-      if (disciplinas.length < 9) return false;
+      const disciplinasComDados = (
+        Object.entries(extras.disciplinaStats) as [
+          Disciplina,
+          { acertos: number; total: number },
+        ][]
+      ).filter(([, stats]) => stats.total > 0);
 
-      // Verifica se todas têm 70%+
-      return disciplinas.every((disc) => {
-        const stats = extras.disciplinaStats![disc];
-        return stats.total > 0 && stats.acertos / stats.total >= 0.7;
-      });
+      // FIX: mínimo de 5 disciplinas com dados (não necessariamente todas as 9)
+      if (disciplinasComDados.length < 5) return false;
+
+      return disciplinasComDados.every(
+        ([, stats]) => stats.acertos / stats.total >= 0.7,
+      );
     },
   },
+
+  // FIX: sem valor mágico 99999 — verificação explícita de nullability
   velocista: {
     titulo: "Velocista",
     descricao: "Complete o modo Turbo em menos de 30 minutos",
-    condicao: (p, extras) => (extras?.turboTempo ?? 99999) < 30 * 60,
+    condicao: (_p, extras) =>
+      extras?.turboTempo != null && extras.turboTempo < 30 * 60,
   },
+
   perfeccionista: {
     titulo: "Perfeccionista",
     descricao: "Acerte todas as questões de um simulado",
-    // ✅ CORREÇÃO: Usa 'simuladoTotal' para garantir 100%, não apenas um número mágico 60
-    condicao: (p, extras) => {
-      if (!extras?.simuladoAcertos || !extras?.simuladoTotal) return false;
+    condicao: (_p, extras) => {
+      if (extras?.simuladoAcertos == null || extras?.simuladoTotal == null)
+        return false;
       return (
         extras.simuladoAcertos === extras.simuladoTotal &&
         extras.simuladoTotal > 0
       );
     },
   },
+
   persistent: {
     titulo: "Persistente",
     descricao: "Complete 10 simulados",
     condicao: (p) => p.conquistas.simuladosCompletos >= 10,
   },
+
   "nivel-5": {
     titulo: "Agente Federal",
     descricao: "Alcance o nível 5",
     condicao: (p) => p.nivel >= 5,
   },
+
   "nivel-10": {
     titulo: "Superintendente",
     descricao: "Alcance o nível máximo",
     condicao: (p) => p.nivel >= 10,
   },
+
+  // FIX: `"cebraspe-master"` era inatingível (condicao: () => false), tornando
+  // `"nivel-max"` também inatingível. Agora que cebraspe-master tem condição real,
+  // nivel-max requer 9 outros badges (excluindo ele próprio) + nível 10.
   "nivel-max": {
     titulo: "Lenda da PRF",
-    descricao: "Complete todos os níveis com todas as conquistas",
-    condicao: (p) => p.nivel >= 10 && p.badges.length >= 10,
+    descricao: "Nível 10 com ao menos 9 conquistas desbloqueadas",
+    condicao: (p) =>
+      p.nivel >= 10 && p.badges.filter((b) => b.id !== "nivel-max").length >= 9,
   },
 };
 
@@ -226,63 +263,80 @@ export const BADGES_CONFIG: Record<
 // FUNÇÕES UTILITÁRIAS
 // ═══════════════════════════════════════════════════════════
 
-/** Calcula nível atual baseado no XP total */
+/**
+ * Calcula o nível correspondente ao XP total.
+ *
+ * FIX: guard para xpTotal negativo (dados corrompidos).
+ * Loop reverso é O(n) mas n=10 — eficiente o suficiente.
+ */
 export function calcularNivel(xpTotal: number): NivelInfo {
-  // ✅ CORREÇÃO: Usa find reverso para compatibilidade (ES5) em vez de findLast (ES2023)
-  // Clona o array para não mutar a constante, ou itera manualmente.
-  // Como NIVEIS é curto e ordenado, um loop reverso simples é mais eficiente e seguro.
+  const xp = Math.max(0, xpTotal);
   for (let i = NIVEIS.length - 1; i >= 0; i--) {
-    if (xpTotal >= NIVEIS[i].xpMin) {
+    if (xp >= NIVEIS[i].xpMin) {
       return NIVEIS[i];
     }
   }
   return NIVEIS[0];
 }
 
-/** Calcula XP necessário para o próximo nível */
+/**
+ * Retorna o XP restante para o próximo nível.
+ * FIX: nunca retorna negativo — no nível máximo retorna 0.
+ */
 export function xpParaProximoNivel(xpTotal: number): number {
-  const nivelAtual = calcularNivel(xpTotal);
-  return nivelAtual.xpMax - xpTotal;
+  const nivel = calcularNivel(xpTotal);
+  // No nível máximo, xpMax é 999999 — diferença nunca é negativa na prática,
+  // mas o Math.max garante para qualquer xpTotal acima do xpMax.
+  return Math.max(0, nivel.xpMax - Math.max(0, xpTotal));
 }
 
-/** Calcula progresso percentual no nível atual (0-100) */
+/**
+ * Calcula o progresso percentual dentro do nível atual (0–100).
+ * FIX: clampado em [0, 100] para evitar valores fora do intervalo.
+ */
 export function calcularProgressoNivel(xpTotal: number): number {
-  const nivel = calcularNivel(xpTotal);
-  const xpNoNivel = xpTotal - nivel.xpMin;
+  const xp = Math.max(0, xpTotal);
+  const nivel = calcularNivel(xp);
+  const xpNoNivel = xp - nivel.xpMin;
   const xpTotalNivel = nivel.xpMax - nivel.xpMin;
 
-  if (xpTotalNivel === 0) return 100; // Evita divisão por zero no nível max
-  return (xpNoNivel / xpTotalNivel) * 100;
+  // Evita divisão por zero no nível máximo (xpMax = 999999, xpMin = 12000 → nunca zero)
+  if (xpTotalNivel <= 0) return 100;
+
+  return Math.min(100, Math.max(0, (xpNoNivel / xpTotalNivel) * 100));
 }
 
-/** Verifica novas conquistas desbloqueadas */
+/**
+ * Verifica quais conquistas foram desbloqueadas que o usuário ainda não tem.
+ * Retorna apenas badges novos.
+ */
 export function verificarNovasConquistas(
   progress: UserProgress,
   extras?: BadgeExtras,
 ): BadgeType[] {
+  const existentes = new Set(progress.badges.map((b) => b.id));
   const novas: BadgeType[] = [];
 
-  (Object.keys(BADGES_CONFIG) as BadgeType[]).forEach((badgeId) => {
-    // Verifica se já não tem
-    if (progress.badges.some((b) => b.id === badgeId)) return;
-
-    // Verifica condição
-    const config = BADGES_CONFIG[badgeId];
-    if (config.condicao(progress, extras)) {
+  for (const badgeId of Object.keys(BADGES_CONFIG) as BadgeType[]) {
+    if (existentes.has(badgeId)) continue;
+    if (BADGES_CONFIG[badgeId].condicao(progress, extras)) {
       novas.push(badgeId);
     }
-  });
+  }
 
   return novas;
 }
 
-/** Cria progresso inicial para novo usuário */
+/**
+ * Cria um objeto de progresso inicial para novo usuário.
+ * Todos os contadores em zero, sem badges, sem streak.
+ */
 export function criarProgressoInicial(): UserProgress {
   return {
     nivel: 1,
     xpTotal: 0,
     xpAtual: 0,
-    xpParaProximoNivel: 100,
+    xpParaProximoNivel: NIVEIS[1].xpMin, // 100 — XP do nível 2
     streakDias: 0,
     ultimoDiaEstudo: null,
     maiorStreak: 0,
@@ -300,7 +354,7 @@ export function criarProgressoInicial(): UserProgress {
         turboMaisRapido: null,
         melhorPontuacao: 0,
       },
-      disciplinasDominadas: [], // Deve ser Disciplina[]
+      disciplinasDominadas: [],
     },
   };
 }
