@@ -9,7 +9,7 @@ import {
   QuestaoRespondida,
 } from "@/data/types";
 
-import { ESTRUTURA_PROVA } from "@/data/questoes";
+import { ESTRUTURA_PROVA } from "@/data";
 
 // ═══════════════════════════════════════════════════════════
 // CONSTANTES

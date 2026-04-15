@@ -23,6 +23,7 @@ const glassCardVariants = cva(
         warning: "bg-amber-950/20 border-amber-500/30",
         info: "bg-blue-950/20 border-blue-500/30",
       },
+
       glow: {
         none: "",
         blue: "shadow-lg shadow-blue-500/10 hover:shadow-blue-500/25 hover:border-blue-400/50",
@@ -37,26 +38,35 @@ const glassCardVariants = cva(
         pink: "shadow-lg shadow-pink-500/10 hover:shadow-pink-500/25 hover:border-pink-400/50",
         white:
           "shadow-lg shadow-white/5 hover:shadow-white/15 hover:border-white/30",
+
+        // ✅ ADICIONADO CORRETAMENTE
+        orange:
+          "shadow-lg shadow-orange-500/10 hover:shadow-orange-500/25 hover:border-orange-400/50",
       },
+
       glowIntensity: {
         subtle: "",
         medium: "[--glow-opacity:0.15]",
         strong: "[--glow-opacity:0.3]",
       },
+
       border: {
         default: "border",
         none: "border-0",
         thick: "border-2",
       },
+
       interactive: {
         false: "",
         true: "cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
       },
+
       selected: {
         false: "",
         true: "ring-2 ring-offset-2 ring-offset-slate-950",
       },
     },
+
     compoundVariants: [
       {
         glow: "blue",
@@ -78,7 +88,13 @@ const glassCardVariants = cva(
         glow: "purple",
         class: "ring-purple-500",
       },
+      {
+        selected: true,
+        glow: "orange",
+        class: "ring-orange-500",
+      },
     ],
+
     defaultVariants: {
       variant: "default",
       glow: "none",
@@ -91,22 +107,13 @@ const glassCardVariants = cva(
 );
 
 // ═══════════════════════════════════════════════════════════
-// TIPOS
+// TIPOS (DERIVADOS AUTOMATICAMENTE - MELHOR PRÁTICA)
 // ═══════════════════════════════════════════════════════════
 
-type GlowColor =
-  | "none"
-  | "blue"
-  | "green"
-  | "purple"
-  | "yellow"
-  | "cyan"
-  | "red"
-  | "pink"
-  | "white";
+type GlowColor = NonNullable<VariantProps<typeof glassCardVariants>["glow"]>;
 
 export interface GlassCardProps extends VariantProps<typeof glassCardVariants> {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   onClick?: () => void;
   header?: ReactNode;
@@ -120,11 +127,10 @@ export interface GlassCardProps extends VariantProps<typeof glassCardVariants> {
   badgeColor?: "blue" | "green" | "red" | "amber" | "purple";
   hoverLift?: boolean;
   glow?: GlowColor;
-  intensity?: "subtle" | "medium" | "strong";
 }
 
 // ═══════════════════════════════════════════════════════════
-// COMPONENTE PRINCIPAL
+// COMPONENTE
 // ═══════════════════════════════════════════════════════════
 
 const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -168,7 +174,8 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       purple: "bg-purple-500/20 text-purple-300 border-purple-500/30",
     };
 
-    const Component = animated ? motion.div : motion.div;
+    const Component = motion.div;
+
     const motionProps = animated
       ? {
           initial: { opacity: 0, y: 20 },
@@ -199,21 +206,19 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         onMouseLeave={() => setIsHovered(false)}
         {...(motionProps as HTMLMotionProps<"div">)}
       >
-        {/* Gradient Border Effect */}
+        {/* Gradient Border */}
         {gradientBorder && (
           <div
             className="absolute inset-0 rounded-xl p-[1px] pointer-events-none"
             style={{
               background: `linear-gradient(135deg, ${gradientBorderColors[0]}, ${gradientBorderColors[1]})`,
               mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-              maskComposite: "exclude",
               WebkitMaskComposite: "xor",
-              padding: "1px",
             }}
           />
         )}
 
-        {/* Shine effect on hover */}
+        {/* Hover shine */}
         {hoverLift && !disabled && (
           <div
             className={cn(
@@ -235,7 +240,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
           </div>
         )}
 
-        {/* Loading overlay */}
+        {/* Loading */}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 backdrop-blur-sm rounded-xl">
             <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin" />
@@ -248,17 +253,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         )}
 
         {/* Content */}
-        <div
-          className={cn(
-            "relative z-10",
-            !header && !footer ? "p-5" : null,
-            header && !footer ? "px-5 py-4" : null,
-            !header && footer ? "px-5 py-4" : null,
-            header && footer ? "px-5 py-4" : null,
-          )}
-        >
-          {children}
-        </div>
+        <div className="relative z-10 px-5 py-4">{children}</div>
 
         {/* Footer */}
         {footer && (
@@ -276,7 +271,7 @@ GlassCard.displayName = "GlassCard";
 export { GlassCard };
 
 // ═══════════════════════════════════════════════════════════
-// UTILITÁRIO
+// UTIL
 // ═══════════════════════════════════════════════════════════
 
 function cn(...inputs: (string | undefined | null | false)[]) {

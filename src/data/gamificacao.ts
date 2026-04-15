@@ -328,15 +328,14 @@ export function verificarNovasConquistas(
 }
 
 /**
- * Cria um objeto de progresso inicial para novo usuário.
- * Todos os contadores em zero, sem badges, sem streak.
+ * Cria um objeto de progresso inicial
  */
 export function criarProgressoInicial(): UserProgress {
   return {
     nivel: 1,
     xpTotal: 0,
     xpAtual: 0,
-    xpParaProximoNivel: NIVEIS[1].xpMin, // 100 — XP do nível 2
+    xpParaProximoNivel: 100,
     streakDias: 0,
     ultimoDiaEstudo: null,
     maiorStreak: 0,
@@ -350,11 +349,11 @@ export function criarProgressoInicial(): UserProgress {
       totalQuestoesRespondidas: 0,
       totalAcertos: 0,
       totalErros: 0,
-      recordes: {
-        turboMaisRapido: null,
-        melhorPontuacao: 0,
-      },
       disciplinasDominadas: [],
+    },
+    recordes: {
+      turboMaisRapido: null,
+      melhorPontuacao: 0,
     },
   };
 }

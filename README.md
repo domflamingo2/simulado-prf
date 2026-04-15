@@ -19,7 +19,7 @@
 
 O **PRF Simulado Inteligente** foi criado com um propósito claro:
 
-> Tornar a aprovacao acessivel para qualquer pessoa — mesmo sem dinheiro.
+> Tornar a aprovação acessivel para qualquer pessoa — mesmo sem dinheiro.
 
 E mais:
 
@@ -55,7 +55,7 @@ Isso significa que:
 📂 Localização das questões no projeto:
 
 ```bash
-src/data/questoes.ts
+src/data/questoes/
 ```
 
 ---

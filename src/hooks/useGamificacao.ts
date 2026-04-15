@@ -55,10 +55,6 @@ export interface UseGamificacaoReturn {
 
 // ─── Merge profundo de progresso ───────────────────────────────────────────
 
-/**
- * FIX: merge profundo para `conquistas` — evita que schemas antigos
- * (sem campos novos) sobrescrevam os valores padrão do `criarProgressoInicial`.
- */
 function mergeProgresso(
   base: UserProgress,
   saved: Partial<UserProgress>,
@@ -66,15 +62,17 @@ function mergeProgresso(
   return {
     ...base,
     ...saved,
+
     conquistas: {
       ...base.conquistas,
       ...(saved.conquistas ?? {}),
-      recordes: {
-        ...base.conquistas.recordes,
-        ...(saved.conquistas?.recordes ?? {}),
-      },
     },
-    // badges é array — usa o salvo se existir, senão o padrão
+
+    recordes: {
+      ...base.recordes,
+      ...(saved.recordes ?? {}),
+    },
+
     badges: Array.isArray(saved.badges) ? saved.badges : base.badges,
   };
 }
@@ -296,12 +294,12 @@ export function useGamificacao(): UseGamificacaoReturn {
         const streak = calcularStreak(prev, hoje, ontem);
         xpTotal = xpBase + streak.xpBonus;
 
-        const novosRecordes = { ...prev.conquistas.recordes };
+        const novosRecordes = { ...prev.recordes };
 
         // Recorde de pontuação
         if (
           dados?.pontuacao != null &&
-          dados.pontuacao > prev.conquistas.recordes.melhorPontuacao
+          dados.pontuacao > prev.recordes.melhorPontuacao
         ) {
           novosRecordes.melhorPontuacao = dados.pontuacao;
           xpTotal += XP_REWARDS.NOVO_RECORDE_PONTUACAO ?? 0;
@@ -309,7 +307,7 @@ export function useGamificacao(): UseGamificacaoReturn {
 
         // Recorde de velocidade turbo
         if (dados?.modo === "TURBO" && dados.tempo != null) {
-          const recordeAtual = prev.conquistas.recordes.turboMaisRapido;
+          const recordeAtual = prev.recordes.turboMaisRapido;
           if (!recordeAtual || dados.tempo < recordeAtual) {
             novosRecordes.turboMaisRapido = dados.tempo;
             xpTotal += XP_REWARDS.NOVO_RECORDE_VELOCIDADE ?? 0;
@@ -350,7 +348,6 @@ export function useGamificacao(): UseGamificacaoReturn {
           conquistas: {
             ...prev.conquistas,
             ...contadores,
-            recordes: novosRecordes,
           },
         };
 

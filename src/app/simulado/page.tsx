@@ -22,16 +22,15 @@ import {
   useState,
 } from "react";
 
-// Lazy load componentes pesados
+// Lazy load componentes pesados (apenas os usados no render principal)
 const QuestaoCard = lazy(() => import("@/components/QuestaoCard"));
-const GlassCard = lazy(() =>
-  import("@/components/ui/GlassCard").then((module) => ({
-    default: module.GlassCard,
-  })),
-);
 
-// Imports síncronos
-import { questoes, TEMPO_PROVA_MINUTOS } from "@/data/questoes";
+// GlassCard importado sincronamente — é usado no LoadingScreen que aparece
+// antes de qualquer Suspense envolver a página.
+// FIX: era lazy-loaded mas o LoadingScreen não estava dentro de um Suspense.
+import { GlassCard } from "@/components/ui/GlassCard";
+
+import { questoes, TEMPO_PROVA_MINUTOS } from "@/data";
 import { HistoricoSimulado, Questao, QuestaoRespondida } from "@/data/types";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import {
@@ -53,7 +52,7 @@ const CONFIG = {
   TEMPO_ANALISE_IA: 2000,
   AUTO_SALVAR_INTERVALO: 30000,
   CHAVE_PROGRESSO: "prf_simulado_progresso",
-  EXPIRACAO_PROGRESSO: 24 * 60 * 60 * 1000, // 24 horas
+  EXPIRACAO_PROGRESSO: 24 * 60 * 60 * 1000,
 } as const;
 
 const MODOS_CONFIG = {
@@ -89,6 +88,32 @@ interface SimuladoState {
   ultimoAutoSave: number;
 }
 
+// ─── Helper: lê localStorage suportando formato legado e novo ─────────────────
+function lerHistoricoStorage(): HistoricoSimulado[] {
+  try {
+    const raw = localStorage.getItem("prf_historico");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed) &&
+      "data" in parsed
+    ) {
+      return Array.isArray(parsed.data) ? parsed.data : [];
+    }
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+// ─── Helper: salva histórico no formato legado (array direto) ────────────────
+// Mantém compatibilidade com o useLocalStorage que suporta ambos os formatos.
+function salvarHistoricoStorage(historico: HistoricoSimulado[]): void {
+  localStorage.setItem("prf_historico", JSON.stringify(historico));
+}
+
 // ═══════════════════════════════════════════════════════════
 // COMPONENTES AUXILIARES
 // ═══════════════════════════════════════════════════════════
@@ -101,7 +126,6 @@ function LoadingScreen({
   analise?: ReturnType<typeof gerarAnaliseAdaptativa>;
 }) {
   const isAdaptativo = modo === "adaptativo";
-  const config = MODOS_CONFIG[modo];
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
@@ -123,7 +147,6 @@ function LoadingScreen({
             <p className="text-slate-400 mb-6">
               Estudando seu histórico para personalizar o simulado
             </p>
-
             {analise && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -173,7 +196,7 @@ function LoadingScreen({
 function NavigationDots({
   total,
   atual,
-  questoes,
+  questoes: qs,
   onNavigate,
 }: {
   total: number;
@@ -187,39 +210,37 @@ function NavigationDots({
     0,
     Math.min(atual - Math.floor(maxDots / 2), total - maxDots),
   );
-  const visibleDots = questoes.slice(start, start + showDots);
+  const visibleDots = qs.slice(start, start + showDots);
 
   return (
     <div className="hidden md:flex items-center gap-1.5 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
       {start > 0 && <span className="text-xs text-slate-600">...</span>}
-
       {visibleDots.map((q, idx) => {
         const realIdx = start + idx;
         const isActive = realIdx === atual;
         const isRespondida = q.respostaUsuario !== undefined;
         const isCorreta = isRespondida && q.respostaUsuario === q.resposta;
         const isErrada = isRespondida && q.respostaUsuario !== q.resposta;
-
         return (
           <button
             key={realIdx}
             onClick={() => onNavigate(realIdx)}
-            className={`
-              w-2.5 h-2.5 rounded-full transition-all duration-200
-              ${isActive ? "w-6 bg-blue-400" : ""}
-              ${isCorreta && !isActive ? "bg-emerald-500" : ""}
-              ${isErrada && !isActive ? "bg-rose-500" : ""}
-              ${!isRespondida && !isActive ? "bg-slate-600 hover:bg-slate-500" : ""}
-            `}
+            className={[
+              "w-2.5 h-2.5 rounded-full transition-all duration-200",
+              isActive ? "w-6 bg-blue-400" : "",
+              isCorreta && !isActive ? "bg-emerald-500" : "",
+              isErrada && !isActive ? "bg-rose-500" : "",
+              !isRespondida && !isActive
+                ? "bg-slate-600 hover:bg-slate-500"
+                : "",
+            ].join(" ")}
             aria-label={`Ir para questão ${realIdx + 1}`}
           />
         );
       })}
-
       {start + showDots < total && (
         <span className="text-xs text-slate-600">...</span>
       )}
-
       <span className="ml-2 text-xs text-slate-500">
         {atual + 1}/{total}
       </span>
@@ -257,12 +278,10 @@ function ConfirmExitModal({
           <AlertTriangle className="w-8 h-8 text-amber-400" />
           <h3 className="text-xl font-bold text-white">Sair do simulado?</h3>
         </div>
-
         <p className="text-slate-400 mb-4">
           Você respondeu {respondidas} de {total} questões. Seu progresso foi
           salvo e você pode continuar depois.
         </p>
-
         <div className="flex gap-3">
           <button
             onClick={onCancel}
@@ -282,12 +301,10 @@ function ConfirmExitModal({
   );
 }
 
-function SuccessNotification({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
+// FIX: SuccessNotification sem onClose — o router navega antes dos 3s,
+// causando memory leak. O componente agora é puramente visual; a navegação
+// é controlada pelo pai após um delay menor que o timeout interno.
+function SuccessNotification() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -312,7 +329,6 @@ export default function SimuladoPage() {
   const searchParams = useSearchParams();
   const modo = (searchParams.get("modo") as ModoSimulado) || "completo";
 
-  // Estados
   const [state, setState] = useState<SimuladoState | null>(null);
   const [loading, setLoading] = useState(true);
   const [analiseIA, setAnaliseIA] = useState<ReturnType<
@@ -323,52 +339,113 @@ export default function SimuladoPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
 
-  const { adicionarXP, registrarAtividade } = useGamificacao();
-  const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
+  // FIX: registrarAtividade inclui adicionarXP internamente — não usar adicionarXP separado
+  const { registrarAtividade } = useGamificacao();
+
+  // Ref para o intervalo de auto-save — não precisa ser refeito quando state muda
+  const autoSaveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
+  // Ref para o state atual — usado no auto-save e nos event handlers sem re-criar closures
+  const stateRef = useRef<SimuladoState | null>(null);
   const isSavingRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const config = MODOS_CONFIG[modo];
   const tempoMaximo = modo === "turbo" ? 40 * 60 : TEMPO_PROVA_MINUTOS * 60;
 
-  // ============================================================================
-  // FUNÇÕES DE UTILITÁRIO
-  // ============================================================================
+  // Mantém stateRef sincronizado com state
+  useEffect(() => {
+    stateRef.current = state;
+  });
+
+  // Cleanup no unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // ── Utilitários de progresso ──────────────────────────────────────────────
+
+  const chaveProgresso = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
 
   const salvarProgresso = useCallback(
     (estado: SimuladoState | null) => {
       if (!estado || isSavingRef.current) return;
-
       isSavingRef.current = true;
       try {
-        const chave = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
-        const progressoParaSalvar = {
-          ...estado,
-          ultimoAutoSave: Date.now(),
-        };
-        localStorage.setItem(chave, JSON.stringify(progressoParaSalvar));
-      } catch (error) {
-        console.error("Erro ao salvar progresso:", error);
+        localStorage.setItem(
+          chaveProgresso,
+          JSON.stringify({ ...estado, ultimoAutoSave: Date.now() }),
+        );
+      } catch (err) {
+        console.error("Erro ao salvar progresso:", err);
       } finally {
         isSavingRef.current = false;
       }
     },
-    [modo],
+    [chaveProgresso],
   );
 
   const limparProgresso = useCallback(() => {
-    const chave = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
-    localStorage.removeItem(chave);
-  }, [modo]);
+    localStorage.removeItem(chaveProgresso);
+  }, [chaveProgresso]);
 
-  // ============================================================================
-  // INICIALIZAÇÃO
-  // ============================================================================
+  // ── Auto-save ─────────────────────────────────────────────────────────────
+  // FIX: intervalo criado uma única vez após o state ser inicializado.
+  // Antes era recriado a cada mudança de state — o intervalo nunca chegava a
+  // 30s porque era resetado a cada clique de resposta.
 
   useEffect(() => {
-    const inicializar = async () => {
-      const chave = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
-      const salvo = localStorage.getItem(chave);
+    if (!state) return;
 
+    // Limpa intervalo anterior se existir
+    if (autoSaveIntervalRef.current) clearInterval(autoSaveIntervalRef.current);
+
+    autoSaveIntervalRef.current = setInterval(() => {
+      salvarProgresso(stateRef.current);
+    }, CONFIG.AUTO_SALVAR_INTERVALO);
+
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+        autoSaveIntervalRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!state, salvarProgresso]); // Recria apenas quando state passa de null → não-null
+
+  // Salvar ao sair/esconder aba
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      const s = stateRef.current;
+      if (s?.questoes.some((q) => q.respostaUsuario !== undefined)) {
+        salvarProgresso(s);
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) salvarProgresso(stateRef.current);
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [salvarProgresso]);
+
+  // ── Inicialização ─────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const inicializar = async () => {
+      // Tenta retomar progresso salvo
+      const salvo = localStorage.getItem(chaveProgresso);
       if (salvo) {
         try {
           const parsed: SimuladoState = JSON.parse(salvo);
@@ -379,30 +456,34 @@ export default function SimuladoPage() {
             const continuar = window.confirm(
               "Você tem um simulado em andamento. Deseja continuar de onde parou?",
             );
-            if (continuar) {
+            if (continuar && !cancelled) {
               setState(parsed);
               setLoading(false);
               return;
             }
           }
-          limparProgresso();
         } catch {
-          limparProgresso();
+          // dado corrompido
         }
+        limparProgresso();
       }
 
-      // Iniciar novo simulado
+      // Inicia novo simulado
       try {
         let selecionadas: Questao[] = [];
         let metadados: SelecaoAdaptativaResult["metadados"] | null = null;
 
         if (modo === "adaptativo") {
-          const historicoRaw = localStorage.getItem("prf_historico");
-          const historico = historicoRaw ? JSON.parse(historicoRaw) : [];
+          // FIX: usa lerHistoricoStorage que suporta ambos os formatos
+          const historico = lerHistoricoStorage();
           const analise = gerarAnaliseAdaptativa(historico, questoes);
-          setAnaliseIA(analise);
 
-          await new Promise((r) => setTimeout(r, CONFIG.TEMPO_ANALISE_IA));
+          if (!cancelled) setAnaliseIA(analise);
+
+          await new Promise<void>((r) =>
+            setTimeout(r, CONFIG.TEMPO_ANALISE_IA),
+          );
+          if (cancelled) return;
 
           const resultado = selecionarQuestoesAdaptativas(
             questoes,
@@ -417,11 +498,16 @@ export default function SimuladoPage() {
           });
         }
 
+        if (cancelled) return;
+
+        const questoesIniciais: QuestaoRespondida[] = selecionadas.map((q) => ({
+          ...q,
+          disciplina: q.disciplina || "GERAL",
+          respostaUsuario: undefined,
+        }));
+
         const novoState: SimuladoState = {
-          questoes: selecionadas.map((q) => ({
-            ...q,
-            respostaUsuario: undefined,
-          })),
+          questoes: questoesIniciais,
           questaoAtual: 0,
           tempoInicio: Date.now(),
           modo,
@@ -437,141 +523,116 @@ export default function SimuladoPage() {
             JSON.stringify(metadados),
           );
         }
-      } catch (error) {
-        console.error("Erro ao inicializar simulado:", error);
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Erro ao inicializar simulado:", err);
         alert("Erro ao carregar questões. Tente novamente.");
         router.push("/");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     inicializar();
-  }, [modo, router, limparProgresso]);
-
-  // ============================================================================
-  // AUTO-SALVAMENTO
-  // ============================================================================
-
-  useEffect(() => {
-    if (!state) return;
-
-    autoSaveRef.current = setInterval(() => {
-      salvarProgresso(state);
-    }, CONFIG.AUTO_SALVAR_INTERVALO);
-
     return () => {
-      if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+      cancelled = true;
     };
-  }, [state, salvarProgresso]);
+  }, [modo, router, limparProgresso, chaveProgresso]);
 
-  // Salvar ao sair da página
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (
-        state &&
-        state.questoes.some((q) => q.respostaUsuario !== undefined)
-      ) {
-        salvarProgresso(state);
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [state, salvarProgresso]);
+  // FIX: handleResposta usa updater de setState para evitar closure stale.
+  // FIX: cria novo objeto para a questão (imutável) em vez de mutar in-place.
+  const handleResposta = useCallback((resposta: "CERTO" | "ERRADO" | null) => {
+    setState((prev) => {
+      if (!prev) return null;
 
-  // Salvar ao esconder a aba
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && state) {
-        salvarProgresso(state);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [state, salvarProgresso]);
+      const idx = prev.questaoAtual;
+      const questaoAtualObj = prev.questoes[idx];
 
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
+      // Imutabilidade: cria novo array e novo objeto de questão
+      const novasQuestoes = prev.questoes.map((q, i) =>
+        i === idx ? { ...q, respostaUsuario: resposta } : q,
+      );
 
-  const handleResposta = useCallback(
-    (resposta: "CERTO" | "ERRADO" | null) => {
-      if (!state) return;
-
-      const novasQuestoes = [...state.questoes];
-      const questaoAtual = novasQuestoes[state.questaoAtual];
-
-      questaoAtual.respostaUsuario = resposta;
-
-      setState((prev) => (prev ? { ...prev, questoes: novasQuestoes } : null));
-
-      adicionarXP(CONFIG.XP_POR_QUESTAO);
-
-      if (resposta !== questaoAtual.resposta) {
-        setShakeQuestao(state.questaoAtual);
+      // Vibração visual em erro
+      if (resposta && resposta !== questaoAtualObj.resposta) {
+        setShakeQuestao(idx);
         setTimeout(() => setShakeQuestao(null), 500);
       }
 
-      setTimeout(() => {
-        if (state.questaoAtual < state.questoes.length - 1) {
-          setState((prev) =>
-            prev ? { ...prev, questaoAtual: prev.questaoAtual + 1 } : null,
-          );
-        }
-      }, 300);
-    },
-    [state, adicionarXP],
-  );
+      // Avança automaticamente para a próxima questão
+      const proximoIdx = idx < prev.questoes.length - 1 ? idx + 1 : idx;
 
+      return {
+        ...prev,
+        questoes: novasQuestoes,
+        questaoAtual: proximoIdx,
+      };
+    });
+  }, []);
+
+  // FIX: handleNavegar agora recebe a assinatura correta do QuestaoCard
+  // ("anterior" | "proxima" | "finalizar") além de number para NavigationDots.
   const handleNavegar = useCallback(
-    (destino: "anterior" | "proxima" | number) => {
-      if (!state) return;
-
-      let novoIndex: number;
-      if (typeof destino === "number") {
-        novoIndex = Math.min(Math.max(0, destino), state.questoes.length - 1);
-      } else {
-        novoIndex =
-          destino === "anterior"
-            ? Math.max(0, state.questaoAtual - 1)
-            : Math.min(state.questoes.length - 1, state.questaoAtual + 1);
+    (destino: "anterior" | "proxima" | "finalizar" | number) => {
+      if (destino === "finalizar") {
+        // Chama finalizarSimulado de forma lazy para evitar dependência circular
+        // na closure — finalizarSimulado é definido abaixo e usa state via stateRef
+        finalizarSimuladoRef.current?.();
+        return;
       }
 
-      setState((prev) => (prev ? { ...prev, questaoAtual: novoIndex } : null));
+      setState((prev) => {
+        if (!prev) return null;
+        let novoIndex: number;
+        if (typeof destino === "number") {
+          novoIndex = Math.min(Math.max(0, destino), prev.questoes.length - 1);
+        } else {
+          novoIndex =
+            destino === "anterior"
+              ? Math.max(0, prev.questaoAtual - 1)
+              : Math.min(prev.questoes.length - 1, prev.questaoAtual + 1);
+        }
+        return novoIndex !== prev.questaoAtual
+          ? { ...prev, questaoAtual: novoIndex }
+          : prev;
+      });
     },
-    [state],
+    [],
   );
 
-  const handleMarcarRevisao = useCallback(() => {
-    if (!state) return;
-
-    const numero = state.questaoAtual + 1;
+  const handleMarcarRevisao = useCallback((numero?: number) => {
     setState((prev) => {
       if (!prev) return null;
-      const jaMarcada = prev.marcadasParaRevisao.includes(numero);
+      const n = numero ?? prev.questaoAtual + 1;
+      const jaMarcada = prev.marcadasParaRevisao.includes(n);
       return {
         ...prev,
         marcadasParaRevisao: jaMarcada
-          ? prev.marcadasParaRevisao.filter((n) => n !== numero)
-          : [...prev.marcadasParaRevisao, numero],
+          ? prev.marcadasParaRevisao.filter((x) => x !== n)
+          : [...prev.marcadasParaRevisao, n],
       };
     });
-  }, [state]);
+  }, []);
+
+  // Ref para que handleNavegar possa chamar finalizarSimulado sem dependência circular
+  const finalizarSimuladoRef = useRef<(() => void) | null>(null);
 
   const finalizarSimulado = useCallback(async () => {
-    if (!state || isFinalizing) return;
+    const currentState = stateRef.current;
+    if (!currentState || isFinalizing) return;
 
     setIsFinalizing(true);
 
     try {
-      const tempoTotal = Math.floor((Date.now() - state.tempoInicio) / 1000);
-      const estatisticas = calcularEstatisticas(state.questoes, tempoTotal);
-
-      adicionarXP(estatisticas.acertos * CONFIG.XP_POR_ACERTO);
+      const tempoTotal = Math.floor(
+        (Date.now() - currentState.tempoInicio) / 1000,
+      );
+      const estatisticas = calcularEstatisticas(
+        currentState.questoes,
+        tempoTotal,
+      );
 
       const modoEnum =
         modo === "turbo"
@@ -596,22 +657,21 @@ export default function SimuladoPage() {
           desempenhoPorDisciplina: estatisticas.desempenhoPorDisciplina,
           taxaResposta: estatisticas.taxaResposta,
         },
-        questoes: state.questoes.map((q) => ({
+        questoes: currentState.questoes.map((q) => ({
           ...q,
-          disciplina: q.disciplina || "Geral",
+          disciplina: q.disciplina || "GERAL",
         })),
-        xpGanho: estatisticas.acertos * CONFIG.XP_POR_ACERTO,
+        // FIX: xpGanho calculado por registrarAtividade — não duplicar aqui
+        xpGanho: 0,
       };
 
-      const historicoExistenteRaw = localStorage.getItem("prf_historico");
-      const historicoExistente = historicoExistenteRaw
-        ? JSON.parse(historicoExistenteRaw)
-        : [];
-
+      // FIX: usa lerHistoricoStorage que suporta ambos os formatos
+      const historicoExistente = lerHistoricoStorage();
       const novoHistorico = [historico, ...historicoExistente];
-      localStorage.setItem("prf_historico", JSON.stringify(novoHistorico));
 
-      // Disparar evento de storage
+      salvarHistoricoStorage(novoHistorico);
+
+      // Dispara evento para sincronizar outras abas
       window.dispatchEvent(
         new StorageEvent("storage", {
           key: "prf_historico",
@@ -619,56 +679,62 @@ export default function SimuladoPage() {
         }),
       );
 
-      // Registrar atividade
-      registrarAtividade("simulado", {
+      // FIX: registrarAtividade já chama adicionarXP internamente.
+      // Não chamar adicionarXP separado para evitar XP duplo.
+      const { xpGanho } = registrarAtividade("simulado", {
         pontuacao: estatisticas.pontuacao,
+        acertos: estatisticas.acertos,
+        erros: estatisticas.erros,
         modo: modoEnum,
         tempo: tempoTotal,
       });
 
-      // Limpar progresso
+      // Atualiza xpGanho no histórico salvo
+      historico.xpGanho = xpGanho;
+      salvarHistoricoStorage([historico, ...historicoExistente]);
+
       limparProgresso();
 
-      setShowSuccess(true);
-      setTimeout(() => {
-        router.push("/resultado");
-      }, 1500);
-    } catch (error) {
-      console.error("Erro ao finalizar simulado:", error);
-      alert("Erro ao salvar resultados. Seu progresso foi salvo localmente.");
-      router.push("/");
-    } finally {
-      setIsFinalizing(false);
-    }
-  }, [
-    state,
-    modo,
-    adicionarXP,
-    registrarAtividade,
-    router,
-    limparProgresso,
-    isFinalizing,
-  ]);
+      if (isMountedRef.current) setShowSuccess(true);
 
+      // FIX: navega após 1s — componente ainda está montado neste ponto.
+      // SuccessNotification não precisa de onClose pois será desmontada pelo router.
+      setTimeout(() => {
+        if (isMountedRef.current) router.push("/resultado");
+      }, 1000);
+    } catch (err) {
+      console.error("Erro ao finalizar simulado:", err);
+      alert("Erro ao salvar resultados. Tente novamente.");
+      if (isMountedRef.current) setIsFinalizing(false);
+    }
+  }, [modo, registrarAtividade, limparProgresso, router, isFinalizing]);
+
+  // Mantém a ref atualizada
+  useEffect(() => {
+    finalizarSimuladoRef.current = finalizarSimulado;
+  });
+
+  // FIX: handleSair não limpa o progresso — apenas salva e sai.
+  // Limpar o progresso aqui anulava o salvamento imediatamente anterior.
   const handleSair = useCallback(() => {
-    if (state) {
-      const respondidas = state.questoes.filter(
+    const s = stateRef.current;
+    if (s) {
+      const respondidas = s.questoes.filter(
         (q) => q.respostaUsuario !== undefined,
       ).length;
       if (respondidas > 0) {
-        salvarProgresso(state);
+        salvarProgresso(s);
+      } else {
+        limparProgresso(); // Sem respostas → não vale a pena salvar
       }
-      limparProgresso();
     }
     router.push("/");
-  }, [state, router, salvarProgresso, limparProgresso]);
+  }, [router, salvarProgresso, limparProgresso]);
 
-  // ============================================================================
-  // RENDER
-  // ============================================================================
+  // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return <LoadingScreen modo={modo} analise={analiseIA || undefined} />;
+    return <LoadingScreen modo={modo} analise={analiseIA ?? undefined} />;
   }
 
   if (!state || state.questoes.length === 0) {
@@ -697,9 +763,7 @@ export default function SimuladoPage() {
             onCancel={() => setShowExitConfirm(false)}
           />
         )}
-        {showSuccess && (
-          <SuccessNotification onClose={() => setShowSuccess(false)} />
-        )}
+        {showSuccess && <SuccessNotification />}
       </AnimatePresence>
 
       {/* Header */}
@@ -736,13 +800,16 @@ export default function SimuladoPage() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={handleMarcarRevisao}
+                onClick={() => handleMarcarRevisao()}
                 className={`p-2 rounded-lg transition-colors ${
                   state.marcadasParaRevisao.includes(state.questaoAtual + 1)
                     ? "bg-amber-500/20 text-amber-400"
                     : "bg-slate-800 text-slate-400 hover:text-amber-400"
                 }`}
-                title="Marcar para revisão depois"
+                title="Marcar para revisão (M)"
+                aria-pressed={state.marcadasParaRevisao.includes(
+                  state.questaoAtual + 1,
+                )}
               >
                 <Flag
                   className={`w-5 h-5 ${
@@ -754,12 +821,12 @@ export default function SimuladoPage() {
               </button>
 
               <div className="text-xs text-slate-500 hidden lg:block">
-                {Math.floor(tempoMaximo / 60)}min restantes
+                {Math.floor(tempoMaximo / 60)}min máx.
               </div>
             </div>
           </div>
 
-          {/* Progress bars */}
+          {/* Barra de progresso */}
           <div className="mt-3 space-y-1">
             <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
               <motion.div
@@ -785,14 +852,16 @@ export default function SimuladoPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{
               opacity: 1,
-              x: 0,
-              ...(shakeQuestao === state.questaoAtual && {
-                x: [0, -10, 10, -10, 10, 0],
-                transition: { duration: 0.4 },
-              }),
+              x:
+                shakeQuestao === state.questaoAtual
+                  ? [0, -10, 10, -10, 10, 0]
+                  : 0,
+              transition:
+                shakeQuestao === state.questaoAtual
+                  ? { duration: 0.4 }
+                  : { duration: 0.2 },
             }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
             className="will-change-transform"
           >
             <Suspense
@@ -805,6 +874,8 @@ export default function SimuladoPage() {
                 numero={state.questaoAtual + 1}
                 total={state.questoes.length}
                 onResposta={handleResposta}
+                // FIX: onNavegar agora recebe assinatura compatível com QuestaoCard
+                onNavegar={handleNavegar}
                 mostrarCorrecao={false}
                 marcadasParaRevisao={state.marcadasParaRevisao}
                 onMarcarRevisao={handleMarcarRevisao}
@@ -853,12 +924,11 @@ export default function SimuladoPage() {
                 ) : (
                   <CheckCircle className="w-5 h-5" />
                 )}
-                {isFinalizing ? "Finalizando..." : "Finalizar"}
+                {isFinalizing ? "Finalizando…" : "Finalizar"}
               </button>
             )}
           </div>
 
-          {/* Indicador mobile */}
           <div className="md:hidden mt-3 text-center text-xs text-slate-500">
             {respondidas} de {state.questoes.length} respondidas
             {respondidas > 0 && ` • ${percentualProgresso.toFixed(0)}%`}
@@ -867,16 +937,12 @@ export default function SimuladoPage() {
       </div>
 
       {/* Auto-save indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="fixed bottom-24 right-4 z-20"
-      >
+      <div className="fixed bottom-24 right-4 z-20">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-400">
           <Save className="w-3 h-3" />
-          <span>Auto-salvando...</span>
+          <span>Auto-salvando a cada 30s</span>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

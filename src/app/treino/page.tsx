@@ -1,6 +1,6 @@
 "use client";
 
-import { questoes } from "@/data/questoes";
+import { questoes } from "@/data";
 import { Disciplina } from "@/data/types";
 import { embaralhar } from "@/lib/simulado-logic";
 import { AnimatePresence, motion } from "framer-motion";
