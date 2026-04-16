@@ -25,6 +25,8 @@ import {
   useState,
 } from "react";
 
+import { NavegacaoDirecao } from "@/types/simulado";
+
 // ============================================================================
 // TYPES & CONFIGS
 // ============================================================================
@@ -34,7 +36,7 @@ export interface QuestaoCardProps {
   numero: number;
   total: number;
   onResposta: (resposta: "CERTO" | "ERRADO" | null) => void;
-  onNavegar?: (direcao: "anterior" | "proxima" | "finalizar") => void;
+  onNavegar?: (direcao: NavegacaoDirecao) => void;
   mostrarCorrecao?: boolean;
   tempoRestante?: string;
   marcadasParaRevisao?: number[];
