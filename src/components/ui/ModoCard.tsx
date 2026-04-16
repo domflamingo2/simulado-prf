@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { LucideIcon } from "lucide-react";
 import Link from "next/link";
 
-type ModoVariant =
+export type ModoVariant =
   | "blue"
   | "amber"
   | "emerald"

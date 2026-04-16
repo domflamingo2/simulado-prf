@@ -78,7 +78,7 @@ export const linksRapidos: LinkItem[] = [
     description: "Guia da plataforma",
   },
   {
-    href: "/questoes",
+    href: "/banco",
     label: "Banco de Questões",
     icon: BookOpen,
     description: "+5.000 questões",

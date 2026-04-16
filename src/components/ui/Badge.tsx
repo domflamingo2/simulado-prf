@@ -553,7 +553,7 @@ export function BadgeShowcase({
 
 // Componente de notificação de novo badge
 interface NewBadgeNotificationProps {
-  badgeType: BadgeType;
+  badgeType: BadgeType | null;
   onClose?: () => void;
 }
 
@@ -561,6 +561,11 @@ export function NewBadgeNotification({
   badgeType,
   onClose,
 }: NewBadgeNotificationProps) {
+  // Se não houver badgeType ou não existir no database, não renderiza
+  if (!badgeType || !BADGE_DATABASE[badgeType]) {
+    return null;
+  }
+
   const config = BADGE_DATABASE[badgeType];
 
   return (
