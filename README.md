@@ -35,7 +35,7 @@ Este projeto e um exemplo real de como a IA pode acelerar o desenvolvimento:
 - 🎨 UI/UX criada com auxilio de IA
 - 🧠 Logica e analise adaptativa com IA
 - ⚡ Otimizacoes e melhorias continuas com IA
-- 📚 **Geracao de questões com IA**
+- 📚 **Geração de questões com IA**
 
 👉 Ou seja:  
 **um projeto moderno, inteligente e construido com as ferramentas do futuro.**

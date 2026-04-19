@@ -1,359 +1,475 @@
 import { Questao } from "../types";
 
 export const questoesDireitoAdministrativo: Questao[] = [
+  // ============================================================
+  // TÓPICO 1: ATO ADMINISTRATIVO
+  // ============================================================
   {
-    id: "adm-001-v2",
+    id: "diradm-001",
     disciplina: "DIREITO_ADMINISTRATIVO",
     enunciado:
-      "O ato administrativo perfeito é aquele que reuniu todos os elementos e pressupostos legais para a sua validade (competência, finalidade, forma, objeto e motivo), podendo ser atacado apenas por meio de ação judicial própria, salvo se houver vício insanável.",
+      "Os requisitos do ato administrativo são competência, finalidade, forma, motivo e objeto, sendo a falta de qualquer deles capaz de gerar nulidade.",
     resposta: "CERTO",
     explicacao:
-      "Ato perfeito: requisitos de validade presentes (art. 2º, Lei 9.784/99). É válido e produz efeitos. Só pode ser desconstituído por meio de ação judicial (anulação) ou administrativo (revogação/anulação), dependendo do vício. Se houver vício insanável (incompetência absoluta, objeto impossível), é nulo.",
-    dificuldade: 2,
-    tags: [
-      "ato administrativo",
-      "ato perfeito",
-      "requisitos de validade",
-      "Lei 9.784/99",
-      "vício",
-    ],
-    fonte_legal: ["Art. 2º, Lei 9.784/1999"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Ato administrativo - conceito e requisitos",
-  },
-  {
-    id: "adm-002-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "O ato administrativo viciado em motivo (erro, dolo, coação) é anulável, podendo ser convalidado pelo administrador se o vício for sanável, ou seja, se for possível suprir o motivo defeituoso por outro legítimo.",
-    resposta: "ERRADO",
-    explicacao:
-      "Vício de motivo (art. 4º, § 2º, Lei 9.784/99) gera anulabilidade, mas NÃO é convalidável. A convalidação (art. 5º, Lei 9.784/99) aplica-se apenas a vícios formais sanáveis. Vício de motivo é insanável (subjetivo, interno). O ato deve ser anulado, não convalidado.",
-    dificuldade: 3,
-    tags: [
-      "ato administrativo",
-      "vício de motivo",
-      "anulabilidade",
-      "convalidação",
-      "Lei 9.784/99",
-    ],
-    fonte_legal: ["Art. 4º, § 2º, e art. 5º, Lei 9.784/1999"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Ato administrativo - invalidação",
-  },
-  {
-    id: "adm-003-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A desapropriação por utilidade pública ou interesse social requer prévia e justa indenização em dinheiro, conforme art. 5º, XXIV, da CF/88, sendo vedada a indenização em títulos da dívida pública ou em bens de qualquer natureza.",
-    resposta: "CERTO",
-    explicacao:
-      "Art. 5º, XXIV, CF/88: 'prévia e justa indenização em dinheiro'. A Constituição exige indenização em dinheiro, não em títulos ou bens. A Lei 4.504/1964 (Estatuto da Terra) permitia indenização em títulos para reforma agrária, mas a EC 26/2000 e EC 64/2010 alteraram, mantendo o dinheiro como regra.",
-    dificuldade: 2,
-    tags: [
-      "desapropriação",
-      "utilidade pública",
-      "indenização em dinheiro",
-      "art. 5º XXIV CF",
-    ],
-    fonte_legal: ["Art. 5º, XXIV, CF/88"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Poderes da administração",
-  },
-  {
-    id: "adm-004-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "O servidor público estável somente pode ser demitido por decisão judicial transitada em julgado, sendo vedada a demissão por processo administrativo disciplinar (PAD), conforme garantia constitucional da estabilidade (art. 41, CF/88).",
-    resposta: "ERRADO",
-    explicacao:
-      "Art. 41, CF/88: estabilidade após 3 anos de efetivo exercício. A demissão do estável requer processo administrativo disciplinar (PAD) com ampla defesa e contraditório (art. 135 e seguintes, Lei 8.112/90), mas NÃO exige decisão judicial prévia. A demissão é ato administrativo, não judicial.",
-    dificuldade: 3,
-    tags: [
-      "estabilidade",
-      "demissão",
-      "processo administrativo disciplinar",
-      "art. 41 CF",
-      "Lei 8.112/90",
-    ],
-    fonte_legal: ["Art. 41, CF/88", "Art. 135 e seguintes, Lei 8.112/1990"],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Agentes administrativos",
-  },
-  {
-    id: "adm-005-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A licitação é obrigatória para a contratação de obras, serviços, compras e alienações pela administração pública direta, autárquica e fundacional, conforme princípio constitucional da isonomia e da moralidade administrativa, salvo nas hipóteses de dispensa ou inexigibilidade previstas em lei.",
-    resposta: "CERTO",
-    explicacao:
-      "Art. 37, XXI, CF/88: obras, serviços, compras e alienações devem ser precedidas de licitação. Lei 14.133/2021 (nova Lei de Licitações) regulamenta. Exceções: dispensa (art. 74) e inexigibilidade (art. 72) quando inviável a competição.",
+      "São os 5 elementos essenciais (COMP-FIN-FOR-MOT-OBJ). A ausência ou vício em qualquer requisito torna o ato nulo, sujeito à anulação.",
     dificuldade: 1,
-    tags: [
-      "licitação",
-      "princípio da isonomia",
-      "art. 37 XXI CF",
-      "Lei 14.133/2021",
-      "dispensa",
-    ],
-    fonte_legal: ["Art. 37, XXI, CF/88", "Lei 14.133/2021"],
+    tags: ["ato administrativo", "requisitos", "nulidade"],
+    fonte_legal: ["Doutrina clássica (Meirelles, Carvalho Filho)"],
     banca_referencia: "CEBRASPE",
-    assunto: "Licitações e contratos",
+    assunto: "Ato Administrativo - Requisitos",
+    ano: 2023,
   },
   {
-    id: "adm-006-v2",
+    id: "diradm-002",
     disciplina: "DIREITO_ADMINISTRATIVO",
     enunciado:
-      "O contrato administrativo pode ser alterado unilateralmente pela administração pública por interesse público, mediante prévia e justa indenização ao contratado pelos prejuízos decorrentes da alteração, conforme poderes exorbitantes da administração.",
+      "A autoexecutoriedade é atributo que permite à Administração executar seus atos sem necessidade de autorização judicial prévia, nos casos previstos em lei.",
     resposta: "CERTO",
     explicacao:
-      "Poderes exorbitantes do contrato administrativo: alteração unilateral (modificação do contrato por interesse público), rescisão unilateral, fiscalização reforçada. A alteração gera direito a indenização (equilíbrio econômico-financeiro).",
+      "Autoexecutoriedade: execução direta de atos administrativos (ex: apreensão de mercadorias, interdição de estabelecimento) sem intervenção do Judiciário.",
     dificuldade: 2,
+    tags: ["ato administrativo", "atributos", "autoexecutoriedade"],
+    banca_referencia: "FGV",
+    assunto: "Ato Administrativo - Atributos",
+    ano: 2024,
+  },
+  {
+    id: "diradm-003",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A anulação do ato administrativo produz efeitos retroativos (ex tunc), enquanto a revogação opera efeitos prospectivos (ex nunc).",
+    resposta: "CERTO",
+    explicacao:
+      "Anulação = ilegalidade (retroage para desfazer). Revogação = conveniência/oportunidade (não retroage, respeita atos consumados e direitos adquiridos).",
+    dificuldade: 2,
+    tags: ["invalidação", "anulação", "revogação", "efeitos"],
+    fonte_legal: ["Súmula 473 STF", "Lei 9.784/1999"],
+    banca_referencia: "FCC",
+    assunto: "Ato Administrativo - Invalidação",
+    ano: 2023,
+  },
+  {
+    id: "diradm-004",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O prazo decadencial para a Administração anular atos administrativos que gerem efeitos favoráveis aos destinatários é de 5 anos, salvo comprovada má-fé.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 54 da Lei nº 9.784/1999: decadência de 5 anos para atos favoráveis. Se houver má-fé do beneficiário, a Administração pode anular a qualquer tempo.",
+    dificuldade: 3,
+    tags: ["prescrição", "decadência", "lei 9.784/1999", "ato favorável"],
+    fonte_legal: ["Art. 54, Lei 9.784/1999"],
+    banca_referencia: "FGV",
+    assunto: "Ato Administrativo - Prescrição/Decadência",
+    ano: 2024,
+  },
+
+  // ============================================================
+  // TÓPICO 2: CONTROLE DA ADMINISTRAÇÃO PÚBLICA
+  // ============================================================
+  {
+    id: "diradm-005",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O controle judicial da administração pública limita-se à análise da legalidade, sendo vedado ao Judiciário adentrar o mérito administrativo.",
+    resposta: "CERTO",
+    explicacao:
+      "Separação de poderes: Judiciário controla conformidade com a lei, mas não substitui a discricionariedade (mérito) do administrador.",
+    dificuldade: 1,
+    tags: ["controle judicial", "mérito administrativo", "legalidade"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Controle da Administração Pública",
+    ano: 2023,
+  },
+  {
+    id: "diradm-006",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O Congresso Nacional pode sustar atos normativos do Poder Executivo que exorbitem do poder regulamentar, mediante decreto legislativo.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 49, V, da CF/88: controle legislativo externo sobre atos normativos do Executivo que ultrapassem os limites da lei.",
+    dificuldade: 2,
+    tags: ["controle legislativo", "decreto legislativo", "CF/88"],
+    fonte_legal: ["Art. 49, V, CF/88"],
+    banca_referencia: "FCC",
+    assunto: "Controle Legislativo",
+    ano: 2023,
+  },
+  {
+    id: "diradm-007",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O controle finalístico ou tutela administrativa é exercido pela Administração Direta sobre as entidades da Administração Indireta.",
+    resposta: "CERTO",
+    explicacao:
+      "Controle finalístico (tutela): vínculo de supervisão ministerial para verificar legalidade e alinhamento à política pública, sem hierarquia.",
+    dificuldade: 2,
+    tags: ["controle administrativo", "tutela", "administração indireta"],
+    banca_referencia: "VUNESP",
+    assunto: "Controle Administrativo",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 3: AGENTES ADMINISTRATIVOS E PROCESSO ADMINISTRATIVO
+  // ============================================================
+  {
+    id: "diradm-008",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "Na Lei nº 8.112/1990, a posse é o vínculo entre o servidor e o cargo, enquanto o exercício é o desempenho efetivo das atribuições.",
+    resposta: "CERTO",
+    explicacao:
+      "Posse: ato de investidura (15 dias para nomeação). Exercício: início das atividades (30 dias após a posse).",
+    dificuldade: 1,
+    tags: ["posse", "exercício", "lei 8.112/1990"],
+    fonte_legal: ["Arts. 13 e 15, Lei 8.112/1990"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Agentes Administrativos",
+    ano: 2023,
+  },
+  {
+    id: "diradm-009",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O processo administrativo federal deve ser iniciado de ofício ou a requerimento do interessado, observados os princípios da legalidade e do contraditório.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 2º da Lei 9.784/1999: instauração por iniciativa da Administração ou pedido do particular, com garantia ampla de defesa e motivação.",
+    dificuldade: 1,
+    tags: ["processo administrativo", "instauração", "lei 9.784/1999"],
+    fonte_legal: ["Art. 2º, Lei 9.784/1999"],
+    banca_referencia: "FGV",
+    assunto: "Processo Administrativo - Conceito e Princípios",
+    ano: 2024,
+  },
+  {
+    id: "diradm-010",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "As fases do processo administrativo incluem instauração, instrução, decisão e recursos, sendo vedada a produção de provas de ofício pela Administração.",
+    resposta: "ERRADO",
+    explicacao:
+      "A Administração pode determinar diligências e produzir provas de ofício para melhor esclarecer os fatos (princípio da verdade material).",
+    dificuldade: 2,
+    tags: ["fases do processo", "instrução", "verdade material"],
+    banca_referencia: "FCC",
+    assunto: "Processo Administrativo - Fases",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 4: PODERES DA ADMINISTRAÇÃO
+  // ============================================================
+  {
+    id: "diradm-011",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O poder disciplinar permite à Administração apurar infrações e aplicar penalidades aos servidores públicos e a particulares que mantenham vínculo jurídico com ela.",
+    resposta: "CERTO",
+    explicacao:
+      "Poder disciplinar é interno (servidores) e externo (particulares com vínculo específico, ex: concessionários, permissionários).",
+    dificuldade: 2,
+    tags: ["poder disciplinar", "poderes administrativos", "sanção"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Poderes da Administração",
+    ano: 2023,
+  },
+  {
+    id: "diradm-012",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O poder regulamentar permite ao Chefe do Executivo editar decretos para explicar a lei e fiel execução, vedada a inovação na ordem jurídica.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 84, IV, CF/88: decretos regulamentares não podem criar direitos ou obrigações não previstos na lei.",
+    dificuldade: 1,
+    tags: ["poder regulamentar", "decreto", "CF/88"],
+    fonte_legal: ["Art. 84, IV, CF/88"],
+    banca_referencia: "FGV",
+    assunto: "Poderes da Administração",
+    ano: 2024,
+  },
+  {
+    id: "diradm-013",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O poder hierárquico confere à Administração a faculdade de aplicar penalidades funcionais por descumprimento de deveres internos.",
+    resposta: "ERRADO",
+    explicacao:
+      "Aplicação de sanções é atributo do poder disciplinar. O poder hierárquico organiza e coordena a estrutura administrativa.",
+    dificuldade: 2,
+    tags: ["poder hierárquico vs disciplinar", "confusão conceitual"],
+    banca_referencia: "VUNESP",
+    assunto: "Poderes da Administração",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 5: PRINCÍPIOS, RESPONSABILIDADE E IMPROBIDADE
+  // ============================================================
+  {
+    id: "diradm-014",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O princípio da legalidade na administração pública significa que o administrador só pode agir conforme a lei autoriza ou determina.",
+    resposta: "CERTO",
+    explicacao:
+      "Diferente do particular (que pode tudo que a lei não proíbe), o administrador está estritamente vinculado à lei (reserva legal).",
+    dificuldade: 1,
+    tags: ["princípio da legalidade", "administração pública"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Princípios da Administração",
+    ano: 2023,
+  },
+  {
+    id: "diradm-015",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A responsabilidade civil do Estado é objetiva, fundamentada na teoria do risco administrativo, exigindo apenas ação/omissão estatal, dano e nexo causal.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 37, §6º, CF/88: independe de dolo ou culpa. Exceções: culpa exclusiva da vítima ou caso fortuito/força maior.",
+    dificuldade: 2,
+    tags: ["responsabilidade objetiva", "risco administrativo", "CF/88"],
+    fonte_legal: ["Art. 37, §6º, CF/88"],
+    banca_referencia: "FCC",
+    assunto: "Responsabilidade Civil do Estado",
+    ano: 2024,
+  },
+  {
+    id: "diradm-016",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "Após a Lei nº 14.230/2021, a configuração de ato de improbidade administrativa exige a comprovação de dolo específico do agente.",
+    resposta: "CERTO",
+    explicacao:
+      "Nova LIA: elimina a modalidade culposa. Exige intenção livre e consciente de alcançar o resultado ilícito (art. 1º, §1º).",
+    dificuldade: 3,
+    tags: ["improbidade administrativa", "lei 14.230/2021", "dolo específico"],
+    fonte_legal: ["Art. 1º, §1º, Lei 8.429/1992 (alterada pela 14.230/21)"],
+    banca_referencia: "FGV",
+    assunto: "Improbidade Administrativa",
+    ano: 2024,
+  },
+
+  // ============================================================
+  // TÓPICO 6: SERVIÇOS PÚBLICOS
+  // ============================================================
+  {
+    id: "diradm-017",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "Os serviços públicos de natureza uti universi são prestados de forma geral e indivisível, custeados por impostos, como segurança e iluminação pública.",
+    resposta: "CERTO",
+    explicacao:
+      "Uti universi: benefício difuso à coletividade. Uti singuli: benefício individual e mensurável (ex: água, energia), custeados por taxas/tarifas.",
+    dificuldade: 2,
+    tags: ["serviços públicos", "uti universi", "uti singuli"],
+    banca_referencia: "FCC",
+    assunto: "Serviços Públicos - Classificação",
+    ano: 2023,
+  },
+  {
+    id: "diradm-018",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A autorização de serviço público é ato precário, discricionário e unilateral, podendo ser revogada a qualquer momento pela Administração.",
+    resposta: "CERTO",
+    explicacao:
+      "Diferente da concessão/permissão (contrato), a autorização é ato administrativo unilateral, sem indenização em caso de revogação.",
+    dificuldade: 3,
+    tags: ["autorização", "concessão", "permissão", "precariedade"],
+    banca_referencia: "FGV",
+    assunto: "Serviços Públicos - Formas de Prestação",
+    ano: 2024,
+  },
+
+  // ============================================================
+  // TÓPICO 7: ADMINISTRAÇÃO DIRETA E INDIRETA
+  // ============================================================
+  {
+    id: "diradm-019",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A desconcentração administrativa consiste na criação de novas pessoas jurídicas, enquanto a descentralização distribui competências internamente no mesmo ente.",
+    resposta: "ERRADO",
+    explicacao:
+      "Está invertido. Desconcentração = distribuição interna (órgãos). Descentralização = transferência para outra pessoa jurídica (entidades).",
+    dificuldade: 1,
+    tags: ["desconcentração vs descentralização", "organização administrativa"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Administração Direta e Indireta",
+    ano: 2022,
+  },
+  {
+    id: "diradm-020",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "As fundações públicas podem ser de direito público ou privado, sendo criadas por lei específica e destinadas a fins de interesse coletivo.",
+    resposta: "CERTO",
+    explicacao:
+      "CF/88, art. 37, XIX: fundações públicas integram a administração indireta. Podem ter regime jurídico conforme sua natureza (Lei 13.301/2016).",
+    dificuldade: 2,
+    tags: ["fundações públicas", "administração indireta", "CF/88"],
+    fonte_legal: ["Art. 37, XIX, CF/88"],
+    banca_referencia: "VUNESP",
+    assunto: "Administração Indireta",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 8: LEI Nº 8.112/1990
+  // ============================================================
+  {
+    id: "diradm-021",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "O servidor federal adquirirá estabilidade após 3 anos de efetivo exercício, mediante avaliação especial de desempenho por comissão instituída para essa finalidade.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 41 da CF/88 e Lei 8.112/1990: estágio probatório de 36 meses com avaliação de aptidão e capacidade.",
+    dificuldade: 1,
+    tags: ["estabilidade", "estágio probatório", "lei 8.112/1990"],
+    fonte_legal: ["Art. 41, CF/88", "Art. 20, Lei 8.112/1990"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lei 8.112/1990 - Estabilidade",
+    ano: 2024,
+  },
+  {
+    id: "diradm-022",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A pena de demissão é aplicada nos casos de abandono de cargo, acumulação ilícita de cargos e improbidade administrativa.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 132 da Lei 8.112/1990: rol taxativo de infrações graves que ensejam demissão, incluindo improbidade e acumulação ilícita.",
+    dificuldade: 2,
+    tags: ["penalidades", "demissão", "lei 8.112/1990"],
+    fonte_legal: ["Art. 132, Lei 8.112/1990"],
+    banca_referencia: "FGV",
+    assunto: "Lei 8.112/1990 - Penalidades",
+    ano: 2023,
+  },
+  {
+    id: "diradm-023",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A licença para capacitação é direito do servidor a cada 5 anos de exercício, por até 3 meses, sem prejuízo da remuneração.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 87-A da Lei 8.112/1990: licença-prêmio convertida em licença-capacitação. Período aquisitivo quinquenal.",
+    dificuldade: 3,
+    tags: ["licenças", "capacitação", "lei 8.112/1990"],
+    fonte_legal: ["Art. 87-A, Lei 8.112/1990"],
+    banca_referencia: "FCC",
+    assunto: "Lei 8.112/1990 - Licenças",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 9: LEI Nº 8.666/1993 (ARTS. 1-6, 20-26, 54-80)
+  // ============================================================
+  {
+    id: "diradm-024",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "Segundo a Lei 8.666/1993, a licitação tem por objetivo assegurar igualdade de condições, selecionar a proposta mais vantajosa e promover o desenvolvimento nacional sustentável.",
+    resposta: "CERTO",
+    explicacao:
+      "Arts. 1º a 3º da Lei 8.666/1993: finalidades clássicas do processo licitatório, alinhadas aos princípios constitucionais.",
+    dificuldade: 1,
+    tags: ["licitação", "objetivos", "lei 8.666/1993"],
+    fonte_legal: ["Arts. 1º a 3º, Lei 8.666/1993"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lei 8.666/1993 - Princípios e Objetivos",
+    ano: 2022,
+  },
+  {
+    id: "diradm-025",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A inexigibilidade de licitação ocorre quando há inviabilidade de competição, como na contratação de artista consagrado pela crítica ou de serviço técnico especializado de natureza singular.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 25 da Lei 8.666/1993: hipóteses de inexigibilidade (notória especialização, fornecedor exclusivo, serviço singular).",
+    dificuldade: 2,
+    tags: ["inexigibilidade", "notória especialização", "lei 8.666/1993"],
+    fonte_legal: ["Art. 25, Lei 8.666/1993"],
+    banca_referencia: "FGV",
+    assunto: "Lei 8.666/1993 - Inexigibilidade",
+    ano: 2023,
+  },
+  {
+    id: "diradm-026",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "Os contratos administrativos podem ser alterados unilateralmente pela Administração, respeitado o equilíbrio econômico-financeiro e o limite de 25% do valor inicial.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 65 da Lei 8.666/1993: cláusula exorbitante permite acréscimos ou supressões até 25% (50% para reformas/edifícios).",
+    dificuldade: 3,
     tags: [
       "contrato administrativo",
-      "poderes exorbitantes",
       "alteração unilateral",
-      "indenização",
+      "cláusulas exorbitantes",
     ],
-    fonte_legal: ["Lei 14.133/2021", "Súmula 473, STJ"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Licitações e contratos",
+    fonte_legal: ["Art. 65, Lei 8.666/1993"],
+    banca_referencia: "FCC",
+    assunto: "Lei 8.666/1993 - Contratos",
+    ano: 2024,
   },
+
+  // ============================================================
+  // TÓPICO 10: LEI Nº 9.784/1999
+  // ============================================================
   {
-    id: "adm-007-v2",
+    id: "diradm-027",
     disciplina: "DIREITO_ADMINISTRATIVO",
     enunciado:
-      "A prescrição do direito do servidor público ao recebimento de vantagens, proventos ou pensões é de 5 (cinco) anos, contados do primeiro dia do exercício seguinte àquele em que o servidor ou beneficiário poderia ter exercido o direito, conforme art. 3º da Lei 9.783/1999.",
+      "Os atos do processo administrativo devem ser motivados, com indicação dos fatos e fundamentos jurídicos, sendo nulos quando ausente a motivação nos casos obrigatórios.",
     resposta: "CERTO",
     explicacao:
-      "Art. 3º, Lei 9.783/99: prescrição em 5 anos para créditos do servidor. O prazo conta do primeiro dia do exercício seguinte ao vencimento (sistema de decênio).",
-    dificuldade: 2,
-    tags: [
-      "prescrição",
-      "servidor público",
-      "vantagens",
-      "Lei 9.783/99",
-      "quinquênio",
-    ],
-    fonte_legal: ["Art. 3º, Lei 9.783/1999"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Agentes administrativos",
-  },
-  {
-    id: "adm-008-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "O processo administrativo disciplinar (PAD) deve ser concluído no prazo máximo de 60 (sessenta) dias, improrrogável, contados da instauração, conforme EC 19/1998, que alterou o art. 41 da CF/88.",
-    resposta: "ERRADO",
-    explicacao:
-      "EC 19/98 alterou o art. 41, § 1º, da CF/88: prazo de 60 dias, PRORROGÁVEL por mais 60 dias (total 120) a critério da autoridade que instaurou o PAD. O prazo é prorrogável, não improrrogável.",
-    dificuldade: 2,
-    tags: [
-      "PAD",
-      "processo administrativo disciplinar",
-      "prazo",
-      "EC 19/98",
-      "art. 41 CF",
-    ],
-    fonte_legal: ["Art. 41, § 1º, CF/88 (redação EC 19/1998)"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Processo administrativo",
-  },
-  {
-    id: "adm-009-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A revogação de ato administrativo pode ser feita pela autoridade hierarquicamente superior à que praticou o ato, quando o ato for inconveniente ou inoportuno, independentemente de vício, pois a revogação atua pelo interesse público.",
-    resposta: "CERTO",
-    explicacao:
-      "Revogação atua pelo interesse público (conveniência e oportunidade), não por vício. Pode ser pelo próprio autor ou superior hierárquico. Anulação é que atua por vício (ilegalidade).",
-    dificuldade: 2,
-    tags: [
-      "revogação",
-      "anulação",
-      "ato administrativo",
-      "interesse público",
-      "hierarquia",
-    ],
-    fonte_legal: ["Lei 9.784/1999"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Ato administrativo - invalidação",
-  },
-  {
-    id: "adm-010-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A anulação de ato administrativo pode ocorrer a qualquer tempo quando houver vício de incompetência absoluta, pois tal vício gera nulidade insanável, não sujeita a prescrição ou decadência.",
-    resposta: "CERTO",
-    explicacao:
-      "Vício de incompetência absoluta (incompetência de jurisdição pessoa ou matéria) gera nulidade insanável. Nulidades insanáveis podem ser decretadas a qualquer tempo (não se prescrevem). A nulidade não se cura pelo tempo.",
-    dificuldade: 3,
-    tags: [
-      "anulação",
-      "nulidade",
-      "incompetência absoluta",
-      "vício insanável",
-      "prescrição",
-    ],
-    fonte_legal: ["Lei 9.784/1999"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Ato administrativo - invalidação",
-  },
-  {
-    id: "adm-011-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "O princípio da publicidade exige que todos os atos administrativos sejam publicados no Diário Oficial da União ou do Estado, sendo vedada a publicidade restrita a meios internos da administração.",
-    resposta: "ERRADO",
-    explicacao:
-      "Publicidade é regra, mas admite exceções. Atos de caráter interno (portarias internas, instruções normativas de organização) podem ter publicidade restrita (intranet, boletim interno). O que é vedado é o sigilo sem fundamento legal.",
-    dificuldade: 2,
-    tags: [
-      "publicidade",
-      "ato administrativo",
-      "Diário Oficial",
-      "publicidade restrita",
-      "exceções",
-    ],
-    fonte_legal: ["Lei 9.784/1999"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Princípios da administração",
-  },
-  {
-    id: "adm-012-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A responsabilidade civil do Estado por ato de agente público é objetiva quando há exercício regular do direito ou ato de guerra, situações que excluem o dever de indenizar, conforme art. 37, § 4º, da CF/88.",
-    resposta: "ERRADO",
-    explicacao:
-      "A responsabilidade do Estado é objetiva (art. 37, § 6º, CF/88), mas o exercício regular do direito (ato legal) e ato de guerra são excludentes de ilicitude (não há ato ilícito, logo não há responsabilidade). A assertiva confundiu: objetividade é a regra, mas o exercício regular do direito exclui o ilícito, não a objetividade.",
-    dificuldade: 3,
-    tags: [
-      "responsabilidade civil",
-      "Estado",
-      "objetiva",
-      "exercício regular do direito",
-      "art. 37 CF",
-    ],
-    fonte_legal: ["Art. 37, § 4º e § 6º, CF/88"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Responsabilidade da administração",
-  },
-  {
-    id: "adm-013-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A tomada de contas especial pode ser decretada pelo Tribunal de Contas quando o gestor não apresentar as contas no prazo legal, ou quando apresentá-las de forma temerária, não se aplicando a prescrição para a responsabilização do gestor.",
-    resposta: "CERTO",
-    explicacao:
-      "Lei 8.443/1992, art. 16: tomada de contas especial para não apresentação de contas ou apresentação temerária. A responsabilização do gestor não se prescreve (art. 17, Lei 8.443/92).",
-    dificuldade: 2,
-    tags: [
-      "tomada de contas especial",
-      "Lei 8.443/1992",
-      "não apresentação",
-      "prescrição",
-      "TCU",
-    ],
-    fonte_legal: ["Art. 16 e 17, Lei 8.443/1992"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Controle da administração",
-  },
-  {
-    id: "adm-014-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "O servidor público em estágio probatório pode ser exonerado de ofício por insuficiência de desempenho, sem direito a recurso administrativo, pois não possui ainda estabilidade constitucional.",
-    resposta: "ERRADO",
-    explicacao:
-      "O estável pode ser exonerado por insuficiência (art. 20, § 1º, Lei 8.112/90), mas tem direito a recurso administrativo (art. 20, § 2º). A falta de estabilidade não exclui o contraditório e a ampla defesa. O servidor pode recorrer.",
-    dificuldade: 3,
-    tags: [
-      "estágio probatório",
-      "exoneração",
-      "insuficiência",
-      "recurso",
-      "art. 20 Lei 8.112/90",
-    ],
-    fonte_legal: ["Art. 20, § 1º e 2º, Lei 8.112/1990"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Agentes administrativos",
-  },
-  {
-    id: "adm-015-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A dispensa de licitação é permitida em casos de emergência ou calamidade pública, quando a urgência for determinada pelo interesse público e a impossibilidade de observar os prazos normais do procedimento licitatório, conforme art. 74, inciso II, da Lei 14.133/2021.",
-    resposta: "CERTO",
-    explicacao:
-      "Lei 14.133/2021, art. 74, II: dispensa por emergência ou calamidade pública. Requisitos: urgência decorrente de situação imprevista e de interesse público; impossibilidade de observar prazos; motivação no processo.",
+      "Art. 50 da Lei 9.784/1999: motivação é requisito de validade, exceto em despachos de mero expediente ou atos de conteúdo vinculatório.",
     dificuldade: 1,
-    tags: [
-      "dispensa de licitação",
-      "emergência",
-      "calamidade",
-      "Lei 14.133/2021",
-      "art. 74",
-    ],
-    fonte_legal: ["Art. 74, II, Lei 14.133/2021"],
+    tags: ["motivação", "nulidade", "lei 9.784/1999"],
+    fonte_legal: ["Art. 50, Lei 9.784/1999"],
     banca_referencia: "CEBRASPE",
-    assunto: "Licitações e contratos",
+    assunto: "Lei 9.784/1999 - Motivação",
+    ano: 2023,
   },
   {
-    id: "adm-016-v2",
+    id: "diradm-028",
     disciplina: "DIREITO_ADMINISTRATIVO",
     enunciado:
-      "O regimento interno de órgão da administração pública tem natureza de ato administrativo normativo primário, pois regula a organização interna, a competência e o funcionamento do órgão, sem necessidade de lei específica para cada norma.",
-    resposta: "CERTO",
-    explicacao:
-      "Regimento interno é ato normativo primário (hierarquia abaixo da lei, mas acima dos atos administrativos individuais). Disciplina a organização interna, baseado na lei que criou o órgão.",
-    dificuldade: 2,
-    tags: [
-      "regimento interno",
-      "ato normativo",
-      "primário",
-      "organização interna",
-      "competência",
-    ],
-    fonte_legal: ["Lei 9.784/1999"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Ato administrativo - classificação",
-  },
-  {
-    id: "adm-017-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "A posse em cargo público deve ocorrer no prazo de 30 (trinta) dias contados da publicação do ato de provimento, prazo este que pode ser prorrogado por igual período a critério da administração, uma única vez, por interesse público.",
-    resposta: "CERTO",
-    explicacao:
-      "Art. 13, caput e § 1º, Lei 8.112/90: posse em 30 dias da publicação. O § 1º permite prorrogação por 30 dias, uma vez, a pedido do interessado ou por interesse público.",
-    dificuldade: 1,
-    tags: ["posse", "prazo", "Lei 8.112/90", "ato de provimento", "publicação"],
-    fonte_legal: ["Art. 13, caput e § 1º, Lei 8.112/1990"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Agentes administrativos",
-  },
-  {
-    id: "adm-018-v2",
-    disciplina: "DIREITO_ADMINISTRATIVO",
-    enunciado:
-      "O servidor público pode acumular dois cargos de provimento efetivo se houver compatibilidade de horários e interesse público, desde que não se trate de cargos de direção ou chefia, conforme permissão constitucional genérica.",
+      "O recurso administrativo contra decisão de processo federal tem efeito suspensivo, salvo disposição legal em contrário.",
     resposta: "ERRADO",
     explicacao:
-      "Art. 37, XVI, CF/88: vedada acumulação remunerada, com exceções TAXATIVAS: a) dois cargos de professor; b) cargo técnico/científico + professor; c) dois cargos de médico. Não basta compatibilidade de horários e interesse público; precisa estar nas exceções constitucionais.",
+      "Art. 63, §1º da Lei 9.784/1999: o recurso administrativo tem efeito devolutivo, sendo o efeito suspensivo a exceção, dependente de decisão fundamentada.",
+    dificuldade: 3,
+    tags: ["recurso administrativo", "efeito suspensivo", "lei 9.784/1999"],
+    fonte_legal: ["Art. 63, §1º, Lei 9.784/1999"],
+    banca_referencia: "VUNESP",
+    assunto: "Lei 9.784/1999 - Recursos",
+    ano: 2024,
+  },
+  {
+    id: "diradm-029",
+    disciplina: "DIREITO_ADMINISTRATIVO",
+    enunciado:
+      "A Lei 9.784/1999 aplica-se subsidiariamente aos processos administrativos específicos da administração pública estadual e municipal, na falta de legislação própria.",
+    resposta: "CERTO",
+    explicacao:
+      "Art. 1º, parágrafo único, da Lei 9.784/1999: aplicação supletiva aos demais entes federativos que não possuam legislação processual própria.",
     dificuldade: 2,
-    tags: [
-      "acumulação",
-      "cargo efetivo",
-      "art. 37 XVI CF",
-      "exceções",
-      "professor",
-      "médico",
-    ],
-    fonte_legal: ["Art. 37, XVI, CF/88"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Agentes administrativos",
+    tags: ["âmbito de aplicação", "lei 9.784/1999", "entidades federativas"],
+    fonte_legal: ["Art. 1º, parágrafo único, Lei 9.784/1999"],
+    banca_referencia: "FGV",
+    assunto: "Lei 9.784/1999 - Disposições Gerais",
+    ano: 2023,
   },
 ];
 
-export const totalQuestoesDireitoAdministrativo = questoesDireitoAdministrativo.length;
+export const totalQuestoesDireitoAdministrativo =
+  questoesDireitoAdministrativo.length;

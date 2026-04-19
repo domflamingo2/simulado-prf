@@ -1,328 +1,620 @@
 import { Questao } from "../types";
 
 export const questoesRaciocinioLogico: Questao[] = [
+  // ============================================================
+  // TÓPICO 1: ESTRUTURAS LÓGICAS
+  // ============================================================
   {
-    id: "raclog-001-v2",
+    id: "rlm-001",
     disciplina: "RACIOCINIO_LOGICO",
     enunciado:
-      "Se a proposição 'Todos os servidores públicos são assíduos' é verdadeira, então a proposição 'Algum servidor público não é assíduo' é necessariamente falsa, pois constitui a negação lógica da proposição original.",
+      "Uma proposição é uma sentença declarativa que pode ser classificada como verdadeira ou falsa, não sendo possível que seja simultaneamente verdadeira e falsa, conforme o princípio do terceiro excluído.",
     resposta: "CERTO",
     explicacao:
-      "A negação de 'Todos A são B' é 'Algum A não é B' (ou 'Existe A que não é B'). Se uma é verdadeira, a outra é falsa. São proposições contraditórias. Na lógica aristotélica e moderna, isso é válido.",
-    dificuldade: 2,
-    tags: [
-      "lógica aristotélica",
-      "quantificadores",
-      "negação",
-      "todos",
-      "algum",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica de argumentação",
-  },
-  {
-    id: "raclog-002-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "A proposição composta 'Se chover, então não sairei' é logicamente equivalente à proposição 'Não chove ou não saio', conforme a regra de equivalência entre condicional e disjunção na lógica proposicional.",
-    resposta: "CERTO",
-    explicacao:
-      "Equivalência lógica: p → q ≡ ~p ∨ q. Aplicando: 'Se chover (p), não saio (q)' ≡ 'Não chove (~p) ou não saio (q)'. A assertiva está correta na forma lógica, embora o enunciado original mencionasse 'choverei' (erro tipográfico corrigido na versão v2).",
-    dificuldade: 3,
-    tags: [
-      "equivalência lógica",
-      "condicional",
-      "disjunção",
-      "Leis de De Morgan",
-      "tabela-verdade",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica sentencial",
-  },
-  {
-    id: "raclog-003-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "Em uma tabela-verdade composta por 3 (três) proposições simples distintas (p, q, r), o número total de combinações possíveis de valores-verdade (V ou F) é igual a 8 (oito), calculado por 2^n, onde n é o número de proposições.",
-    resposta: "CERTO",
-    explicacao:
-      "Fórmula: 2^n. Para n=3, temos 2³ = 8 linhas na tabela-verdade. As combinações são: VVV, VVF, VFV, VFF, FVV, FVF, FFV, FFF.",
+      "Princípios fundamentais da lógica clássica: (1) Identidade (p é p); (2) Não contradição (p não pode ser V e F); (3) Terceiro excluído (p é V ou F, não há terceira opção). Proposições obedecem a esses princípios.",
     dificuldade: 1,
     tags: [
-      "tabela-verdade",
-      "combinações",
-      "proposições simples",
-      "cálculo combinatório",
+      "proposição",
+      "princípio do terceiro excluído",
+      "valores lógicos",
+      "lógica clássica",
     ],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Lógica sentencial",
+    banca_referencia: "CEBRASPE",
+    assunto: "Estruturas Lógicas",
+    ano: 2024,
   },
   {
-    id: "raclog-004-v2",
+    id: "rlm-002",
     disciplina: "RACIOCINIO_LOGICO",
     enunciado:
-      "A negação da proposição composta 'João é alto e Maria é baixa', segundo as Leis de De Morgan, é logicamente equivalente a 'João não é alto ou Maria não é baixa', sendo que o conectivo 'e' é substituído por 'ou' e ambos os componentes são negados.",
+      "A sentença 'x + 5 = 10' é uma proposição lógica, pois possui valor verdadeiro ou falso definido.",
+    resposta: "ERRADO",
+    explicacao:
+      "'x + 5 = 10' é uma sentença aberta (função proposicional), pois seu valor lógico depende do valor de x. Só é proposição quando x é especificado (ex: '3 + 5 = 10' é proposição falsa).",
+    dificuldade: 2,
+    tags: ["sentença aberta", "função proposicional", "proposição", "variável"],
+    banca_referencia: "FGV",
+    assunto: "Estruturas Lógicas",
+    ano: 2023,
+  },
+  {
+    id: "rlm-003",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A negação da proposição '2 + 2 = 4' é a proposição '2 + 2 ≠ 4', e ambas não podem ser verdadeiras simultaneamente, caracterizando proposições contraditórias.",
     resposta: "CERTO",
     explicacao:
-      "Lei de De Morgan: ~(p ∧ q) ≡ ~p ∨ ~q. A negação de uma conjunção é uma disjunção das negações. 'Não (A e B)' = 'Não A ou Não B'.",
+      "Proposições contraditórias: uma é a negação da outra. Se p é verdadeira, ~p é falsa, e vice-versa. '2 + 2 = 4' (V) e '2 + 2 ≠ 4' (F) são contraditórias por definição.",
+    dificuldade: 1,
+    tags: ["negação", "proposições contraditórias", "valores lógicos"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Estruturas Lógicas",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 2: LÓGICA DE ARGUMENTAÇÃO
+  // ============================================================
+  {
+    id: "rlm-004",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "O argumento 'Se chove, então a rua fica molhada. Choveu. Logo, a rua ficou molhada' é válido e corresponde ao Modus Ponens, regra de inferência fundamental na lógica dedutiva.",
+    resposta: "CERTO",
+    explicacao:
+      "Modus Ponens: (p → q) ∧ p ⊢ q. Se a condicional é verdadeira e o antecedente ocorre, o consequente necessariamente ocorre. É uma regra de inferência válida e amplamente cobrada.",
+    dificuldade: 2,
+    tags: ["Modus Ponens", "inferência válida", "condicional", "argumentação"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lógica de Argumentação",
+    ano: 2024,
+  },
+  {
+    id: "rlm-005",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "O argumento 'Se estudo, então passo. Não passei. Logo, não estudei' é válido e corresponde ao Modus Tollens, desde que a condicional inicial seja verdadeira.",
+    resposta: "CERTO",
+    explicacao:
+      "Modus Tollens: (p → q) ∧ ~q ⊢ ~p. Se a condicional é verdadeira e o consequente é falso, o antecedente deve ser falso. É regra válida, mas depende da veracidade da premissa condicional.",
+    dificuldade: 2,
+    tags: ["Modus Tollens", "inferência válida", "condicional", "negação"],
+    banca_referencia: "FCC",
+    assunto: "Lógica de Argumentação",
+    ano: 2023,
+  },
+  {
+    id: "rlm-006",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A afirmação 'Todo político é honesto. João é político. Logo, João é honesto' é um argumento válido, independentemente da veracidade factual da premissa 'Todo político é honesto'.",
+    resposta: "CERTO",
+    explicacao:
+      "Validade ≠ Verdade. Um argumento é válido se a conclusão decorre logicamente das premissas, mesmo que as premissas sejam falsas factualmente. Aqui, a forma é válida (silogismo em Barbara).",
+    dificuldade: 3,
+    tags: ["validade vs verdade", "silogismo", "argumentação dedutiva"],
+    banca_referencia: "FGV",
+    assunto: "Lógica de Argumentação",
+    ano: 2024,
+  },
+  {
+    id: "rlm-007",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A analogia é um tipo de raciocínio indutivo que estabelece conclusão provável (não necessária) com base em semelhanças entre casos, sendo útil em argumentação, mas não garantindo validade lógica formal.",
+    resposta: "CERTO",
+    explicacao:
+      "Analogia = raciocínio por semelhança. É indutivo (ampliativo), não dedutivo. A conclusão é provável, não necessária. CEBRASPE cobra essa distinção entre validade formal e força argumentativa.",
+    dificuldade: 2,
+    tags: ["analogia", "raciocínio indutivo", "argumentação", "validade"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lógica de Argumentação",
+    ano: 2023,
+  },
+  {
+    id: "rlm-008",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A falácia da afirmação do consequente ocorre quando se infere 'p' a partir de 'p → q' e 'q', o que é logicamente inválido, pois q pode ser verdadeiro por outras razões além de p.",
+    resposta: "CERTO",
+    explicacao:
+      "Falácia: (p → q) ∧ q ⊬ p. Ex: 'Se chove, rua molha. Rua molhou. Logo, choveu' (inválido: pode ter sido mangueira). CEBRASPE adora cobrar reconhecimento de falácias.",
+    dificuldade: 3,
+    tags: ["falácia", "afirmação do consequente", "invalidade", "condicional"],
+    banca_referencia: "VUNESP",
+    assunto: "Lógica de Argumentação",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 3: LÓGICA SENTENCIAL (PROPOSICIONAL)
+  // ============================================================
+  {
+    id: "rlm-009",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A tabela-verdade de uma proposição composta com 4 proposições simples distintas possui 16 linhas, calculadas por 2⁴, representando todas as combinações possíveis de valores V/F.",
+    resposta: "CERTO",
+    explicacao:
+      "Fórmula: número de linhas = 2ⁿ, onde n = número de proposições simples. Para n=4: 2⁴ = 16 linhas. Cada linha representa uma combinação única de V/F para as proposições.",
+    dificuldade: 1,
+    tags: ["tabela-verdade", "combinações", "proposições simples", "cálculo"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lógica Sentencial - Tabelas-Verdade",
+    ano: 2024,
+  },
+  {
+    id: "rlm-010",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A proposição condicional 'Se p, então q' é falsa apenas quando p é verdadeiro e q é falso; nos demais casos (V→V, F→V, F→F), a condicional é verdadeira.",
+    resposta: "CERTO",
+    explicacao:
+      "Tabela-verdade da condicional (→): só é F quando antecedente V e consequente F. Isso reflete que uma promessa 'Se p, então q' só é quebrada quando p ocorre e q não.",
+    dificuldade: 1,
+    tags: ["condicional", "tabela-verdade", "implicação", "valores lógicos"],
+    banca_referencia: "FCC",
+    assunto: "Lógica Sentencial - Conectivos",
+    ano: 2023,
+  },
+  {
+    id: "rlm-011",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A equivalência lógica '~(p ∧ q) ≡ ~p ∨ ~q' é uma das Leis de De Morgan, que permite transformar a negação de uma conjunção em uma disjunção das negações.",
+    resposta: "CERTO",
+    explicacao:
+      "Leis de De Morgan: (1) ~(p ∧ q) ≡ ~p ∨ ~q; (2) ~(p ∨ q) ≡ ~p ∧ ~q. São fundamentais para simplificação e negação de proposições compostas.",
     dificuldade: 2,
     tags: [
       "Leis de De Morgan",
+      "equivalência",
       "negação",
       "conjunção",
       "disjunção",
-      "equivalência",
     ],
     banca_referencia: "CEBRASPE",
-    assunto: "Lógica sentencial",
+    assunto: "Lógica Sentencial - Equivalências",
+    ano: 2024,
   },
   {
-    id: "raclog-005-v2",
+    id: "rlm-012",
     disciplina: "RACIOCINIO_LOGICO",
     enunciado:
-      "Se as premissas 'Todos os A são B' e 'Todos os B são C' são verdadeiras, então, necessariamente, a conclusão 'Todos os A são C' é verdadeira, configurando um silogismo válido na primeira figura (Barbara).",
+      "A proposição 'p ↔ q' (bicondicional) é verdadeira quando p e q possuem o mesmo valor lógico (ambos V ou ambos F), e falsa quando possuem valores diferentes.",
     resposta: "CERTO",
     explicacao:
-      "Silogismo categórico Barbara (AAA-1): Todo M é P, Todo S é M, logo Todo S é P. Aqui: Todo B é C, Todo A é B, logo Todo A é C. É válido por transitividade da inclusão de classes.",
-    dificuldade: 2,
-    tags: [
-      "silogismo",
-      "lógica aristotélica",
-      "Barbara",
-      "figura do silogismo",
-      "validade",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica de argumentação",
-  },
-  {
-    id: "raclog-006-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "A proposição 'Ou João estuda ou Maria estuda', sob a interpretação do ou exclusivo (disjunção exclusiva), é verdadeira quando ambos estudam, pois a condição de exclusividade é satisfeita pela participação de ambos.",
-    resposta: "ERRADO",
-    explicacao:
-      "No 'ou exclusivo' (XOR), a proposição é verdadeira quando EXATAMENTE UM dos componentes é verdadeiro. Se ambos estudam (V e V), o ou exclusivo é FALSO. O ou inclusivo é que seria verdadeiro. O CEBRASPE usa 'ou...ou' como exclusivo.",
-    dificuldade: 3,
-    tags: [
-      "ou exclusivo",
-      "ou inclusivo",
-      "disjunção",
-      "tabela-verdade",
-      "interpretação",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica sentencial",
-  },
-  {
-    id: "raclog-007-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "O argumento dedutivo 'Todo mamífero é animal. Todo cão é mamífero. Logo, todo cão é animal' é válido e corresponde ao modo lógico Barbara da primeira figura do silogismo categórico.",
-    resposta: "CERTO",
-    explicacao:
-      "Silogismo em Barbara: 1ª premissa (Maior): Todo M é P (Todo mamífero é animal). 2ª premissa (Menor): Todo S é M (Todo cão é mamífero). Conclusão: Todo S é P (Todo cão é animal). É válido.",
-    dificuldade: 2,
-    tags: [
-      "silogismo",
-      "Barbara",
-      "validade",
-      "dedução",
-      "lógica aristotélica",
-    ],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Lógica de argumentação",
-  },
-  {
-    id: "raclog-008-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "A proposição 'É necessário que chova para que a rua fique molhada' estabelece que a chuva é condição necessária para a rua molhada, sendo logicamente equivalente a 'Se a rua está molhada, então choveu'.",
-    resposta: "CERTO",
-    explicacao:
-      "Condição necessária: 'A apenas se B' ou 'Se A, então B'. Aqui: 'Rua molhada apenas se chove' = 'Se rua molhada, então choveu'. A chuva é necessária (sem chuva, não há rua molhada), mas não suficiente (pode chover sem molhar a rua específica).",
-    dificuldade: 3,
-    tags: [
-      "condição necessária",
-      "condição suficiente",
-      "implicação",
-      "lógica condicional",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica de argumentação",
-  },
-  {
-    id: "raclog-009-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "Se uma proposição condicional 'Se p, então q' é verdadeira e seu consequente 'q' é falso, então, pelo Modus Tollens, o antecedente 'p' é necessariamente falso.",
-    resposta: "CERTO",
-    explicacao:
-      "Modus Tollens: (p → q) ∧ ~q ⊢ ~p. Se 'Se p então q' é verdade e q é falso, então p deve ser falso (se p fosse verdadeiro, q seria verdadeiro, mas q é falso). É regra de inferência válida.",
-    dificuldade: 2,
-    tags: [
-      "Modus Tollens",
-      "inferência",
-      "condicional",
-      "consequente",
-      "antecedente",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica de argumentação",
-  },
-  {
-    id: "raclog-010-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "A negação da proposição universal negativa 'Nenhum servidor é incompetente' é a proposição particular afirmativa 'Algum servidor é incompetente', conforme as regras de oposição entre proposições categóricas.",
-    resposta: "CERTO",
-    explicacao:
-      "Negação de 'Nenhum A é B' (E) é 'Algum A é B' (I). São proposições contraditórias (não podem ser ambas verdadeiras nem ambas falsas). Se uma é verdadeira, a outra é falsa, e vice-versa.",
-    dificuldade: 2,
-    tags: [
-      "negação",
-      "proposições categóricas",
-      "quadrilátero de oposição",
-      "particular afirmativa",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica de argumentação",
-  },
-  {
-    id: "raclog-011-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "Dados os conjuntos A = {1, 2, 3} e B = {2, 3, 4}, a interseção A ∩ B é igual ao conjunto {2, 3}, contendo apenas os elementos que pertencem simultaneamente a ambos os conjuntos.",
-    resposta: "CERTO",
-    explicacao:
-      "Interseção (∩): elementos comuns a A e B. A = {1, 2, 3}, B = {2, 3, 4}. Elementos comuns: 2 e 3. Logo, A ∩ B = {2, 3}.",
+      "Bicondicional (↔) = 'se e somente se'. É verdadeira quando os componentes têm valores iguais. Equivale a (p → q) ∧ (q → p).",
     dificuldade: 1,
     tags: [
-      "teoria dos conjuntos",
-      "interseção",
-      "elementos comuns",
-      "álgebra de conjuntos",
+      "bicondicional",
+      "tabela-verdade",
+      "equivalência lógica",
+      "conectivos",
     ],
-    banca_referencia: "FCC",
-    assunto: "Operações com conjuntos",
+    banca_referencia: "FGV",
+    assunto: "Lógica Sentencial - Conectivos",
+    ano: 2023,
   },
   {
-    id: "raclog-012-v2",
+    id: "rlm-013",
     disciplina: "RACIOCINIO_LOGICO",
     enunciado:
-      "O número de anagramas possíveis da palavra 'LOGICA' é igual a 720 (seiscentos e vinte), calculado por 6 fatorial (6!), pois a palavra possui 6 letras distintas.",
+      "A equivalência 'p → q ≡ ~q → ~p' representa a contrapositiva da condicional, que é logicamente equivalente à proposição original, sendo útil em demonstrações e inferências.",
     resposta: "CERTO",
     explicacao:
-      "Anagramas = permutações de letras. Para n elementos distintos: n! (n fatorial). 6! = 6 × 5 × 4 × 3 × 2 × 1 = 720. Como todas as letras de 'LOGICA' são distintas, o cálculo é direto.",
+      "Contrapositiva: inverte e nega antecedente e consequente. (p → q) ≡ (~q → ~p). É sempre equivalente, diferentemente da recíproca (q → p) ou inversa (~p → ~q).",
+    dificuldade: 2,
+    tags: ["contrapositiva", "equivalência", "condicional", "demonstração"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lógica Sentencial - Equivalências",
+    ano: 2024,
+  },
+  {
+    id: "rlm-014",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A negação da condicional 'Se estudo, então passo' é 'Estudo e não passo', conforme a equivalência ~(p → q) ≡ p ∧ ~q, que pode ser derivada das Leis de De Morgan.",
+    resposta: "CERTO",
+    explicacao:
+      "Negação da condicional: ~(p → q) ≡ ~(~p ∨ q) ≡ p ∧ ~q (por De Morgan). 'Não é verdade que se estudo então passo' = 'Estudo e não passo'. Pegadinha clássica!",
+    dificuldade: 3,
+    tags: [
+      "negação da condicional",
+      "Leis de De Morgan",
+      "equivalência",
+      "pegadinha",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lógica Sentencial - Negação",
+    ano: 2023,
+  },
+  {
+    id: "rlm-015",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A proposição 'p ∨ ~p' é uma tautologia, pois é sempre verdadeira independentemente do valor de p, exemplificando o princípio do terceiro excluído.",
+    resposta: "CERTO",
+    explicacao:
+      "Tautologia = proposição sempre V. 'p ou não-p' cobre todas as possibilidades (p é V ou F). É a expressão lógica do princípio do terceiro excluído.",
     dificuldade: 2,
     tags: [
-      "anagramas",
+      "tautologia",
+      "terceiro excluído",
+      "princípios lógicos",
+      "proposição composta",
+    ],
+    banca_referencia: "FCC",
+    assunto: "Lógica Sentencial - Classificação",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 3.5: DIAGRAMAS LÓGICOS
+  // ============================================================
+  {
+    id: "rlm-016",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "No diagrama de Venn, a proposição 'Todo A é B' é representada pelo conjunto A completamente contido no conjunto B, indicando que todos os elementos de A também pertencem a B.",
+    resposta: "CERTO",
+    explicacao:
+      "Diagramas de Venn: 'Todo A é B' = A ⊆ B (A dentro de B). 'Algum A é B' = interseção não vazia. 'Nenhum A é B' = conjuntos disjuntos (sem interseção).",
+    dificuldade: 1,
+    tags: [
+      "diagramas de Venn",
+      "inclusão de conjuntos",
+      "proposições categóricas",
+      "representação visual",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Diagramas Lógicos",
+    ano: 2024,
+  },
+  {
+    id: "rlm-017",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "Se 'Algum A é B' e 'Todo B é C' são verdadeiras, então necessariamente 'Algum A é C' é verdadeira, conforme pode ser verificado pela sobreposição de diagramas de Venn.",
+    resposta: "CERTO",
+    explicacao:
+      "Silogismo válido: Algum A é B (interseção A∩B ≠ ∅) + Todo B é C (B ⊆ C) → Algum A é C (A∩C ≠ ∅). O elemento comum a A e B também está em C.",
+    dificuldade: 2,
+    tags: [
+      "silogismo válido",
+      "diagramas de Venn",
+      "inferência",
+      "proposições categóricas",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Diagramas Lógicos",
+    ano: 2023,
+  },
+  {
+    id: "rlm-018",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A proposição 'Nenhum A é B' é representada no diagrama de Venn por dois conjuntos disjuntos, sem qualquer área de interseção entre A e B.",
+    resposta: "CERTO",
+    explicacao:
+      "'Nenhum A é B' = A ∩ B = ∅ (conjuntos disjuntos). No diagrama, os círculos de A e B não se sobrepõem. É a representação visual da exclusão total.",
+    dificuldade: 1,
+    tags: [
+      "diagramas de Venn",
+      "conjuntos disjuntos",
+      "proposição universal negativa",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Diagramas Lógicos",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 4: LÓGICA DE PRIMEIRA ORDEM (QUANTIFICADORES)
+  // ============================================================
+  {
+    id: "rlm-019",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A negação da proposição 'Todo servidor é eficiente' é 'Algum servidor não é eficiente', e não 'Nenhum servidor é eficiente', conforme as regras de negação de quantificadores.",
+    resposta: "CERTO",
+    explicacao:
+      "Negação de quantificadores: ~(∀x P(x)) ≡ ∃x ~P(x). 'Nem todo' = 'Algum não'. 'Nenhum' seria a negação de 'Algum é', não de 'Todo é'.",
+    dificuldade: 2,
+    tags: [
+      "quantificadores",
+      "negação",
+      "lógica de primeira ordem",
+      "proposições categóricas",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Lógica de Primeira Ordem",
+    ano: 2024,
+  },
+  {
+    id: "rlm-020",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A proposição 'Existe x tal que x é par e x é primo' é verdadeira, pois o número 2 satisfaz simultaneamente as duas condições, sendo o único número par primo.",
+    resposta: "CERTO",
+    explicacao:
+      "Quantificador existencial (∃): basta um exemplo para tornar a proposição verdadeira. 2 é par e primo → a proposição é V. CEBRASPE cobra atenção a exemplos concretos.",
+    dificuldade: 2,
+    tags: [
+      "quantificador existencial",
+      "números primos",
+      "exemplo concreto",
+      "lógica de primeira ordem",
+    ],
+    banca_referencia: "FCC",
+    assunto: "Lógica de Primeira Ordem",
+    ano: 2023,
+  },
+  {
+    id: "rlm-021",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A equivalência '~(∃x P(x)) ≡ ∀x ~P(x)' indica que negar 'existe x com propriedade P' equivale a afirmar 'para todo x, não-P', sendo fundamental para negação de proposições quantificadas.",
+    resposta: "CERTO",
+    explicacao:
+      "Regra de negação de quantificadores: (1) ~∀x P(x) ≡ ∃x ~P(x); (2) ~∃x P(x) ≡ ∀x ~P(x). Troca-se o quantificador e nega-se o predicado.",
+    dificuldade: 3,
+    tags: [
+      "negação de quantificadores",
+      "equivalência",
+      "lógica de primeira ordem",
+      "regras formais",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Lógica de Primeira Ordem",
+    ano: 2024,
+  },
+
+  // ============================================================
+  // TÓPICO 5: PRINCÍPIOS DE CONTAGEM E PROBABILIDADE
+  // ============================================================
+  {
+    id: "rlm-022",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "O número de maneiras de organizar 5 pessoas em uma fila é 120, calculado por 5! (5 fatorial), pois a ordem dos elementos é relevante, caracterizando uma permutação simples.",
+    resposta: "CERTO",
+    explicacao:
+      "Permutação simples de n elementos: Pₙ = n!. Para 5 pessoas: 5! = 5×4×3×2×1 = 120. Ordem importa → permutação. Se ordem não importasse, seria combinação.",
+    dificuldade: 1,
+    tags: [
       "permutação",
       "fatorial",
       "princípio fundamental da contagem",
+      "ordem importa",
     ],
     banca_referencia: "CEBRASPE",
-    assunto: "Princípios de contagem",
+    assunto: "Princípios de Contagem",
+    ano: 2023,
   },
   {
-    id: "raclog-013-v2",
+    id: "rlm-023",
     disciplina: "RACIOCINIO_LOGICO",
     enunciado:
-      "Se a probabilidade de ocorrência de um evento A é 0,25 (vinte e cinco por cento), então a probabilidade do evento complementar (não-A) é 0,75 (setenta e cinco por cento), pois a soma das probabilidades de eventos complementares é sempre igual a 1 (um).",
+      "A probabilidade de obter face 6 em um lançamento de dado honesto é 1/6, e a probabilidade de NÃO obter face 6 (evento complementar) é 5/6, pois P(A) + P(~A) = 1.",
     resposta: "CERTO",
     explicacao:
-      "P(~A) = 1 - P(A). Se P(A) = 0,25, então P(~A) = 1 - 0,25 = 0,75. Eventos complementares são mutuamente exclusivos e exaustivos (cobrem todo o espaço amostral).",
+      "Evento complementar: P(~A) = 1 - P(A). Dado honesto: P(6) = 1/6 → P(não-6) = 1 - 1/6 = 5/6. Soma das probabilidades do espaço amostral = 1.",
     dificuldade: 1,
-    tags: [
-      "probabilidade",
-      "evento complementar",
-      "espaço amostral",
-      "cálculo probabilístico",
-    ],
+    tags: ["probabilidade", "evento complementar", "dado", "espaço amostral"],
     banca_referencia: "FCC",
     assunto: "Probabilidade",
+    ano: 2024,
   },
   {
-    id: "raclog-014-v2",
+    id: "rlm-024",
     disciplina: "RACIOCINIO_LOGICO",
     enunciado:
-      "Em uma progressão aritmética (PA) com primeiro termo a₁ = 2 e razão r = 3, o décimo termo (a₁₀) é igual a 29 (vinte e nove), calculado pela fórmula aₙ = a₁ + (n-1) × r.",
+      "Se dois eventos A e B são mutuamente exclusivos, então P(A ∪ B) = P(A) + P(B), pois não há interseção a ser subtraída na fórmula geral da união.",
     resposta: "CERTO",
     explicacao:
-      "Fórmula do termo geral da PA: aₙ = a₁ + (n-1)r. a₁₀ = 2 + (10-1) × 3 = 2 + 9 × 3 = 2 + 27 = 29.",
-    dificuldade: 2,
-    tags: ["progressão aritmética", "termo geral", "razão", "PA"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Raciocínio lógico envolvendo problemas aritméticos",
-  },
-  {
-    id: "raclog-015-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "A média aritmética dos números 10, 20 e 30 é igual à média geométrica dos mesmos números, pois ambas resultam em 20 (vinte).",
-    resposta: "ERRADO",
-    explicacao:
-      "Média Aritmética (MA) = (10+20+30)/3 = 20. Média Geométrica (MG) = ³√(10×20×30) = ³√6000 ≈ 18,17. São diferentes. A igualdade só ocorre quando todos os valores são iguais.",
+      "Eventos mutuamente exclusivos: A ∩ B = ∅ → P(A ∩ B) = 0. Fórmula da união: P(A ∪ B) = P(A) + P(B) - P(A ∩ B) → simplifica para P(A) + P(B).",
     dificuldade: 2,
     tags: [
-      "média aritmética",
-      "média geométrica",
-      "medidas de centralidade",
-      "cálculo",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Raciocínio lógico envolvendo problemas aritméticos",
-  },
-  {
-    id: "raclog-016-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "Se as premissas 'Todo A é B' e 'Algum B é C' são verdadeiras, então, necessariamente, a conclusão 'Algum A é C' é verdadeira, configurando um silogismo válido.",
-    resposta: "ERRADO",
-    explicacao:
-      "Silogismo inválido (falácia do termo médio não distribuído). O C pode estar no B que não é A. Ex: Todo cão é mamífero (A=B). Algum mamífero é gato (algum B é C). Mas nenhum cão é gato. A conclusão não é necessária.",
-    dificuldade: 3,
-    tags: ["silogismo", "falácia", "termo médio", "distribuição", "validade"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica de argumentação",
-  },
-  {
-    id: "raclog-017-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "A proposição 'João não é alto nem é forte' é logicamente equivalente a 'João não é alto e João não é forte', conforme a regra de equivalência entre a negação da disjunção e a conjunção das negações (Leis de De Morgan).",
-    resposta: "CERTO",
-    explicacao:
-      "'Nem A nem B' = 'Não A e Não B'. Lei de De Morgan aplicada: ~(A ∨ B) ≡ ~A ∧ ~B. 'Não (A ou B)' = 'Não A e Não B'.",
-    dificuldade: 2,
-    tags: [
-      "Leis de De Morgan",
-      "nem...nem",
-      "negação",
-      "disjunção",
-      "conjunção",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Lógica sentencial",
-  },
-  {
-    id: "raclog-018-v2",
-    disciplina: "RACIOCINIO_LOGICO",
-    enunciado:
-      "Se P(A) = 0,5, P(B) = 0,4 e P(A ∩ B) = 0,2, então a probabilidade da união P(A ∪ B) é igual a 0,7 (sete décimos), calculada pela fórmula P(A ∪ B) = P(A) + P(B) - P(A ∩ B).",
-    resposta: "CERTO",
-    explicacao:
-      "Fórmula da probabilidade da união: P(A ∪ B) = P(A) + P(B) - P(A ∩ B). Substituindo: 0,5 + 0,4 - 0,2 = 0,7. O valor 0,2 é subtraído para não contar duas vezes a interseção.",
-    dificuldade: 2,
-    tags: [
-      "probabilidade",
-      "união de eventos",
-      "interseção",
-      "fórmula da união",
+      "eventos mutuamente exclusivos",
+      "probabilidade da união",
+      "interseção vazia",
     ],
     banca_referencia: "CEBRASPE",
     assunto: "Probabilidade",
+    ano: 2023,
+  },
+  {
+    id: "rlm-025",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "O número de combinações possíveis de 3 elementos escolhidos entre 5 é 10, calculado por C(5,3) = 5!/(3!×2!), pois na combinação a ordem dos elementos não importa.",
+    resposta: "CERTO",
+    explicacao:
+      "Combinação: C(n,p) = n!/(p!(n-p)!). C(5,3) = 5!/(3!×2!) = (120)/(6×2) = 10. Ordem não importa → combinação. Se importasse, seria arranjo: A(5,3) = 60.",
+    dificuldade: 2,
+    tags: [
+      "combinação",
+      "fatorial",
+      "ordem não importa",
+      "análise combinatória",
+    ],
+    banca_referencia: "VUNESP",
+    assunto: "Princípios de Contagem",
+    ano: 2022,
+  },
+  {
+    id: "rlm-026",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A probabilidade condicional P(A|B) = P(A ∩ B)/P(B) representa a probabilidade de A ocorrer dado que B já ocorreu, sendo fundamental para problemas de dependência entre eventos.",
+    resposta: "CERTO",
+    explicacao:
+      "Probabilidade condicional: P(A|B) = P(A e B)/P(B). Restringe o espaço amostral a B. Se A e B são independentes, P(A|B) = P(A).",
+    dificuldade: 3,
+    tags: [
+      "probabilidade condicional",
+      "eventos dependentes",
+      "fórmula",
+      "espaço amostral restrito",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Probabilidade",
+    ano: 2024,
+  },
+
+  // ============================================================
+  // TÓPICO 6: OPERAÇÕES COM CONJUNTOS
+  // ============================================================
+  {
+    id: "rlm-027",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "Dados os conjuntos A = {1, 2, 3, 4} e B = {3, 4, 5, 6}, a diferença A - B é igual a {1, 2}, contendo apenas os elementos que pertencem a A mas não a B.",
+    resposta: "CERTO",
+    explicacao:
+      "Diferença de conjuntos: A - B = {x | x ∈ A e x ∉ B}. Elementos de A que não estão em B: 1 e 2. B - A seria {5, 6}. Atenção: A - B ≠ B - A.",
+    dificuldade: 1,
+    tags: [
+      "diferença de conjuntos",
+      "operações com conjuntos",
+      "elementos exclusivos",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Operações com Conjuntos",
+    ano: 2023,
+  },
+  {
+    id: "rlm-028",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A propriedade distributiva da união sobre a interseção é expressa por A ∪ (B ∩ C) = (A ∪ B) ∩ (A ∪ C), sendo válida para quaisquer conjuntos A, B e C.",
+    resposta: "CERTO",
+    explicacao:
+      "Propriedades de conjuntos: (1) Distributiva: A ∪ (B ∩ C) = (A ∪ B) ∩ (A ∪ C) e A ∩ (B ∪ C) = (A ∩ B) ∪ (A ∩ C); (2) Comutativa, associativa, De Morgan. São cobradas em equivalências.",
+    dificuldade: 3,
+    tags: [
+      "propriedades de conjuntos",
+      "distributiva",
+      "álgebra de conjuntos",
+      "equivalência",
+    ],
+    banca_referencia: "FCC",
+    assunto: "Operações com Conjuntos",
+    ano: 2024,
+  },
+  {
+    id: "rlm-029",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "Se n(A) = 20, n(B) = 30 e n(A ∩ B) = 10, então n(A ∪ B) = 40, calculado pela fórmula n(A ∪ B) = n(A) + n(B) - n(A ∩ B), que evita a dupla contagem da interseção.",
+    resposta: "CERTO",
+    explicacao:
+      "Fórmula da união de conjuntos: n(A ∪ B) = n(A) + n(B) - n(A ∩ B). Substituindo: 20 + 30 - 10 = 40. A interseção é subtraída para não contar duas vezes.",
+    dificuldade: 2,
+    tags: [
+      "união de conjuntos",
+      "fórmula da união",
+      "princípio da inclusão-exclusão",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Operações com Conjuntos",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 7: PROBLEMAS ARITMÉTICOS, GEOMÉTRICOS E MATRICIAIS
+  // ============================================================
+  {
+    id: "rlm-030",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "Em uma progressão geométrica (PG) com primeiro termo a₁ = 2 e razão q = 3, o quarto termo (a₄) é igual a 54, calculado pela fórmula aₙ = a₁ × qⁿ⁻¹.",
+    resposta: "CERTO",
+    explicacao:
+      "Fórmula do termo geral da PG: aₙ = a₁ × qⁿ⁻¹. a₄ = 2 × 3³ = 2 × 27 = 54. PG: cada termo é o anterior multiplicado pela razão.",
+    dificuldade: 2,
+    tags: ["progressão geométrica", "termo geral", "razão", "PG"],
+    banca_referencia: "FCC",
+    assunto: "Problemas Aritméticos",
+    ano: 2024,
+  },
+  {
+    id: "rlm-031",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A matriz identidade de ordem 3 possui 1s na diagonal principal e 0s nas demais posições, sendo o elemento neutro da multiplicação de matrizes quadradas.",
+    resposta: "CERTO",
+    explicacao:
+      "Matriz identidade Iₙ: diagonal principal = 1, demais = 0. Propriedade: A × I = I × A = A (para matrizes quadradas compatíveis). Elemento neutro multiplicativo.",
+    dificuldade: 2,
+    tags: [
+      "matriz identidade",
+      "matrizes",
+      "elemento neutro",
+      "multiplicação de matrizes",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Problemas Matriciais",
+    ano: 2023,
+  },
+  {
+    id: "rlm-032",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A área de um triângulo retângulo com catetos medindo 3 cm e 4 cm é igual a 6 cm², calculada por (base × altura)/2, onde os catetos funcionam como base e altura.",
+    resposta: "CERTO",
+    explicacao:
+      "Triângulo retângulo: área = (cateto₁ × cateto₂)/2. (3 × 4)/2 = 6 cm². A hipotenusa (5 cm, por Pitágoras) não é usada no cálculo da área.",
+    dificuldade: 1,
+    tags: ["triângulo retângulo", "área", "catetos", "geometria plana"],
+    banca_referencia: "VUNESP",
+    assunto: "Problemas Geométricos",
+    ano: 2022,
+  },
+  {
+    id: "rlm-033",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "Se uma matriz A é de ordem 2×3 e uma matriz B é de ordem 3×2, então o produto AB é possível e resulta em uma matriz de ordem 2×2, enquanto BA resulta em uma matriz de ordem 3×3.",
+    resposta: "CERTO",
+    explicacao:
+      "Multiplicação de matrizes: A(m×n) × B(n×p) = C(m×p). AB: (2×3)×(3×2) → 2×2. BA: (3×2)×(2×3) → 3×3. A multiplicação de matrizes não é comutativa (AB ≠ BA em geral).",
+    dificuldade: 3,
+    tags: [
+      "multiplicação de matrizes",
+      "ordem de matrizes",
+      "não comutatividade",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Problemas Matriciais",
+    ano: 2024,
+  },
+  {
+    id: "rlm-034",
+    disciplina: "RACIOCINIO_LOGICO",
+    enunciado:
+      "A soma dos ângulos internos de qualquer triângulo é sempre igual a 180°, independentemente do tipo de triângulo (equilátero, isósceles ou escaleno), conforme propriedade fundamental da geometria euclidiana plana.",
+    resposta: "CERTO",
+    explicacao:
+      "Teorema da soma dos ângulos internos: em qualquer triângulo no plano euclidiano, a soma é 180°. É propriedade invariante, usada em diversos problemas geométricos.",
+    dificuldade: 1,
+    tags: [
+      "triângulo",
+      "soma dos ângulos internos",
+      "geometria euclidiana",
+      "propriedade invariante",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Problemas Geométricos",
+    ano: 2023,
   },
 ];
 
 export const totalQuestoesRLM = questoesRaciocinioLogico.length;
+
+export const distribuicaoDificuldadeRLM = {
+  1: questoesRaciocinioLogico.filter((q) => q.dificuldade === 1).length,
+  2: questoesRaciocinioLogico.filter((q) => q.dificuldade === 2).length,
+  3: questoesRaciocinioLogico.filter((q) => q.dificuldade === 3).length,
+};

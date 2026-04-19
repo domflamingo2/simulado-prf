@@ -1,222 +1,474 @@
 "use client";
 
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Toaster, toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast, Toaster } from "sonner";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
-import {
-  buscarQuestoes,
-  getEstatisticasBanco,
-  getQuestoesPorDificuldade,
-  getQuestoesPorDisciplina,
-  questoes,
-} from "@/data";
-import { AcoesBanco } from "./components/AcoesBanco";
+import { getEstatisticasBanco, getStatsPorDisciplina, questoes } from "@/data";
+import { AcoesBancoWithErrorBoundary } from "./components/AcoesBanco";
 import { EmptyStateBanco } from "./components/EmptyStateBanco";
 import { EstatisticasBanco } from "./components/EstatisticasBanco";
 import { FiltrosBanco } from "./components/FiltrosBanco";
 import { HeaderBanco } from "./components/HeaderBanco";
 import { LoadingBanco } from "./components/LoadingBanco";
-import { QuestaoCardBanco } from "./components/QuestaoCardBanco";
+import {
+  QuestaoCardBanco,
+  QuestaoListVirtualizada,
+} from "./components/QuestaoCardBanco";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type DificuldadeLevel = "todas" | "1" | "2" | "3";
+
+interface Filters {
+  busca: string;
+  disciplina: string;
+  dificuldade: DificuldadeLevel;
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const VALID_DIFICULDADES: DificuldadeLevel[] = ["todas", "1", "2", "3"];
+const VIRTUALIZE_THRESHOLD = 100;
+const TREINO_MAX_QUESTOES = 30;
+const DEBOUNCE_BUSCA_MS = 350;
+
+// ─── Loading Overlay ──────────────────────────────────────────────────────────
+
+const LoadingOverlay = ({ message }: { message: string }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.2 }}
+    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+  >
+    <motion.div
+      initial={{ scale: 0.92, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.92, opacity: 0 }}
+      className="bg-slate-900/95 border border-white/[0.08] rounded-2xl px-8 py-6 flex flex-col items-center gap-4 shadow-2xl"
+    >
+      <div className="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+      <p className="text-sm text-slate-300">{message}</p>
+    </motion.div>
+  </motion.div>
+);
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+
+const PageFooter = ({
+  total,
+  totalBanco,
+  favoritas,
+  virtualizado,
+}: {
+  total: number;
+  totalBanco: number;
+  favoritas: number;
+  virtualizado: boolean;
+}) => (
+  <motion.footer
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.3 }}
+    className="flex flex-col items-center gap-2 pt-6 pb-2 text-center"
+  >
+    <p className="text-xs text-slate-500">
+      Mostrando{" "}
+      <span className="text-slate-400 font-medium tabular-nums">
+        {total.toLocaleString("pt-BR")}
+      </span>{" "}
+      de{" "}
+      <span className="text-slate-400 font-medium tabular-nums">
+        {totalBanco.toLocaleString("pt-BR")}
+      </span>{" "}
+      questões
+      {favoritas > 0 && (
+        <span className="ml-2 text-amber-400/80">
+          · {favoritas.toLocaleString("pt-BR")} favorita
+          {favoritas !== 1 ? "s" : ""}
+        </span>
+      )}
+    </p>
+
+    {virtualizado && (
+      <p className="text-[10px] text-slate-600">
+        ⚡ Modo performance ativo · {total.toLocaleString("pt-BR")} questões
+        renderizadas com virtualização
+      </p>
+    )}
+
+    <p className="text-[10px] text-slate-700">
+      <kbd className="px-1.5 py-px rounded bg-white/[0.04] border border-white/[0.06] font-mono text-slate-600">
+        Ctrl K
+      </kbd>{" "}
+      busca rápida &nbsp;·&nbsp;{" "}
+      <kbd className="px-1.5 py-px rounded bg-white/[0.04] border border-white/[0.06] font-mono text-slate-600">
+        Esc
+      </kbd>{" "}
+      limpar filtros
+    </p>
+  </motion.footer>
+);
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BancoQuestoesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // ── UI state ───────────────────────────────────────────────────────────────
   const [carregando, setCarregando] = useState(true);
-  const [busca, setBusca] = useState("");
-  const [disciplinaFiltro, setDisciplinaFiltro] = useState("todas");
-  const [dificuldadeFiltro, setDificuldadeFiltro] = useState("todas");
+  const [isExporting, setIsExporting] = useState(false);
+  const [isTraining, setIsTraining] = useState(false);
+
+  // ── Filter state ───────────────────────────────────────────────────────────
+  const [filters, setFilters] = useState<Filters>({
+    busca: "",
+    disciplina: "todas",
+    dificuldade: "todas",
+  });
+
+  // ── Favorites ──────────────────────────────────────────────────────────────
   const [favoritas, setFavoritas] = useState<Set<string>>(new Set());
 
-  // Carrega favoritos do localStorage
+  // ── Scroll restoration ref ─────────────────────────────────────────────────
+  const didRestoreScroll = useRef(false);
+
+  // ── Sync URL → state + localStorage → favorites on mount ──────────────────
   useEffect(() => {
     try {
       const saved = localStorage.getItem("prf_questoes_favoritas");
-      if (saved) {
-        setFavoritas(new Set(JSON.parse(saved)));
-      }
+      if (saved) setFavoritas(new Set(JSON.parse(saved) as string[]));
+
+      const urlBusca = searchParams.get("busca") ?? "";
+      const urlDisciplina = searchParams.get("disciplina") ?? "todas";
+      const urlDificuldade = searchParams.get("dificuldade") ?? "todas";
+
+      setFilters({
+        busca: urlBusca,
+        disciplina: urlDisciplina,
+        dificuldade: VALID_DIFICULDADES.includes(
+          urlDificuldade as DificuldadeLevel,
+        )
+          ? (urlDificuldade as DificuldadeLevel)
+          : "todas",
+      });
     } catch (err) {
-      console.error("Erro ao carregar favoritas:", err);
+      console.error("[BancoQuestoesPage] init error:", err);
+      toast.error("Erro ao carregar preferências");
     } finally {
       setCarregando(false);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentional: run once on mount
 
-  // Salva favoritos no localStorage
-  const toggleFavorita = useCallback((id: string) => {
-    setFavoritas((prev) => {
-      const novo = new Set(prev);
-      if (novo.has(id)) {
-        novo.delete(id);
-        toast.info("Questão removida dos favoritos");
-      } else {
-        novo.add(id);
-        toast.success("Questão adicionada aos favoritos! ⭐");
-      }
-      localStorage.setItem("prf_questoes_favoritas", JSON.stringify([...novo]));
-      return novo;
-    });
-  }, []);
-
-  // Estatísticas do banco
-  const estatisticasBanco = useMemo(() => getEstatisticasBanco(), []);
-
-  // Estatísticas por disciplina
-  const statsPorDisciplina = useMemo(() => {
-    const disciplinas = Object.keys(DISCIPLINAS_NOME);
-    return disciplinas
-      .map((disc) => ({
-        disciplina: disc,
-        nome: DISCIPLINAS_NOME[disc],
-        count: questoes.filter((q) => q.disciplina === disc).length,
-      }))
-      .filter((s) => s.count > 0)
-      .sort((a, b) => b.count - a.count);
-  }, []);
-
-  // Filtragem das questões
-  const questoesFiltradas = useMemo(() => {
-    let resultado = [...questoes];
-
-    // Filtro por disciplina
-    if (disciplinaFiltro !== "todas") {
-      resultado = getQuestoesPorDisciplina(disciplinaFiltro as any);
+  // ── Scroll restoration ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (carregando || didRestoreScroll.current) return;
+    didRestoreScroll.current = true;
+    const saved = sessionStorage.getItem("banco_scroll_position");
+    if (saved) {
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: parseInt(saved, 10) }),
+      );
     }
+    return () => {
+      sessionStorage.setItem("banco_scroll_position", String(window.scrollY));
+    };
+  }, [carregando]);
 
-    // Filtro por dificuldade
-    if (dificuldadeFiltro !== "todas") {
-      const dificuldadeNum = parseInt(dificuldadeFiltro) as 1 | 2 | 3;
-      resultado = getQuestoesPorDificuldade(dificuldadeNum);
-      // Se já havia filtro por disciplina, precisamos combinar
-      if (disciplinaFiltro !== "todas") {
-        resultado = resultado.filter((q) => q.disciplina === disciplinaFiltro);
-      }
-    }
+  // ── URL sync helper ────────────────────────────────────────────────────────
+  const pushFiltersToURL = useCallback(
+    (f: Filters) => {
+      const params = new URLSearchParams();
+      if (f.busca) params.set("busca", f.busca);
+      if (f.disciplina !== "todas") params.set("disciplina", f.disciplina);
+      if (f.dificuldade !== "todas") params.set("dificuldade", f.dificuldade);
+      const qs = params.toString();
+      const url = qs ? `?${qs}` : window.location.pathname;
+      router.replace(url, { scroll: false });
+    },
+    [router],
+  );
 
-    // Busca textual
-    if (busca.trim()) {
-      resultado = buscarQuestoes(busca);
-      // Aplicar filtros adicionais após busca
-      if (disciplinaFiltro !== "todas") {
-        resultado = resultado.filter((q) => q.disciplina === disciplinaFiltro);
-      }
-      if (dificuldadeFiltro !== "todas") {
-        resultado = resultado.filter(
-          (q) => q.dificuldade === parseInt(dificuldadeFiltro),
-        );
-      }
-    }
+  // ── Debounced busca ────────────────────────────────────────────────────────
+  const debouncedSyncURL = useDebouncedCallback(
+    (f: Filters) => pushFiltersToURL(f),
+    DEBOUNCE_BUSCA_MS,
+  ) as (f: Filters) => void;
 
-    return resultado;
-  }, [busca, disciplinaFiltro, dificuldadeFiltro]);
+  const setFilter = useCallback(
+    <K extends keyof Filters>(key: K, value: Filters[K]) => {
+      setFilters((prev) => {
+        const next = { ...prev, [key]: value };
+        // Sync imediato para filtros não-busca; debounced para busca
+        if (key === "busca") debouncedSyncURL(next);
+        else pushFiltersToURL(next);
+        return next;
+      });
+    },
+    [debouncedSyncURL, pushFiltersToURL],
+  );
 
   const limparFiltros = useCallback(() => {
-    setBusca("");
-    setDisciplinaFiltro("todas");
-    setDificuldadeFiltro("todas");
+    const reset: Filters = {
+      busca: "",
+      disciplina: "todas",
+      dificuldade: "todas",
+    };
+    setFilters(reset);
+    pushFiltersToURL(reset);
     toast.info("Filtros limpos");
+  }, [pushFiltersToURL]);
+
+  // ── Static data (memoized once) ────────────────────────────────────────────
+  const estatisticasBanco = useMemo(() => getEstatisticasBanco(), []);
+  const statsPorDisciplina = useMemo(() => getStatsPorDisciplina(), []);
+
+  // ── Filtered questions ─────────────────────────────────────────────────────
+  const questoesFiltradas = useMemo(() => {
+    let result = questoes as typeof questoes;
+
+    if (filters.disciplina !== "todas") {
+      result = result.filter((q) => q.disciplina === filters.disciplina);
+    }
+
+    if (filters.dificuldade !== "todas") {
+      const nivel = parseInt(filters.dificuldade, 10);
+      result = result.filter((q) => q.dificuldade === nivel);
+    }
+
+    const termo = filters.busca.trim().toLowerCase();
+    if (termo) {
+      result = result.filter(
+        (q) =>
+          q.enunciado.toLowerCase().includes(termo) ||
+          q.assunto?.toLowerCase().includes(termo) ||
+          q.disciplina.toLowerCase().includes(termo) ||
+          q.tags?.some((t) => t.toLowerCase().includes(termo)),
+      );
+    }
+
+    return result;
+  }, [filters]);
+
+  const shouldVirtualize = questoesFiltradas.length > VIRTUALIZE_THRESHOLD;
+
+  // ── Favorites ──────────────────────────────────────────────────────────────
+  const toggleFavorita = useCallback((id: string) => {
+    setFavoritas((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        toast.info("Removida dos favoritos");
+      } else {
+        next.add(id);
+        toast.success("Adicionada aos favoritos ⭐");
+      }
+      try {
+        localStorage.setItem(
+          "prf_questoes_favoritas",
+          JSON.stringify([...next]),
+        );
+      } catch {
+        // storage full or blocked — silently ignore
+      }
+      return next;
+    });
   }, []);
 
-  const exportarQuestoes = useCallback(() => {
-    const data = {
-      exportadoEm: new Date().toISOString(),
-      totalQuestoes: questoesFiltradas.length,
-      questoes: questoesFiltradas.map((q) => ({
-        id: q.id,
-        disciplina: q.disciplina,
-        enunciado: q.enunciado,
-        resposta: q.resposta,
-        explicacao: q.explicacao,
-        dificuldade: q.dificuldade,
-        ano: q.ano,
-        banca: q.banca_referencia,
-        assunto: q.assunto,
-        tags: q.tags,
-      })),
-    };
+  // ── Export ─────────────────────────────────────────────────────────────────
+  const exportarQuestoes = useCallback(async () => {
+    if (questoesFiltradas.length === 0) {
+      toast.error("Nenhuma questão para exportar");
+      return;
+    }
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `prf_banco_questoes_${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    requestAnimationFrame(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
+    setIsExporting(true);
 
-    toast.success(`${questoesFiltradas.length} questões exportadas!`);
-  }, [questoesFiltradas]);
+    try {
+      if (questoesFiltradas.length > 5_000) {
+        toast.warning("Grande volume — pode demorar alguns segundos…", {
+          duration: 5000,
+        });
+      }
 
-  const iniciarTreino = useCallback(() => {
+      const payload = {
+        exportadoEm: new Date().toISOString(),
+        totalQuestoes: questoesFiltradas.length,
+        filtrosAplicados: {
+          busca: filters.busca || null,
+          disciplina:
+            filters.disciplina !== "todas" ? filters.disciplina : null,
+          dificuldade:
+            filters.dificuldade !== "todas" ? filters.dificuldade : null,
+        },
+        questoes: questoesFiltradas.map((q) => ({
+          id: q.id,
+          disciplina: q.disciplina,
+          enunciado: q.enunciado,
+          resposta: q.resposta,
+          explicacao: q.explicacao,
+          dificuldade: q.dificuldade,
+          ano: q.ano,
+          banca: q.banca_referencia,
+          assunto: q.assunto,
+          tags: q.tags,
+          fonte_legal: q.fonte_legal,
+        })),
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement("a"), {
+        href: url,
+        download: `prf_banco_questoes_${new Date().toISOString().split("T")[0]}.json`,
+      });
+      document.body.appendChild(a);
+      a.click();
+
+      requestAnimationFrame(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      toast.success(
+        `${questoesFiltradas.length.toLocaleString("pt-BR")} questões exportadas!`,
+      );
+    } catch (err) {
+      console.error("[exportarQuestoes]", err);
+      toast.error("Erro ao exportar. Tente novamente.");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [questoesFiltradas, filters]);
+
+  // ── Start training ─────────────────────────────────────────────────────────
+  const iniciarTreino = useCallback(async () => {
     if (questoesFiltradas.length === 0) {
       toast.error("Nenhuma questão selecionada para treino");
       return;
     }
 
-    const selecionadas = questoesFiltradas.slice(0, 30).map((q) => ({
-      ...q,
-      respostaUsuario: undefined,
-    }));
+    setIsTraining(true);
 
-    localStorage.setItem(
-      "prf_treino_atual",
-      JSON.stringify({
-        disciplina: "BANCO_DE_QUESTOES",
-        questoes: selecionadas,
-        mostrarExplicacao: true,
-        modo: "TREINO",
-        totalDisponiveis: questoesFiltradas.length,
-      }),
-    );
+    try {
+      const selecionadas = questoesFiltradas
+        .slice(0, TREINO_MAX_QUESTOES)
+        .map((q) => ({ ...q, respostaUsuario: undefined }));
 
-    toast.success(`Iniciando treino com ${selecionadas.length} questões!`);
-    window.location.href = "/treino/simulado";
-  }, [questoesFiltradas]);
+      localStorage.setItem(
+        "prf_treino_atual",
+        JSON.stringify({
+          disciplina: "BANCO_DE_QUESTOES",
+          questoes: selecionadas,
+          mostrarExplicacao: true,
+          modo: "TREINO",
+          totalDisponiveis: questoesFiltradas.length,
+          dataInicio: new Date().toISOString(),
+        }),
+      );
 
-  if (carregando) {
-    return <LoadingBanco />;
-  }
+      toast.success(`Iniciando treino com ${selecionadas.length} questões!`);
+
+      await new Promise((r) => setTimeout(r, 400)); // let toast render
+      router.push("/treino/simulado");
+    } catch (err) {
+      console.error("[iniciarTreino]", err);
+      toast.error("Erro ao preparar treino. Tente novamente.");
+      setIsTraining(false);
+    }
+    // Note: setIsTraining(false) NOT called on success — page navigates away
+  }, [questoesFiltradas, router]);
+
+  // ── Active filter labels ────────────────────────────────────────────────────
+  const filtrosAtivos = useMemo(() => {
+    const labels: string[] = [];
+    if (filters.busca) labels.push(`"${filters.busca}"`);
+    if (filters.disciplina !== "todas") {
+      labels.push(
+        DISCIPLINAS_NOME[filters.disciplina as keyof typeof DISCIPLINAS_NOME] ??
+          filters.disciplina,
+      );
+    }
+    if (filters.dificuldade !== "todas") {
+      labels.push(
+        filters.dificuldade === "1"
+          ? "Fácil"
+          : filters.dificuldade === "2"
+            ? "Médio"
+            : "Difícil",
+      );
+    }
+    return labels;
+  }, [filters]);
+
+  // ── Early return ───────────────────────────────────────────────────────────
+  if (carregando) return <LoadingBanco variant="initial" />;
 
   return (
     <>
       <Toaster
         position="top-right"
-        richColors
         toastOptions={{
           style: {
-            background: "#1e293b",
-            border: "1px solid #334155",
+            background: "rgba(15,17,23,0.95)",
+            border: "1px solid rgba(255,255,255,0.08)",
             color: "#f1f5f9",
+            fontSize: "13px",
+            backdropFilter: "blur(12px)",
           },
           duration: 3000,
         }}
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white pb-12">
-        <HeaderBanco total={estatisticasBanco.total} />
+      {/* ── Action overlays ── */}
+      <AnimatePresence>
+        {isExporting && (
+          <LoadingOverlay key="exp" message="Exportando questões…" />
+        )}
+        {isTraining && (
+          <LoadingOverlay key="trn" message="Preparando treino…" />
+        )}
+      </AnimatePresence>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          {/* Estatísticas do banco */}
-          <EstatisticasBanco stats={estatisticasBanco} />
+      {/* ── Page shell ── */}
+      <div className="min-h-screen bg-slate-950 text-white">
+        <HeaderBanco total={estatisticasBanco.total} isLoading={false} />
 
-          {/* Filtros */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
+          {/* Stats */}
+          <EstatisticasBanco stats={estatisticasBanco} isLoading={false} />
+
+          {/* Filters */}
           <FiltrosBanco
-            busca={busca}
-            setBusca={setBusca}
-            disciplinaFiltro={disciplinaFiltro}
-            setDisciplinaFiltro={setDisciplinaFiltro}
-            dificuldadeFiltro={dificuldadeFiltro}
-            setDificuldadeFiltro={setDificuldadeFiltro}
+            busca={filters.busca}
+            setBusca={(v) => {
+              const val = typeof v === "function" ? v(filters.busca) : v;
+              setFilter("busca", val);
+            }}
+            disciplinaFiltro={filters.disciplina}
+            setDisciplinaFiltro={(v) => setFilter("disciplina", v as string)}
+            dificuldadeFiltro={filters.dificuldade}
+            setDificuldadeFiltro={(v) => {
+              const val = typeof v === "function" ? v(filters.dificuldade) : v;
+              setFilter("dificuldade", val as DificuldadeLevel);
+            }}
             statsPorDisciplina={statsPorDisciplina}
             onLimparFiltros={limparFiltros}
+            isLoading={false}
+            totalQuestoesEncontradas={questoesFiltradas.length}
           />
 
-          {/* Ações */}
-          <AcoesBanco
+          {/* Actions */}
+          <AcoesBancoWithErrorBoundary
             totalQuestoes={questoesFiltradas.length}
             questoesSelecionadas={estatisticasBanco.total}
             onExportar={exportarQuestoes}
@@ -224,44 +476,59 @@ export default function BancoQuestoesPage() {
             onResetarFiltros={limparFiltros}
           />
 
-          {/* Lista de questões */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-3"
-          >
-            <AnimatePresence mode="popLayout">
+          {/* Question list */}
+          <section aria-label="Lista de questões">
+            <AnimatePresence mode="wait">
               {questoesFiltradas.length === 0 ? (
-                <EmptyStateBanco onLimparFiltros={limparFiltros} />
-              ) : (
-                questoesFiltradas.map((questao, idx) => (
-                  <QuestaoCardBanco
-                    key={questao.id}
-                    questao={questao}
-                    index={idx}
+                <EmptyStateBanco
+                  key="empty"
+                  onLimparFiltros={limparFiltros}
+                  variant="no-results"
+                  filtrosAtivos={filtrosAtivos}
+                />
+              ) : shouldVirtualize ? (
+                <motion.div
+                  key="virtual"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <QuestaoListVirtualizada
+                    questoes={questoesFiltradas}
                     onFavoritar={toggleFavorita}
-                    isFavorita={favoritas.has(questao.id)}
+                    favoritas={favoritas}
                   />
-                ))
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="list"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-3"
+                >
+                  {questoesFiltradas.map((questao, idx) => (
+                    <QuestaoCardBanco
+                      key={questao.id}
+                      questao={questao}
+                      index={idx}
+                      onFavoritar={toggleFavorita}
+                      isFavorita={favoritas.has(questao.id)}
+                    />
+                  ))}
+                </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+          </section>
 
-          {/* Footer com contagem */}
+          {/* Footer */}
           {questoesFiltradas.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-xs text-slate-500 pt-4"
-            >
-              Mostrando {questoesFiltradas.length} de {estatisticasBanco.total}{" "}
-              questões
-              {favoritas.size > 0 && (
-                <span className="ml-2 text-amber-400">
-                  • {favoritas.size} favoritas
-                </span>
-              )}
-            </motion.div>
+            <PageFooter
+              total={questoesFiltradas.length}
+              totalBanco={estatisticasBanco.total}
+              favoritas={favoritas.size}
+              virtualizado={shouldVirtualize}
+            />
           )}
         </main>
       </div>

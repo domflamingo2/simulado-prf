@@ -1,346 +1,534 @@
 import { Questao } from "../types";
 
 export const questoesAdministracao: Questao[] = [
+  // ============================================================
+  // TÓPICO 1: EVOLUÇÃO DA ADMINISTRAÇÃO PÚBLICA
+  // ============================================================
   {
-    id: "admin-001-v2",
+    id: "admin-001",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "A teoria clássica da administração, representada por Frederick Taylor (Administração Científica) e Henri Fayol (Teoria Clássica), enfatiza a eficiência técnica, a divisão do trabalho, a padronização e a hierarquia como elementos fundamentais para a racionalização da produção e da organização.",
+      "A reforma do Estado no Brasil buscou substituir o modelo burocrático tradicional por um modelo gerencial, com foco em eficiência, resultados e qualidade dos serviços públicos.",
     resposta: "CERTO",
     explicacao:
-      "Taylor focou na racionalização do trabalho operário (estudo de tempos e movimentos). Fayol focou na organização administrativa (funções da administração: planejar, organizar, comandar, coordenar, controlar). Ambos enfatizam eficiência, divisão do trabalho e hierarquia.",
+      "A reforma gerencial (PDRAE/1995) introduziu foco em desempenho, eficiência, orientação ao cidadão e controle de resultados.",
     dificuldade: 1,
-    tags: [
-      "teoria clássica",
-      "Taylor",
-      "Fayol",
-      "administração científica",
-      "eficiência",
-      "hierarquia",
-    ],
-    banca_referencia: "CEBRASPE/FGV",
-    assunto: "Evolução da Administração Pública",
+    tags: ["reforma do estado", "administracao publica gerencial", "PDRAE"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Evolucao da Administracao Publica",
+    ano: 2023,
   },
   {
-    id: "admin-002-v2",
+    id: "admin-002",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "A teoria das relações humanas, desenvolvida a partir das experiências de Elton Mayo na Hawthorne, prioriza os aspectos técnicos e estruturais da organização em detrimento dos fatores humanos, sociais e psicológicos dos trabalhadores.",
+      "A gestão pública e a gestão privada são idênticas quanto aos seus objetivos, pois ambas visam exclusivamente ao lucro.",
     resposta: "ERRADO",
     explicacao:
-      "A Teoria das Relações Humanas (Mayo, Roethlisberger, Dickson) surgiu justamente como crítica à excessiva racionalização técnica. Prioriza os fatores humanos, sociais, psicológicos, a satisfação no trabalho, as relações interpessoais, não os aspectos técnicos.",
+      "Gestão pública busca interesse coletivo e bem comum; gestão privada visa lucro. Há convergências em técnicas, mas divergências em finalidades.",
     dificuldade: 1,
-    tags: [
-      "teoria das relações humanas",
-      "Mayo",
-      "experiência de Hawthorne",
-      "fatores humanos",
-    ],
+    tags: ["gestao publica vs privada", "objetivos organizacionais"],
     banca_referencia: "CEBRASPE",
-    assunto: "Evolução da Administração Pública",
+    assunto: "Gestao Publica e Privada",
+    ano: 2022,
   },
   {
-    id: "admin-003-v2",
+    id: "admin-003",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "O planejamento estratégico na gestão pública estabelece objetivos de longo prazo, define estratégias para alcançá-los e alinha recursos e ações, considerando o ambiente externo (oportunidades e ameaças) e interno (forças e fraquezas) da organização.",
+      "A excelência nos serviços públicos está associada à eficiência, eficácia e efetividade na entrega de resultados à sociedade.",
     resposta: "CERTO",
     explicacao:
-      "Planejamento estratégico = longo prazo, missão, visão, valores, análise SWOT (ambiente externo e interno), formulação de estratégias, implementação e avaliação. Na gestão pública, adapta-se ao setor público (foco em resultados para a sociedade).",
+      "Excelência = eficiência (meios), eficácia (resultados) e efetividade (impacto social). Modelo 3Es da gestão pública.",
     dificuldade: 1,
-    tags: [
-      "planejamento estratégico",
-      "longo prazo",
-      "SWOT",
-      "gestão pública",
-      "missão e visão",
-    ],
+    tags: ["excelencia", "eficiencia", "eficacia", "efetividade"],
     banca_referencia: "FGV",
-    assunto: "Gestão de Pessoas",
+    assunto: "Excelencia nos Servicos Publicos",
+    ano: 2023,
   },
   {
-    id: "admin-004-v2",
+    id: "admin-004",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "A organização formal é aquela estabelecida oficialmente pela administração, com hierarquia definida, divisão de tarefas, normas e procedimentos escritos, representada graficamente pelo organograma, enquanto a organização informal emerge espontaneamente das relações sociais.",
+      "O modelo patrimonialista de administração pública caracteriza-se pela confusão entre o patrimônio do Estado e o do governante.",
     resposta: "CERTO",
     explicacao:
-      "Conceito clássico: organização formal = estrutura oficial, organograma, regulamentos. Organização informal = relações interpessoais, grupos de convívio, lideranças emergentes, comunicação informal (boca a boca).",
-    dificuldade: 1,
-    tags: [
-      "organização formal",
-      "organização informal",
-      "hierarquia",
-      "organograma",
-      "estrutura",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Características das organizações formais modernas",
-  },
-  {
-    id: "admin-005-v2",
-    disciplina: "ADMINISTRACAO",
-    enunciado:
-      "A teoria da liderança situacional de Hersey e Blanchard sugere que não existe um único melhor estilo de liderança, devendo o líder adaptar seu comportamento (diretivo ou de apoio) ao nível de maturidade (competência e compromisso) dos subordinados.",
-    resposta: "CERTO",
-    explicacao:
-      "Liderança situacional: o estilo deve variar (dirigir, instruir, apoiar, delegar) conforme a maturidade da equipe (capacidade + vontade). Não há estilo único ideal; depende da situação.",
+      "Patrimonialismo: ausência de distinção entre público e privado, nepotismo, clientelismo. Superado pelo modelo burocrático weberiano.",
     dificuldade: 2,
-    tags: [
-      "liderança situacional",
-      "Hersey e Blanchard",
-      "estilos de liderança",
-      "maturidade",
-    ],
-    banca_referencia: "FGV",
-    assunto: "Liderança",
+    tags: ["patrimonialismo", "evolucao historica", "weber"],
+    banca_referencia: "FCC",
+    assunto: "Evolucao da Administracao Publica",
+    ano: 2023,
   },
   {
-    id: "admin-006-v2",
+    id: "admin-005",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "O ciclo PDCA (Plan-Do-Check-Act), também conhecido como ciclo de Deming, é uma ferramenta de gestão da qualidade que propõe um processo contínuo de planejamento, execução, verificação e ação corretiva para melhoria de processos.",
+      "A governança pública moderna incorpora princípios de transparência, accountability e participação social como pilares da gestão.",
     resposta: "CERTO",
     explicacao:
-      "PDCA = Plan (planejar), Do (executar), Check (verificar), Act (agir/melhorar). Ciclo de melhoria contínua (Kaizen). Aplicável à gestão pública e privada.",
-    dificuldade: 1,
-    tags: [
-      "PDCA",
-      "ciclo de Deming",
-      "melhoria contínua",
-      "qualidade",
-      "gestão de processos",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Excelência nos serviços públicos",
+      "Governança pública = mecanismos de direção, controle e prestação de contas, com foco em legitimidade e resultados sociais.",
+    dificuldade: 2,
+    tags: ["governanca publica", "accountability", "transparencia"],
+    banca_referencia: "FGV",
+    assunto: "Gestao Publica Contemporanea",
+    ano: 2024,
   },
+
+  // ============================================================
+  // TÓPICO 2: GESTÃO DE PESSOAS
+  // ============================================================
   {
-    id: "admin-007-v2",
+    id: "admin-006",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "A matriz SWOT (FOFA) é ferramenta de análise estratégica que avalia Forças (Strengths), Oportunidades (Weaknesses), Fraquezas (Opportunities) e Ameaças (Threats) de uma organização, considerando ambiente interno e externo.",
+      "A gestão de pessoas no setor público limita-se à administração de folha de pagamento e controle de frequência.",
     resposta: "ERRADO",
     explicacao:
-      "A tradução está incorreta na assertiva. O correto é: Strengths = Forças, Weaknesses = Fraquezas (ambos internos), Opportunities = Oportunidades, Threats = Ameaças (ambos externos). A assertiva trocou Fraquezas com Oportunidades.",
-    dificuldade: 2,
-    tags: [
-      "SWOT",
-      "FOFA",
-      "análise estratégica",
-      "forças",
-      "fraquezas",
-      "oportunidades",
-      "ameaças",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Planejamento estratégico",
-  },
-  {
-    id: "admin-008-v2",
-    disciplina: "ADMINISTRACAO",
-    enunciado:
-      "O controle burocrático, baseado nas teorias de Max Weber, fundamenta-se em regras, regulamentos, procedimentos padronizados, hierarquia formal e impessoalidade, visando a racionalidade e a previsibilidade nas decisões organizacionais.",
-    resposta: "CERTO",
-    explicacao:
-      "Weber: burocracia como forma ideal de organização racional-legal. Características: divisão do trabalho, hierarquia, regras formais, impessoalidade, seleção por competência, propriedade separada do cargo.",
+      "Gestão de pessoas moderna inclui: recrutamento, desenvolvimento, avaliação de desempenho, clima organizacional e retenção de talentos.",
     dificuldade: 1,
-    tags: [
-      "Weber",
-      "burocracia",
-      "controle burocrático",
-      "racionalidade",
-      "hierarquia",
-      "impessoalidade",
-    ],
+    tags: ["gestao de pessoas", "RH estrategico"],
     banca_referencia: "CEBRASPE",
-    assunto: "Evolução da Administração Pública",
+    assunto: "Gestao de Pessoas - Conceitos",
+    ano: 2022,
   },
   {
-    id: "admin-009-v2",
+    id: "admin-007",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "A gestão por resultados (GPR) na administração pública foca exclusivamente em indicadores financeiros e orçamentários de desempenho, desconsiderando aspectos qualitativos como satisfação do cidadão e qualidade dos serviços.",
+      "O planejamento estratégico de recursos humanos deve estar alinhado ao planejamento estratégico organizacional.",
+    resposta: "CERTO",
+    explicacao:
+      "RH estratégico atua como parceiro de negócio, alinhando competências humanas aos objetivos institucionais de longo prazo.",
+    dificuldade: 2,
+    tags: ["planejamento estrategico rh", "alinhamento estrategico"],
+    banca_referencia: "FGV",
+    assunto: "Planejamento Estrategico de RH",
+    ano: 2023,
+  },
+  {
+    id: "admin-008",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A gestão de desempenho avalia apenas resultados individuais, desconsiderando metas organizacionais.",
     resposta: "ERRADO",
     explicacao:
-      "GPR considera múltiplas dimensões: eficiência (relação insumo/produto), eficácia (alcance de objetivos), efetividade (impacto na sociedade), qualidade, satisfação do cidadão, não apenas financeiros. É uma visão multidimensional.",
+      "Gestão de desempenho integra avaliação individual, equipes e metas institucionais, com foco em feedback e desenvolvimento contínuo.",
     dificuldade: 2,
-    tags: [
-      "gestão por resultados",
-      "GPR",
-      "indicadores",
-      "eficiência",
-      "eficácia",
-      "efetividade",
-    ],
-    banca_referencia: "FGV",
-    assunto: "Excelência na gestão dos serviços públicos",
-  },
-  {
-    id: "admin-010-v2",
-    disciplina: "ADMINISTRACAO",
-    enunciado:
-      "O processo decisório de Herbert Simon compreende três fases principais: inteligência (identificação do problema), concepção (desenvolvimento de alternativas) e escolha (seleção da alternativa mais adequada).",
-    resposta: "CERTO",
-    explicacao:
-      "Simon (Administrative Behavior): decisão racional limitada (bounded rationality). Fases: 1) Inteligência (problema/oportunidade), 2) Concepção/Formulação (alternativas), 3) Escolha (decisão), 4) Revisão (pós-decisão, em algumas versões).",
-    dificuldade: 2,
-    tags: [
-      "Herbert Simon",
-      "processo decisório",
-      "inteligência",
-      "concepção",
-      "escolha",
-      "racionalidade limitada",
-    ],
+    tags: ["gestao de desempenho", "avaliacao 360", "feedback"],
     banca_referencia: "CEBRASPE",
-    assunto: "Tomada de decisão",
+    assunto: "Gestao de Desempenho",
+    ano: 2023,
   },
   {
-    id: "admin-011-v2",
+    id: "admin-009",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "A teoria Z de William Ouchi combina elementos da gestão japonesa (consenso, emprego vitalício, responsabilidade coletiva) com elementos da gestão americana (individualismo, avaliação de desempenho, controle), propondo um modelo híbrido de organização.",
+      "Cultura organizacional refere-se aos valores, crenças e práticas compartilhadas dentro da organização.",
     resposta: "CERTO",
     explicacao:
-      "Ouchi (Theory Z): integração de práticas japonesas (confiança, relacionamento longo prazo, consenso) e americanas (clareza de responsabilidades, avaliação individual). Enfoque na cultura organizacional.",
-    dificuldade: 2,
-    tags: [
-      "teoria Z",
-      "Ouchi",
-      "gestão japonesa",
-      "gestão americana",
-      "cultura organizacional",
-    ],
-    banca_referencia: "FGV",
-    assunto: "Cultura organizacional",
+      "Cultura = conjunto de pressupostos básicos, valores e artefatos que orientam o comportamento organizacional (Schein).",
+    dificuldade: 1,
+    tags: ["cultura organizacional", "valores", "crencas"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Comportamento Organizacional",
+    ano: 2022,
   },
   {
-    id: "admin-012-v2",
+    id: "admin-010",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "O Balanced Scorecard (BSC) é ferramenta de avaliação de desempenho organizacional que contempla apenas a perspectiva financeira, ignorando aspectos relacionados a clientes, processos internos e aprendizado organizacional.",
+      "Clima organizacional e cultura organizacional são conceitos sinônimos e intercambiáveis na gestão de pessoas.",
     resposta: "ERRADO",
     explicacao:
-      "BSC (Kaplan e Norton) tem 4 perspectivas balanceadas: 1) Financeira, 2) Clientes, 3) Processos Internos de Negócio, 4) Aprendizado e Crescimento. Não é apenas financeiro; é justamente o contrário (equilíbrio entre indicadores financeiros e não-financeiros).",
+      "Cultura = profundo, estável, valores fundamentais. Clima = percepção momentânea, superficial, influenciado por eventos recentes.",
     dificuldade: 2,
-    tags: [
-      "BSC",
-      "Balanced Scorecard",
-      "perspectivas",
-      "indicadores",
-      "desempenho",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Gestão de desempenho",
+    tags: ["clima organizacional", "cultura organizacional", "diferencas"],
+    banca_referencia: "FCC",
+    assunto: "Comportamento Organizacional",
+    ano: 2023,
   },
   {
-    id: "admin-013-v2",
+    id: "admin-011",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "A estrutura organizacional divisionalizada (modelo divisional) agrupa atividades por produto, região geográfica ou cliente, criando unidades autônomas (divisões) com suas próprias funções de produção, marketing e finanças.",
+      "A gestão por competências busca alinhar conhecimentos, habilidades e atitudes às necessidades organizacionais.",
     resposta: "CERTO",
     explicacao:
-      "Estrutura divisional (Alfred Sloan/GM): divisões autônomas por produto, mercado ou região. Cada divisão tem sua própria estrutura funcional. Adequada para organizações grandes e diversificadas.",
+      "Modelo CHA: Conhecimento (saber), Habilidade (saber fazer), Atitude (querer fazer). Base para recrutamento, avaliação e desenvolvimento.",
+    dificuldade: 2,
+    tags: ["gestao por competencias", "CHA", "mapeamento de competencias"],
+    banca_referencia: "FGV",
+    assunto: "Gestao por Competencias",
+    ano: 2023,
+  },
+  {
+    id: "admin-012",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A gestão do conhecimento visa apenas ao registro documental de informações, sem preocupação com a socialização do saber.",
+    resposta: "ERRADO",
+    explicacao:
+      "Gestão do conhecimento = criar, compartilhar e aplicar conhecimento tácito e explícito (Nonaka & Takeuchi). Foco em aprendizagem organizacional.",
+    dificuldade: 3,
+    tags: [
+      "gestao do conhecimento",
+      "conhecimento tacito",
+      "aprendizagem organizacional",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Gestao do Conhecimento",
+    ano: 2024,
+  },
+  {
+    id: "admin-013",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "Qualidade de vida no trabalho está relacionada apenas a benefícios financeiros oferecidos ao servidor.",
+    resposta: "ERRADO",
+    explicacao:
+      "QVT inclui: ergonomia, saúde ocupacional, equilíbrio vida-trabalho, reconhecimento, autonomia e desenvolvimento profissional.",
+    dificuldade: 1,
+    tags: ["qualidade de vida no trabalho", "QVT", "bem-estar"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Qualidade de Vida no Trabalho",
+    ano: 2021,
+  },
+  {
+    id: "admin-014",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A departamentalização funcional agrupa atividades com base em funções semelhantes, como marketing, finanças e produção.",
+    resposta: "CERTO",
+    explicacao:
+      "Estrutura funcional: especialização por áreas técnicas. Vantagem: eficiência. Desvantagem: visão fragmentada (silos).",
+    dificuldade: 1,
+    tags: ["departamentalizacao", "estrutura funcional", "organizacao"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Estrutura Organizacional",
+    ano: 2022,
+  },
+  {
+    id: "admin-015",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A estrutura matricial combina departamentalização funcional e por projetos, permitindo alocação flexível de recursos.",
+    resposta: "CERTO",
+    explicacao:
+      "Matricial: dupla subordinação (gerente funcional + gerente de projeto). Flexível, mas pode gerar conflitos de autoridade.",
+    dificuldade: 2,
+    tags: ["estrutura matricial", "gestao por projetos", "departamentalizacao"],
+    banca_referencia: "FCC",
+    assunto: "Estrutura Organizacional",
+    ano: 2023,
+  },
+  {
+    id: "admin-016",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A liderança eficaz depende exclusivamente de características inatas do líder.",
+    resposta: "ERRADO",
+    explicacao:
+      "Teorias contemporâneas: liderança é comportamental e situacional. Pode ser desenvolvida por treinamento e experiência (liderança servidora, transformacional).",
+    dificuldade: 2,
+    tags: ["lideranca", "teorias da lideranca", "desenvolvimento"],
+    banca_referencia: "FGV",
+    assunto: "Lideranca",
+    ano: 2023,
+  },
+  {
+    id: "admin-017",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A teoria da expectativa de Vroom afirma que a motivação depende da relação entre esforço, desempenho e recompensa esperada.",
+    resposta: "CERTO",
+    explicacao:
+      "Motivação = Expectativa (esforço→desempenho) × Instrumentalidade (desempenho→recompensa) × Valência (valor da recompensa).",
+    dificuldade: 3,
+    tags: ["motivacao", "teoria da expectativa", "vroom"],
+    banca_referencia: "FCC",
+    assunto: "Motivacao e Satisfacao no Trabalho",
+    ano: 2024,
+  },
+  {
+    id: "admin-018",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "O recrutamento pode ser interno ou externo, dependendo da origem dos candidatos.",
+    resposta: "CERTO",
+    explicacao:
+      "Recrutamento interno: promove talentos existentes (motivação, custo). Externo: traz novas competências, mas pode desmotivar internos.",
+    dificuldade: 1,
+    tags: ["recrutamento", "selecao de pessoas", "RH"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Recrutamento e Selecao",
+    ano: 2022,
+  },
+  {
+    id: "admin-019",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A análise e descrição de cargos define responsabilidades, requisitos e competências necessárias para o desempenho de funções.",
+    resposta: "CERTO",
+    explicacao:
+      "Análise de cargos = base para recrutamento, avaliação de desempenho, remuneração e treinamento. Inclui tarefas, responsabilidades e perfil necessário.",
+    dificuldade: 1,
+    tags: ["analise de cargos", "descricao de cargos", "gestao de cargos"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Analise e Descricao de Cargos",
+    ano: 2021,
+  },
+  {
+    id: "admin-020",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A seleção por competências utiliza técnicas como assessment center e dinâmicas de grupo para avaliar comportamentos esperados.",
+    resposta: "CERTO",
+    explicacao:
+      "Seleção por competências foca em evidências comportamentais. Assessment center simula situações reais para observar competências em ação.",
     dificuldade: 2,
     tags: [
+      "selecao por competencias",
+      "assessment center",
+      "entrevista comportamental",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Recrutamento e Selecao",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 3: EDUCAÇÃO, TREINAMENTO E DESENVOLVIMENTO
+  // ============================================================
+  {
+    id: "admin-021",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "Treinamento e desenvolvimento são conceitos idênticos e possuem o mesmo foco organizacional.",
+    resposta: "ERRADO",
+    explicacao:
+      "Treinamento = curto prazo, foco em habilidades específicas para cargo atual. Desenvolvimento = longo prazo, foco em crescimento profissional e carreira.",
+    dificuldade: 2,
+    tags: ["treinamento", "desenvolvimento", "educacao corporativa"],
+    banca_referencia: "FGV",
+    assunto: "Educacao Corporativa",
+    ano: 2023,
+  },
+  {
+    id: "admin-022",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A educação corporativa busca o desenvolvimento contínuo dos colaboradores alinhado à estratégia organizacional.",
+    resposta: "CERTO",
+    explicacao:
+      "Educação corporativa = sistema integrado de aprendizagem que conecta desenvolvimento humano aos objetivos estratégicos da organização.",
+    dificuldade: 2,
+    tags: ["educacao corporativa", "aprendizagem organizacional", "estrategia"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Educacao Corporativa",
+    ano: 2023,
+  },
+  {
+    id: "admin-023",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A educação a distância elimina totalmente a necessidade de interação entre instrutor e aluno.",
+    resposta: "ERRADO",
+    explicacao:
+      "EAD de qualidade combina recursos assíncronos (videoaulas, fóruns) e síncronos (webinars, tutoria). Interação é essencial para aprendizagem significativa.",
+    dificuldade: 1,
+    tags: ["ead", "educacao a distancia", "interacao"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Educacao a Distancia",
+    ano: 2022,
+  },
+  {
+    id: "admin-024",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "O modelo 70-20-10 de desenvolvimento propõe que 70% da aprendizagem ocorre na prática, 20% em interações sociais e 10% em treinamentos formais.",
+    resposta: "CERTO",
+    explicacao:
+      "Modelo 70-20-10 (Lombardo & Eichinger): aprendizagem experiencial (on-the-job) é predominante. Base para programas modernos de desenvolvimento.",
+    dificuldade: 3,
+    tags: [
+      "modelo 70-20-10",
+      "desenvolvimento profissional",
+      "aprendizagem experiencial",
+    ],
+    banca_referencia: "FCC",
+    assunto: "Educacao Corporativa",
+    ano: 2024,
+  },
+  {
+    id: "admin-025",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A LGPD impacta a gestão de pessoas ao exigir consentimento e transparência no tratamento de dados pessoais dos servidores.",
+    resposta: "CERTO",
+    explicacao:
+      "Lei 13.709/2018: RH deve adequar processos de recrutamento, avaliação e folha de pagamento aos princípios de finalidade, necessidade e segurança de dados.",
+    dificuldade: 3,
+    tags: ["lgpd", "gestao de pessoas", "protecao de dados"],
+    banca_referencia: "FGV",
+    assunto: "Gestao de Pessoas e Legislacao",
+    ano: 2024,
+  },
+
+  // ============================================================
+  // QUESTÕES INTERDISCIPLINARES E DE APROFUNDAMENTO
+  // ============================================================
+  {
+    id: "admin-026",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A nova gestão pública (New Public Management) incorpora técnicas do setor privado, como foco em resultados, descentralização e competição controlada.",
+    resposta: "CERTO",
+    explicacao:
+      "NPM: movimento global dos anos 80-90 que influenciou a reforma gerencial brasileira. Ênfase em eficiência, métricas de desempenho e orientação ao cidadão.",
+    dificuldade: 2,
+    tags: [
+      "new public management",
+      "reforma gerencial",
+      "gestao por resultados",
+    ],
+    banca_referencia: "FCC",
+    assunto: "Evolucao da Administracao Publica",
+    ano: 2023,
+  },
+  {
+    id: "admin-027",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A avaliação de desempenho com foco punitivo tende a gerar resistência e reduzir a eficácia do processo de gestão de pessoas.",
+    resposta: "CERTO",
+    explicacao:
+      "Avaliação formativa (com feedback construtivo) é mais eficaz que abordagem punitiva. Foco deve ser desenvolvimento, não apenas julgamento.",
+    dificuldade: 2,
+    tags: ["avaliacao de desempenho", "feedback", "gestao de pessoas"],
+    banca_referencia: "VUNESP",
+    assunto: "Gestao de Desempenho",
+    ano: 2023,
+  },
+  {
+    id: "admin-028",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A teoria dos dois fatores de Herzberg distingue fatores higiênicos (evitam insatisfação) de fatores motivacionais (geram satisfação).",
+    resposta: "CERTO",
+    explicacao:
+      "Herzberg: salário, condições de trabalho = higiênicos. Reconhecimento, realização, responsabilidade = motivacionais. Ambos são necessários para alta performance.",
+    dificuldade: 3,
+    tags: ["herzberg", "motivacao", "teoria dos dois fatores"],
+    banca_referencia: "FCC",
+    assunto: "Motivacao e Satisfacao no Trabalho",
+    ano: 2024,
+  },
+  {
+    id: "admin-029",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A estrutura organizacional em rede caracteriza-se por parcerias, terceirização e flexibilidade, sendo adequada para ambientes dinâmicos.",
+    resposta: "CERTO",
+    explicacao:
+      "Estrutura em rede: organização focal coordena parceiros especializados. Vantagens: agilidade, redução de custos fixos. Desafio: gestão de relações.",
+    dificuldade: 3,
+    tags: ["estrutura em rede", "organizacao flexivel", "terceirizacao"],
+    banca_referencia: "FGV",
+    assunto: "Estrutura Organizacional",
+    ano: 2024,
+  },
+  {
+    id: "admin-030",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "O endomarketing aplica técnicas de marketing interno para engajar servidores, melhorar clima organizacional e alinhar valores institucionais.",
+    resposta: "CERTO",
+    explicacao:
+      "Endomarketing = comunicação estratégica interna para construir identidade organizacional, engajamento e cultura de serviço público.",
+    dificuldade: 2,
+    tags: ["endomarketing", "comunicacao interna", "engajamento"],
+    banca_referencia: "VUNESP",
+    assunto: "Comportamento Organizacional",
+    ano: 2023,
+  },
+  {
+    id: "admin-031",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A gestão do conhecimento explícito é mais desafiadora que a do conhecimento tácito, por depender de documentação formal.",
+    resposta: "ERRADO",
+    explicacao:
+      "Conhecimento tácito (experiência, intuição) é mais difícil de codificar e transferir. Gestão do conhecimento foca em converter tácito em explícito (socialização, externalização).",
+    dificuldade: 3,
+    tags: ["gestao do conhecimento", "conhecimento tacito", "nonaka"],
+    banca_referencia: "FGV",
+    assunto: "Gestao do Conhecimento",
+    ano: 2024,
+  },
+  {
+    id: "admin-032",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "O feedback 360 graus avalia o servidor a partir de múltiplas fontes: superiores, pares, subordinados e autoavaliação.",
+    resposta: "CERTO",
+    explicacao:
+      "Feedback 360°: visão multidimensional do desempenho. Requer cultura de confiança e foco em desenvolvimento, não em punição.",
+    dificuldade: 2,
+    tags: ["feedback 360", "avaliacao de desempenho", "multisource feedback"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Gestao de Desempenho",
+    ano: 2023,
+  },
+  {
+    id: "admin-033",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A diversidade e inclusão no serviço público fortalecem a legitimidade institucional e a qualidade das políticas públicas.",
+    resposta: "CERTO",
+    explicacao:
+      "Diversidade (gênero, raça, PCD, etc.) traz perspectivas múltiplas, melhora tomada de decisão e representa melhor a sociedade atendida.",
+    dificuldade: 2,
+    tags: ["diversidade", "inclusao", "gestao de pessoas"],
+    banca_referencia: "FGV",
+    assunto: "Gestao de Pessoas Contemporanea",
+    ano: 2024,
+  },
+  {
+    id: "admin-034",
+    disciplina: "ADMINISTRACAO",
+    enunciado:
+      "A departamentalização por produtos ou serviços é mais adequada para organizações com portfólio diversificado e mercados distintos.",
+    resposta: "CERTO",
+    explicacao:
+      "Estrutura divisional: cada divisão foca em um produto/mercado. Vantagem: foco no cliente. Desvantagem: duplicação de recursos.",
+    dificuldade: 2,
+    tags: [
+      "departamentalizacao",
       "estrutura divisional",
-      "divisões",
-      "autonomia",
-      "produto",
-      "região",
-      "cliente",
+      "gestao por produtos",
     ],
-    banca_referencia: "FGV",
-    assunto: "Tipos de estrutura organizacional",
+    banca_referencia: "FCC",
+    assunto: "Estrutura Organizacional",
+    ano: 2023,
   },
   {
-    id: "admin-014-v2",
+    id: "admin-035",
     disciplina: "ADMINISTRACAO",
     enunciado:
-      "O benchmarking é processo de comparação de práticas, processos e resultados de uma organização com os de outras organizações, restrito exclusivamente a concorrentes diretos do mesmo setor de atuação.",
-    resposta: "ERRADO",
+      "O planejamento de sucessão é estratégia de retenção de talentos que visa preparar profissionais para assumir cargos-chave no futuro.",
+    resposta: "CERTO",
     explicacao:
-      "Benchmarking pode ser: interno (dentro da própria org), competitivo (concorrentes), funcional (melhores práticas em processos específicos, independente do setor), genérico (qualquer organização excelente). Não se restringe a concorrentes.",
+      "Sucessão planejada reduz riscos de descontinuidade, desenvolve lideranças internas e demonstra compromisso com carreira dos servidores.",
     dificuldade: 2,
     tags: [
-      "benchmarking",
-      "melhores práticas",
-      "comparação",
-      "competitivo",
-      "funcional",
+      "planejamento de sucessao",
+      "retencao de talentos",
+      "desenvolvimento de liderancas",
     ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Excelência nos serviços públicos",
-  },
-  {
-    id: "admin-015-v2",
-    disciplina: "ADMINISTRACAO",
-    enunciado:
-      "A pirâmide de Maslow hierarquiza as necessidades humanas em níveis, da base para o topo: fisiológicas, segurança, sociais/pertencimento, estima e autorrealização, sugerindo que necessidades inferiores devem ser satisfeitas antes das superiores.",
-    resposta: "CERTO",
-    explicacao:
-      "Maslow (Teoria da Hierarquia das Necessidades): 1) Fisiológicas (comer, beber), 2) Segurança (proteção), 3) Sociais (amizade, amor), 4) Estima (reconhecimento), 5) Autorrealização (potencial máximo). Ordem crescente de complexidade.",
-    dificuldade: 1,
-    tags: ["Maslow", "pirâmide", "necessidades", "hierarquia", "motivação"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Motivação",
-  },
-  {
-    id: "admin-016-v2",
-    disciplina: "ADMINISTRACAO",
-    enunciado:
-      "O downsizing refere-se à redução deliberada do número de funcionários de uma organização, geralmente por meio de demissões, aposentadorias incentivadas ou transferências, visando à racionalização de custos e à melhoria da eficiência.",
-    resposta: "CERTO",
-    explicacao:
-      "Downsizing = redução de pessoal, enxugamento da estrutura. Pode ser por corte de custos, reengenharia, fusões/aquisições. Diferente de rightsizing (ajuste ao tamanho ideal).",
-    dificuldade: 1,
-    tags: [
-      "downsizing",
-      "redução de pessoal",
-      "racionalização",
-      "custos",
-      "eficiência",
-    ],
-    banca_referencia: "FGV",
-    assunto: "Gestão de Pessoas",
-  },
-  {
-    id: "admin-017-v2",
-    disciplina: "ADMINISTRACAO",
-    enunciado:
-      "A gestão do conhecimento (knowledge management) visa capturar, organizar, armazenar e compartilhar o conhecimento tácito e explícito existente na organização, transformando-o em ativo estratégico para a inovação e competitividade.",
-    resposta: "CERTO",
-    explicacao:
-      "KM (Nonaka e Takeuchi): conhecimento tácito (pessoal, experiência) vs explícito (documentado, formal). O processo de conversão (socialização, externalização, combinação, internalização) gera inovação.",
-    dificuldade: 2,
-    tags: [
-      "gestão do conhecimento",
-      "knowledge management",
-      "conhecimento tácito",
-      "conhecimento explícito",
-      "inovação",
-    ],
-    banca_referencia: "FGV",
-    assunto: "Gestão por competências e gestão do conhecimento",
-  },
-  {
-    id: "admin-018-v2",
-    disciplina: "ADMINISTRACAO",
-    enunciado:
-      "O organograma é a representação gráfica da estrutura formal de uma organização, evidenciando a divisão do trabalho, a hierarquia de autoridade, os canais de comunicação formal e as relações de subordinação entre cargos.",
-    resposta: "CERTO",
-    explicacao:
-      "Organograma: diagrama que mostra a estrutura organizacional (cargos, departamentos, relações hierárquicas). Pode ser vertical (top-down), horizontal, circular, etc.",
-    dificuldade: 1,
-    tags: [
-      "organograma",
-      "representação gráfica",
-      "estrutura formal",
-      "hierarquia",
-      "comunicação",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Características das organizações formais modernas",
+    banca_referencia: "VUNESP",
+    assunto: "Gestao de Pessoas Estrategica",
+    ano: 2024,
   },
 ];
 

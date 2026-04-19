@@ -1,645 +1,696 @@
-// ============================================================
-// PORTUGUÊS - Questões (50+ questões)
-// ============================================================
-
 import { Questao } from "../types";
 
 export const questoesPortugues: Questao[] = [
-  // Bloco 1: Interpretação de Textos e Tipologia (12 questões)
+  // ============================================================
+  // TÓPICO 1: COMPREENSÃO E INTERPRETAÇÃO DE TEXTOS
+  // ============================================================
   {
-    id: "port-001-v2",
+    id: "port-001",
     disciplina: "PORTUGUES",
     enunciado:
-      "Considere o seguinte trecho de um ofício oficial: 'Conforme solicitação da vossa senhoria, encaminhamos os documentos pertinentes à análise requerida, ciente de que o prazo para manifestação esgotar-se-á no próximo dia 15.' A forma verbal 'esgotar-se-á' indica uma ação futura em relação ao momento da escrita, caracterizando uso do futuro do presente do indicativo com valor temporal prospectivo.",
+      "Em textos oficiais, a clareza e a concisão são princípios fundamentais, devendo-se evitar expressões redundantes como 'criar novos empregos' ou 'encarar de frente', que constituem pleonasmos viciosos.",
     resposta: "CERTO",
     explicacao:
-      "O futuro do presente (esgotar-se-á) indica ação futura em relação ao momento do enunciado. O valor é prospectivo/temporal. Conforme gramática normativa e Manual de Redação da Presidência da República, este tempo verbal é adequado para textos oficiais quando se refere a prazos futuros.",
-    dificuldade: 2,
-    tags: ["verbos", "futuro do presente", "texto oficial", "tempo verbal"],
+      "O Manual de Redação da Presidência da República recomenda linguagem direta e econômica. Pleonasmos viciosos ('subir para cima', 'criar novo') devem ser evitados por ferirem a concisão, princípio basilar da redação oficial.",
+    dificuldade: 1,
+    tags: ["clareza", "concisão", "pleonasmo", "Manual de Redação"],
     fonte_legal: ["Manual de Redação da Presidência da República"],
     banca_referencia: "CEBRASPE",
-    assunto: "Interpretação de textos oficiais",
+    assunto: "Compreensão e Interpretação de Textos",
+    ano: 2024,
   },
   {
-    id: "port-002-v2",
+    id: "port-002",
     disciplina: "PORTUGUES",
     enunciado:
-      "No texto 'O servidor, embora tenha apresentado a documentação exigida, não teve seu pedido deferido', a oração subordinada reduzida 'embora tenha apresentado a documentação exigida' estabelece uma relação de concessão com a oração principal, indicando que apesar de uma condição ter sido satisfeita, o resultado esperado não ocorreu.",
+      "A inferência é uma operação lógica que permite ao leitor extrair informações implícitas do texto, desde que fundamentadas em elementos textuais e no conhecimento de mundo, não configurando mera suposição pessoal.",
     resposta: "CERTO",
     explicacao:
-      "A conjunção concessiva 'embora' introduz uma oração que exprime um fato que deveria impedir o resultado da oração principal, mas não o impede. Trata-se de concessão, conforme a tipologia de orações subordinadas adverbiais.",
+      "Inferir ≠ inventar. Inferência válida parte de pistas textuais + conhecimento prévio. Em provas, a banca exige que a resposta esteja ancorada no texto, mesmo que indiretamente.",
     dificuldade: 2,
     tags: [
-      "orações subordinadas",
-      "concessão",
-      "conjunções",
-      "análise sintática",
+      "inferência",
+      "interpretação",
+      "informação implícita",
+      "leitura crítica",
     ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Sintaxe do período",
+    banca_referencia: "FGV",
+    assunto: "Compreensão e Interpretação de Textos",
+    ano: 2023,
   },
   {
-    id: "port-003-v2",
+    id: "port-003",
     disciplina: "PORTUGUES",
     enunciado:
-      "Analise a seguinte construção presente em despacho oficial: 'Trata-se de processo administrativo instaurado para apuração de responsabilidade, sendo que o mesmo deverá ser analisado pelo setor competente.' O pronome 'o mesmo' está empregado corretamente como recurso de coesão textual, substituindo o termo 'processo administrativo' para evitar repetição.",
-    resposta: "ERRADO",
+      "A ambiguidade em textos oficiais é sempre considerada vício de linguagem, devendo ser evitada por comprometer a precisão e a segurança jurídica do documento.",
+    resposta: "CERTO",
     explicacao:
-      "Conforme o Manual de Redação da Presidência da República, o pronome 'o mesmo' como substantivo é considerado vício de estilo (prolixidade) em textos oficiais. Deve-se usar pronome oblíquo (ele) ou simplesmente omitir: '...e deverá ser analisado...'",
-    dificuldade: 3,
-    tags: ["coesão textual", "pronomes", "Manual de Redação", "estilo oficial"],
+      "Precisão é requisito essencial da redação oficial. Ambiguidade (duplo sentido) gera insegurança interpretativa e deve ser eliminada por reformulação ou pontuação adequada.",
+    dificuldade: 1,
+    tags: [
+      "ambiguidade",
+      "precisão",
+      "vício de linguagem",
+      "segurança jurídica",
+    ],
     fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-004-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "Em correspondência oficial, a expressão 'no intuito de' pode ser substituída por 'com o intuito de' sem prejuízo do sentido original, sendo ambas as construções igualmente aceitas na norma culta escrita.",
-    resposta: "CERTO",
-    explicacao:
-      "Ambas as construções são sinonímicas e adequadas. 'No intuito de' (preposição 'em' + artigo 'o') e 'com o intuito de' (preposição 'com' + artigo 'o') expressam finalidade de forma equivalente na norma culta.",
-    dificuldade: 2,
-    tags: [
-      "regência nominal",
-      "locuções prepositivas",
-      "correspondência oficial",
-    ],
-    banca_referencia: "FCC",
-    assunto: "Regência nominal e verbal",
-  },
-  {
-    id: "port-005-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "Considere o seguinte período extraído de portaria: 'O servidor que não comparecer à reunião prevista no art. 3º, § 2º, desta norma, será submetido a processo administrativo disciplinar, sem prejuízo das demais sanções legais cabíveis.' A vírgula empregada após 'norma' é obrigatória por se tratar de oração subordinada adjetiva restritiva intercalada.",
-    resposta: "ERRADO",
-    explicacao:
-      "A oração 'que não comparecer à reunião prevista no art. 3º, § 2º, desta norma' é restritiva (especifica qual servidor), e orações restritivas NÃO são isoladas por vírgulas. A vírgula após 'norma' está incorreta. O correto seria: 'O servidor que não comparecer à reunião prevista no art. 3º, § 2º, desta norma será submetido...'",
-    dificuldade: 3,
-    tags: [
-      "pontuação",
-      "orações adjetivas",
-      "restritiva vs explicativa",
-      "vírgula",
-    ],
     banca_referencia: "CEBRASPE",
-    assunto: "Pontuação",
-  },
-  {
-    id: "port-006-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "No trecho 'Os documentos foram analisados pelos servidores designados', a voz passiva analítica (ser + particípio) é utilizada para destacar o objeto paciente ('os documentos') e ocultar ou despersonalizar o agente da ação, estratégia comum em textos administrativos quando o foco é o resultado, não o executor.",
-    resposta: "CERTO",
-    explicacao:
-      "A voz passiva analítica (forma ser + particípio passado + preposição por/pelo) tem como função destacar o paciente e, frequentemente, omitir ou relegar a segundo plano o agente. É recurso legítimo e frequente em textos oficiais quando o resultado importa mais que quem executou.",
-    dificuldade: 2,
-    tags: ["voz passiva", "voz verbal", "sintaxe", "gênero textual"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Sintaxe da oração",
-  },
-  {
-    id: "port-007-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A frase 'Entre você e eu, não há divergências quanto ao mérito da decisão' apresenta erro de regência verbal na construção 'há divergências', pois o verbo 'haver' no sentido de 'existir' rege objeto direto, não podendo ser seguido de termo preposicionado.",
-    resposta: "ERRADO",
-    explicacao:
-      "O erro está no pronome 'eu', não na regência de 'haver'. Após preposição ('entre'), usa-se o pronome oblíquo: 'Entre você e mim'. O verbo 'haver' no sentido de existir é impessoal e invariável, e 'divergências' é sujeito (não objeto): 'há divergências' está correto.",
-    dificuldade: 2,
-    tags: ["pronomes", "casos oblíquos", "regência", "erro de concordância"],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Classes de palavras",
-  },
-  // Bloco 1: Interpretação de Textos e Tipologia (12 questões)
-  {
-    id: "port-008-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "No texto 'O relatório apresentado pelo setor de análise contém informações que são confidenciais e que não podem ser divulgadas', ambas as orações subordinadas adjetivas introduzidas pelo pronome relativo 'que' são classificadas como restritivas, pois limitam o significado do termo antecedente 'informações'.",
-    resposta: "ERRADO",
-    explicacao:
-      "A primeira oração ('que são confidenciais') é explicativa (apenas explica, não limita - poderia ser omitida sem prejuízo da identificação). A segunda ('que não podem ser divulgadas') também é explicativa. Seriam restritivas se não houvesse vírgula antes e se limitassem o sentido (ex: 'informações que são confidenciais' vs 'informações confidenciais'). A presença da vírgula antes do 'que' indica explicativa.",
-    dificuldade: 3,
-    tags: [
-      "orações adjetivas",
-      "restritiva vs explicativa",
-      "pronomes relativos",
-      "pontuação",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Sintaxe do período",
-  },
-  {
-    id: "port-009-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A expressão 'a fim de que' introduz oração subordinada adverbial final, equivalendo a 'para que', e rege modo subjuntivo: 'Aprovou-se a medida a fim de que sejam sanadas as irregularidades'.",
-    resposta: "CERTO",
-    explicacao:
-      "'A fim de que' é locução conjuntiva final, introduz oração adverbial final (propósito), e exige modo subjuntivo (possibilidade, futuridade, não realizada). A conjugação 'sejam' está correta no presente do subjuntivo.",
-    dificuldade: 2,
-    tags: ["orações adverbiais", "finalidade", "modo subjuntivo", "conjunções"],
-    banca_referencia: "FCC",
-    assunto: "Sintaxe do período",
-  },
-  {
-    id: "port-010-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "Em 'O servidor procedeu à análise dos documentos', o verbo 'proceder' está corretamente empregado no sentido de 'realizar, executar', com a preposição 'a' exigida pela regência verbal, conforme registro formal da norma culta.",
-    resposta: "CERTO",
-    explicacao:
-      "'Proceder a' = realizar, executar (registro formal). Diferente de 'proceder de' (originar-se) ou 'proceder contra' (adotar medidas). A regência 'procedeu à análise' está correta e é típica de textos oficiais.",
-    dificuldade: 2,
-    tags: ["regência verbal", "proceder", "gênero oficial", "formalidade"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Regência verbal",
-  },
-  {
-    id: "port-011-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A palavra 'interessado' é paroxítona terminada em ditongo 'eo', portanto acentuada graficamente na nova ortografia, conforme regra geral de acentuação de paroxítonas.",
-    resposta: "ERRADO",
-    explicacao:
-      "Paroxítonas terminadas em ditongo oral (ao, eo, ou) NÃO são mais acentuadas na ortografia vigente (reforma de 1990, vigor desde 2009/2015). 'Interessado' perdeu o acento. Apenas paroxítonas terminadas em 'i' ou 'u' tônicos (seguidos de s) ou em 'r', 'n', 'l', 'x', 'ps', 'ão', 'ã', 'ãs' são acentuadas.",
-    dificuldade: 2,
-    tags: ["acentuação gráfica", "paroxítonas", "ditongo", "nova ortografia"],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Acentuação gráfica",
-  },
-  {
-    id: "port-012-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A construção 'Houveram diversos problemas na tramitação do processo' está gramaticalmente correta, pois o verbo 'haver' flexiona-se em número quando usado no sentido de 'acontecer' ou 'existir'.",
-    resposta: "ERRADO",
-    explicacao:
-      "'Haver' no sentido de 'existir' ou 'acontecer' é impessoal e invariável. O correto é 'Houve diversos problemas' (singular) ou 'Havia diversos problemas'. 'Houveram' é erro de concordância vulgar, não aceito na norma culta.",
-    dificuldade: 2,
-    tags: ["concordância verbal", "haver", "impessoalidade", "erro comum"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Concordância verbal",
+    assunto: "Compreensão e Interpretação de Textos",
+    ano: 2024,
   },
 
-  // Bloco 2: Morfologia e Sintaxe Avançada (12 questões)
+  // ============================================================
+  // TÓPICO 2: TIPOLOGIA TEXTUAL
+  // ============================================================
   {
-    id: "port-013-v2",
+    id: "port-004",
     disciplina: "PORTUGUES",
     enunciado:
-      "No período 'Caso seja aprovado o projeto, as obras iniciar-se-ão imediatamente', a oração 'Caso seja aprovado o projeto' é subordinada adverbial condicional reduzida da proposição 'caso o projeto seja aprovado', exigindo modo subjuntivo na oração subordinada.",
+      "O texto dissertativo-argumentativo, predominante em pareceres e decisões administrativas, caracteriza-se pela defesa de um ponto de vista fundamentado em argumentos lógicos e dados objetivos.",
     resposta: "CERTO",
     explicacao:
-      "'Caso' é conjunção condicional (integra o grupo 'se, caso, contanto que, desde que, a menos que'). Introduz oração subordinada adverbial condicional. A forma reduzida 'Caso seja aprovado' equivale a 'Se for aprovado', com verbo no subjuntivo (futuro do subjuntivo/flexão de mesóclise).",
-    dificuldade: 3,
+      "Dissertativo-argumentativo = tese + argumentos + conclusão. É o tipo textual padrão para peças que exigem posicionamento fundamentado: pareceres, decisões, relatórios analíticos.",
+    dificuldade: 1,
     tags: [
-      "orações condicionais",
-      "modo subjuntivo",
-      "redução de orações",
-      "conjunções",
+      "dissertativo-argumentativo",
+      "parecer",
+      "argumentação",
+      "tipologia",
     ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Sintaxe do período",
+    banca_referencia: "FCC",
+    assunto: "Tipologia Textual",
+    ano: 2023,
   },
   {
-    id: "port-014-v2",
+    id: "port-005",
     disciplina: "PORTUGUES",
     enunciado:
-      "O termo 'cujo' é pronome relativo que indica posse e estabelece concordância com o possuído (substantivo que segue), não com o possuidor (termo antecedente), como em 'O servidor cujo relatório foi aprovado'.",
+      "A narração em textos oficiais limita-se a relatos de fatos em atas e relatórios, devendo ser impessoal, cronológica e objetiva, sem juízos de valor ou recursos literários.",
     resposta: "CERTO",
     explicacao:
-      "'Cujo' = 'do qual', 'da qual', 'dos quais', 'das quais'. Concorda com o substantivo seguinte (possuído): 'cujo relatório' (relatório = singular, masculino). O possuidor ('servidor') pode ser masculino ou feminino, singular ou plural, mas 'cujo' concorda com 'relatório'.",
+      "Narração oficial = relato factual. Deve ser impessoal (3ª pessoa), linear (ordem cronológica) e objetiva (sem adjetivação subjetiva). Recursos como metáfora ou ironia são inadequados.",
+    dificuldade: 2,
+    tags: ["narração", "atas", "relatórios", "impessoalidade", "objetividade"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Tipologia Textual",
+    ano: 2022,
+  },
+  {
+    id: "port-006",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O texto descritivo, comum em laudos periciais, deve priorizar a ordem espacial e o uso de adjetivos técnicos precisos, evitando subjetivismo e impressões pessoais.",
+    resposta: "CERTO",
+    explicacao:
+      "Descrição técnica = precisão + ordem lógica (espaço, tempo, importância). Adjetivos devem ser objetivos ('veículo de cor vermelha', não 'veículo bonito'). Subjetivismo compromete a credibilidade do laudo.",
+    dificuldade: 2,
+    tags: ["descrição", "laudos", "adjetivos técnicos", "ordem espacial"],
+    banca_referencia: "VUNESP",
+    assunto: "Tipologia Textual",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 3: ORTOGRAFIA OFICIAL
+  // ============================================================
+  {
+    id: "port-007",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "Após o Acordo Ortográfico de 1990, o trema foi completamente abolido da língua portuguesa, não sendo mais utilizado em nenhuma palavra, nem mesmo em nomes próprios estrangeiros.",
+    resposta: "ERRADO",
+    explicacao:
+      "O trema foi abolido em palavras portuguesas ('linguiça', 'frequente'), mas mantém-se em nomes próprios estrangeiros e seus derivados: 'Müller', 'mülleriano'. A exceção está no §1º do Art. 2º do Acordo.",
+    dificuldade: 2,
+    tags: ["trema", "Acordo Ortográfico", "nomes próprios", "exceções"],
+    fonte_legal: ["Acordo Ortográfico da Língua Portuguesa (1990)"],
+    banca_referencia: "FGV",
+    assunto: "Ortografia Oficial",
+    ano: 2024,
+  },
+  {
+    id: "port-008",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A grafia correta dos derivados de 'trazer' mantém o 'z': 'traz', 'trazes', 'trazem', 'trazia', 'trouxeram', conforme a regra de manutenção da consoante radical em verbos irregulares.",
+    resposta: "ERRADO",
+    explicacao:
+      "O verbo 'trazer' é irregular: presente do indicativo = 'trago, trazes, traz, trazemos, trazeis, trazem' (com 'z'), mas o pretérito perfeito = 'trouxe, trouxeste, trouxe...' (com 'x'). A regra não é manutenção mecânica do radical.",
+    dificuldade: 3,
+    tags: ["verbos irregulares", "trazer", "ortografia", "conjugação"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Ortografia Oficial",
+    ano: 2023,
+  },
+  {
+    id: "port-009",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "Usa-se 'ss' em substantivos derivados de verbos terminados em '-ceder', '-gredir', '-primir': 'concessão' (de conceder), 'agressão' (de agredir), 'impressão' (de imprimir).",
+    resposta: "CERTO",
+    explicacao:
+      "Regra mnemônica: verbos em -ceder/-gredir/-primir → substantivos em -ssão. Exceções existem, mas esta regra cobre a maioria dos casos cobrados em concurso.",
+    dificuldade: 2,
+    tags: ["ss vs ç", "derivação", "substantivos", "ortografia"],
+    banca_referencia: "FCC",
+    assunto: "Ortografia Oficial",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 4: ACENTUAÇÃO GRÁFICA
+  // ============================================================
+  {
+    id: "port-010",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "As paroxítonas terminadas em ditongo oral 'ei', 'oi' perderam o acento gráfico com o Acordo Ortográfico: 'ideia', 'jiboia', 'plateia' grafam-se sem acento.",
+    resposta: "CERTO",
+    explicacao:
+      "Acordo Ortográfico (1990): paroxítonas com ditongos abertos 'ei', 'oi' não são mais acentuadas. Exceção: se o 'i' ou 'u' forem tônicos e precedidos de ditongo ('baiúca' mantém acento).",
+    dificuldade: 1,
+    tags: ["acentuação", "paroxítonas", "ditongo", "Acordo Ortográfico"],
+    fonte_legal: ["Acordo Ortográfico da Língua Portuguesa (1990)"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Acentuação Gráfica",
+    ano: 2024,
+  },
+  {
+    id: "port-011",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A palavra 'pôde' (pretérito perfeito) mantém o acento diferencial para distinguir-se de 'pode' (presente do indicativo), conforme exceção expressa no Acordo Ortográfico.",
+    resposta: "CERTO",
+    explicacao:
+      "Acordo manteve apenas três acentos diferenciais: pôde/pode (verbo), pôr/por (verbo/preposição), têm/tem (3ª pl./3ª sg.). 'Pôde' (passado) leva acento; 'pode' (presente) não.",
+    dificuldade: 2,
+    tags: ["acentos diferenciais", "pôde vs pode", "Acordo Ortográfico"],
+    fonte_legal: ["Acordo Ortográfico da Língua Portuguesa (1990)"],
+    banca_referencia: "FGV",
+    assunto: "Acentuação Gráfica",
+    ano: 2023,
+  },
+  {
+    id: "port-012",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "Os monossílabos tônicos terminados em 'a', 'e', 'o' seguidos ou não de 's' são acentuados: 'pá', 'pé', 'pó', 'más', 'nós', 'vés'.",
+    resposta: "CERTO",
+    explicacao:
+      "Regra clássica: monossílabos tônicos abertos (a, e, o) recebem acento agudo. Fechados (ê, ô) não: 'se', 'no', 'por'. Atenção: 'pôs' (pretérito de pôr) leva circunflexo por ser fechado.",
+    dificuldade: 1,
+    tags: ["monossílabos tônicos", "acentuação", "regra geral"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Acentuação Gráfica",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 5: EMPREGO DAS CLASSES DE PALAVRAS
+  // ============================================================
+  {
+    id: "port-013",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O pronome 'cujo' é relativo possessivo que concorda em gênero e número com o substantivo que o segue (possuído), não com o antecedente (possuidor): 'O servidor cujo relatório foi aprovado'.",
+    resposta: "CERTO",
+    explicacao:
+      "'Cujo' = 'do qual', 'da qual'. Concorda com o possuído: 'cujo relatório' (relatório = masc. sg.). O possuidor ('servidor') não influencia a flexão. Erro comum: 'cuja relatório' (incorreto).",
     dificuldade: 2,
     tags: ["pronomes relativos", "cujo", "concordância", "posse"],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Classes de palavras",
-  },
-  {
-    id: "port-015-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "Na frase 'Não só apresentou o projeto, como também o defendeu perante a comissão', a correlação conjuntiva 'não só... como também...' estabelece uma relação de adição, equivalente a 'e', mas com ênfase aditiva.",
-    resposta: "CERTO",
-    explicacao:
-      "A correlação 'não só... como também...' (ou 'mas também') é aditiva, acrescentando uma informação à outra com ênfase. É estrutura coordenativa sindética aditiva, similar a 'e', mas com valor enfático de adição cumulativa.",
-    dificuldade: 2,
-    tags: ["conjunções coordenativas", "adição", "correlação", "sintaxe"],
     banca_referencia: "FCC",
-    assunto: "Sintaxe do período",
+    assunto: "Classes de Palavras - Pronomes",
+    ano: 2024,
   },
   {
-    id: "port-016-v2",
+    id: "port-014",
     disciplina: "PORTUGUES",
     enunciado:
-      "O vocábulo 'porquê' com acento circunflexo é substantivo e pode ser substituído por 'motivo' ou 'razão', sendo usado geralmente em final de frase, precedido de artigo: 'Não compreendo o porquê da demora'.",
+      "O advérbio 'onde' só deve ser empregado para indicar lugar físico; para tempo, usa-se 'quando': 'Onde há fumaça, há fogo' (lugar) × 'Quando chove, o trânsito piora' (tempo).",
     resposta: "CERTO",
     explicacao:
-      "'Porquê' (circunflexo) = substantivo masculino, sinônimo de 'motivo', 'causa'. Usa-se com artigo ('o porquê', 'um porquê') e frequentemente em final de oração. Diferente de 'por que' (pergunta), 'porquê' (fim de frase interrogativa) e 'porque' (= 'pois').",
+      "'Onde' = advérbio de lugar. Uso temporal ('onde eu estava') é coloquial, inadequado para textos formais. Em redação oficial, prefira 'quando', 'na ocasião em que', 'no momento em que'.",
+    dificuldade: 1,
+    tags: ["advérbios", "onde vs quando", "lugar vs tempo", "norma culta"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Classes de Palavras - Advérbios",
+    ano: 2023,
+  },
+  {
+    id: "port-015",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A conjunção 'conquanto' introduz oração subordinada adverbial concessiva, equivalendo a 'embora', 'ainda que', e exige verbo no modo subjuntivo: 'Conquanto tenha estudado, não foi aprovado'.",
+    resposta: "CERTO",
+    explicacao:
+      "'Conquanto' = conjunção concessiva formal. Exige subjuntivo por indicar hipótese, possibilidade ou fato não realizado. Similar a 'embora', 'posto que', 'não obstante'.",
+    dificuldade: 3,
+    tags: ["conjunções concessivas", "conquanto", "modo subjuntivo", "sintaxe"],
+    banca_referencia: "VUNESP",
+    assunto: "Classes de Palavras - Conjunções",
+    ano: 2022,
+  },
+  {
+    id: "port-016",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O verbo 'haver' no sentido de 'existir' é impessoal e invariável, devendo ser conjugado sempre na 3ª pessoa do singular: 'Havia muitos processos pendentes' (não 'haviam').",
+    resposta: "CERTO",
+    explicacao:
+      "'Haver' existencial = impessoal (sem sujeito). O termo seguinte é objeto direto, não sujeito. Erro grave em concursos: flexionar 'haver' no plural ('haviam processos').",
     dificuldade: 2,
     tags: [
-      "homônimos",
-      "porquê/por que/porquê/porque",
-      "acentuação",
-      "classes de palavras",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Significação das palavras",
-  },
-  {
-    id: "port-017-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "Em 'Mal chegou o ofício, o servidor providenciou a resposta', o advérbio 'mal' tem valor temporal, equivalente a 'logo que', 'assim que', 'no mesmo instante em que', indicando simultaneidade imediata entre as ações.",
-    resposta: "CERTO",
-    explicacao:
-      "'Mal' (advérbio) = 'logo que', 'assim que' (temporal). Indica que uma ação ocorreu imediatamente após outra. Diferente de 'mau' (adj. 'ruim', 'mau exemplo'). A construção 'Mal + verbo, verbo' é temporal, não causal nem concessiva.",
-    dificuldade: 3,
-    tags: ["advérbios", "temporalidade", "mal vs mau", "conectivos"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Classes de palavras",
-  },
-  {
-    id: "port-018-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A expressão 'às vezes' é craseada porque resulta da contração da preposição 'a' (exigida pelo regime de certos verbos ou locuções) com o artigo feminino plural 'as' da expressão 'vezes'.",
-    resposta: "CERTO",
-    explicacao:
-      "'Às vezes' = 'a' (preposição, ex: 'chega a') + 'as' (artigo) + 'vezes'. É crase obrigatória quando houver a preposição 'a' + artigo feminino 'a/as'. A expressão 'às vezes' (= 'ocasionalmente') exige a crase.",
-    dificuldade: 2,
-    tags: ["crase", "contração", "preposição a", "artigo feminino"],
-    banca_referencia: "FCC",
-    assunto: "Emprego do sinal indicativo de crase",
-  },
-  {
-    id: "port-019-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "O gerúndio 'sendo' em 'Sendo assim, aprovou-se a medida' tem valor causal, equivalente a 'como era assim', 'visto que era assim', estabelecendo uma relação de causa entre a oração reduzida e a oração principal.",
-    resposta: "CERTO",
-    explicacao:
-      "O gerúndio 'sendo' pode ter valor causal ('como', 'visto que'), condicional ('se for'), temporal ('enquanto'), concessivo ('embora sendo') ou consecutivo. Em 'Sendo assim', é causal (dado que, considerando que).",
-    dificuldade: 3,
-    tags: [
-      "gerúndio",
-      "orações reduzidas",
-      "causalidade",
-      "valores do gerúndio",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Sintaxe do período",
-  },
-  {
-    id: "port-020-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A concordância verbal na frase 'A maioria dos servidores estavam presentes na reunião' está correta, pois o núcleo 'servidores' determina o plural do verbo, conforme regra de concordância com sujeito composto.",
-    resposta: "ERRADO",
-    explicacao:
-      "O sujeito é 'A maioria dos servidores' = 'maioria' (substantivo coletivo partitivo). O núcleo é 'maioria' (singular), portanto o verbo deve ser singular: 'estava'. A regra é: coletivos partitivos (parte, metade, maioria, etc.) seguidos de 'de' + plural podem concordar no singular (com o coletivo) ou no plural (com o termo partido), mas a norma culta preferencial é o singular com o núcleo coletivo.",
-    dificuldade: 3,
-    tags: [
+      "verbo haver",
+      "impessoalidade",
       "concordância verbal",
-      "coletivos partitivos",
-      "sujeito composto",
-      "núcleo do sujeito",
-    ],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Concordância verbal",
-  },
-  {
-    id: "port-021-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "O termo 'onde' pode ser usado para indicar tempo em construções como 'Onde há vontade, há um caminho', sendo essa uma flexão poética aceita na norma culta estrita.",
-    resposta: "ERRADO",
-    explicacao:
-      "'Onde' é adverbio relativo de lugar (lugar em que). Para tempo, usa-se 'quando' ('Quando há vontade...'). O uso de 'onde' para tempo é considerado coloquial ou poético, mas não é aceito na norma culta estrita, especialmente em textos oficiais.",
-    dificuldade: 2,
-    tags: [
-      "pronomes relativos",
-      "onde vs quando",
-      "lugar vs tempo",
-      "norma culta",
+      "erro comum",
     ],
     banca_referencia: "CEBRASPE",
-    assunto: "Classes de palavras",
-  },
-  {
-    id: "port-022-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A frase 'Trata-se de um processo de complexa análise' emprega o pronome 'se' como índice de indeterminação do sujeito, caracterizando uma construção impessoal onde não se identifica o agente da ação.",
-    resposta: "CERTO",
-    explicacao:
-      "'Trata-se' = locução verbal impessoal. 'Se' é partícula apassivadora ou índice de indeterminação. Aqui, é índice de indeterminação (ou partícula apassivadora), tornando a oração impessoal (sujeito indeterminado ou genérico). A construção é padrão em textos oficiais para introduzir temas.",
-    dificuldade: 3,
-    tags: [
-      "pronomes",
-      "índice de indeterminação",
-      "construções impessoais",
-      "trata-se",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Sintaxe da oração",
-  },
-  {
-    id: "port-023-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A palavra 'heroico' é proparoxítona e, portanto, graficamente acentuada na sílaba 'ro', conforme regra geral de acentuação tônica das palavras terminadas em ditongo 'eo'.",
-    resposta: "ERRADO",
-    explicacao:
-      "'Heroico' é proparoxítona (he-rói-co), mas na nova ortografia as proparoxítonas terminadas em ditongo oral (ao, eo, ou) perderam o acento. O correto é 'heroico' (sem acento), pois termina em 'eo'. A regra é: proparoxítonas são acentuadas, EXCETO se terminarem em ditongo oral (i, u tônicos seguidos de outra vogal não são mais acentuados).",
-    dificuldade: 3,
-    tags: [
-      "acentuação gráfica",
-      "proparoxítonas",
-      "ditongo",
-      "nova ortografia",
-    ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Acentuação gráfica",
-  },
-  {
-    id: "port-024-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A oração 'Quando puder, responda ao questionamento' é subordinada adverbial temporal reduzida de 'Quando você puder', equivalente a 'Assim que for possível', exigindo modo subjuntivo na oração subordinada.",
-    resposta: "CERTO",
-    explicacao:
-      "'Quando' é conjunção adverbial temporal. A oração reduzida 'Quando puder' (= 'Quando for possível') exige futuro do subjuntivo ('puder'), pois indica ação futura em relação ao momento do enunciado, com possibilidade/condição.",
-    dificuldade: 2,
-    tags: ["orações temporais", "modo subjuntivo", "redução", "quando"],
-    banca_referencia: "FCC",
-    assunto: "Sintaxe do período",
+    assunto: "Classes de Palavras - Verbos",
+    ano: 2024,
   },
 
-  // Bloco 3: Redação Oficial e Textos Administrativos (12 questões)
+  // ============================================================
+  // TÓPICO 6: EMPREGO DO SINAL INDICATIVO DE CRASE
+  // ============================================================
   {
-    id: "port-025-v2",
+    id: "port-017",
     disciplina: "PORTUGUES",
     enunciado:
-      "Segundo o Manual de Redação da Presidência da República, o vocativo em ofícios deve ser feito com a expressão 'Senhor' ou 'Senhora', seguido do cargo ou nome do destinatário, e nunca com tratamentos como 'Vossa Excelência' ou 'Vossa Senhoria' no corpo do texto.",
-    resposta: "ERRADO",
+      "Ocorre crase obrigatória diante de palavras femininas que admitem artigo 'a(s)' e que são regidas por preposição 'a': 'Fui à reunião', 'Refiro-me às normas'.",
+    resposta: "CERTO",
     explicacao:
-      "O Manual permite 'Vossa Excelência' (para autoridades com tratamento de Excelência) e 'Vossa Senhoria' (VS) para tratamento genérico formal. 'Senhor' ou 'Senhora' também são aceitos. A proibição é de usar 'Você' ou tratamentos informais. 'Vossa Excelência' é obrigatório para Presidente, Ministros, etc.",
-    dificuldade: 3,
-    tags: [
-      "Manual de Redação",
-      "vocativo",
-      "tratamento",
-      "ofícios",
-      "formalidade",
-    ],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Redação de correspondências oficiais",
+      "Regra prática da crase: substitua a palavra feminina por masculina. Se surgir 'ao/aos', há crase: 'Fui à reunião' → 'Fui ao encontro' (✓ crase). 'Refiro-me às normas' → 'aos regulamentos' (✓ crase).",
+    dificuldade: 1,
+    tags: ["crase", "preposição a", "artigo feminino", "regra prática"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Emprego do Sinal Indicativo de Crase",
+    ano: 2023,
   },
   {
-    id: "port-026-v2",
+    id: "port-018",
     disciplina: "PORTUGUES",
     enunciado:
-      "Em memorandos oficiais, a forma de tratamento 'Vossa Senhoria' deve ser empregada para destinatários de hierarquia inferior à do remetente, enquanto 'Vossa Excelência' é reservada para autoridades de hierarquia superior.",
-    resposta: "ERRADO",
+      "Não ocorre crase diante de verbos, mesmo que regidos pela preposição 'a': 'Começou a chover', 'Passou a estudar', 'Está a dever'.",
+    resposta: "CERTO",
     explicacao:
-      "'Vossa Senhoria' (VS) é tratamento formal genérico, independente de hierarquia. 'Vossa Excelência' (V. Ex.ª) é para autoridades específicas (Presidente, Ministros, Governadores, Deputados, Senadores, Juízes, etc.), não necessariamente superiores. A escolha depende do cargo, não da hierarquia relativa.",
+      "Verbo não admite artigo. Se não há artigo, não há crase (crase = preposição 'a' + artigo 'a'). 'A' antes de verbo é sempre preposição isolada.",
+    dificuldade: 1,
+    tags: ["crase", "verbos", "preposição", "regra de exclusão"],
+    banca_referencia: "FCC",
+    assunto: "Emprego do Sinal Indicativo de Crase",
+    ano: 2022,
+  },
+  {
+    id: "port-019",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A expressão 'à moda de', mesmo implícita, justifica o uso da crase: 'Frango à passarinho' (= à moda de passarinho), 'Escrito à Machado de Assis' (= à moda de).",
+    resposta: "CERTO",
+    explicacao:
+      "Crase facultativa em locuções com 'à moda de' elíptica. É tradição gramatical manter o acento em expressões consagradas que remetem a estilo/maneira.",
+    dificuldade: 3,
+    tags: ["crase facultativa", "à moda de", "expressões consagradas"],
+    banca_referencia: "FGV",
+    assunto: "Emprego do Sinal Indicativo de Crase",
+    ano: 2024,
+  },
+
+  // ============================================================
+  // TÓPICO 7: SINTAXE DA ORAÇÃO E DO PERÍODO
+  // ============================================================
+  {
+    id: "port-020",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "Na oração 'O servidor que faltou será advertido', a oração subordinada adjetiva 'que faltou' é restritiva, pois limita o universo de 'servidores' àqueles que faltaram.",
+    resposta: "CERTO",
+    explicacao:
+      "Adjetiva restritiva = sem vírgula, especifica/limita o antecedente. Se fosse explicativa ('O servidor, que faltou, será advertido'), haveria vírgulas e a oração apenas acrescentaria informação.",
+    dificuldade: 2,
+    tags: [
+      "orações adjetivas",
+      "restritiva vs explicativa",
+      "pontuação",
+      "sintaxe",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Sintaxe da Oração e do Período",
+    ano: 2023,
+  },
+  {
+    id: "port-021",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A voz passiva sintética (com 'se') exige que o verbo concorde com o sujeito paciente: 'Vendem-se casas' (casas = sujeito plural) × 'Vende-se casa' (casa = sujeito singular).",
+    resposta: "CERTO",
+    explicacao:
+      "Passiva sintética: verbo + 'se' + sujeito paciente. O verbo concorda com o sujeito: 'Alugam-se apartamentos' (✓) × 'Aluga-se apartamentos' (✗). Diferente de 'se' como índice de indeterminação.",
     dificuldade: 3,
     tags: [
+      "voz passiva",
+      "partícula apassivadora",
+      "concordância verbal",
+      "se",
+    ],
+    banca_referencia: "FCC",
+    assunto: "Sintaxe da Oração e do Período",
+    ano: 2024,
+  },
+  {
+    id: "port-022",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O período composto por subordinação pode apresentar orações reduzidas, que dispensam conectivos e empregam formas nominais do verbo (infinitivo, gerúndio, particípio): 'Ao chegar, assinou o termo' (= Quando chegou).",
+    resposta: "CERTO",
+    explicacao:
+      "Oração reduzida = sem conjunção, com forma nominal. 'Ao chegar' (infinitivo) = temporal; 'Chegando' (gerúndio) = temporal/causal; 'Chegado' (particípio) = temporal/conclusiva.",
+    dificuldade: 2,
+    tags: ["orações reduzidas", "formas nominais", "conectivos", "sintaxe"],
+    banca_referencia: "VUNESP",
+    assunto: "Sintaxe da Oração e do Período",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 8: PONTUAÇÃO
+  // ============================================================
+  {
+    id: "port-023",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A vírgula é obrigatória para separar orações coordenadas assindéticas (sem conectivo) ou sindéticas (com conectivo), exceto quando ligadas por 'e' com sujeitos iguais: 'Chegou, cumprimentou a todos e sentou-se'.",
+    resposta: "CERTO",
+    explicacao:
+      "Regra: vírgula separa orações coordenadas. Exceção: com 'e' e sujeitos iguais, a vírgula é facultativa ('Chegou, cumprimentou e sentou' ou 'Chegou, cumprimentou, e sentou').",
+    dificuldade: 2,
+    tags: ["pontuação", "vírgula", "orações coordenadas", "conjunção e"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Pontuação",
+    ano: 2023,
+  },
+  {
+    id: "port-024",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O uso de dois-pontos em textos oficiais é adequado para introduzir enumerações, citações diretas ou explicações: 'Requisitos: a) idade mínima; b) escolaridade; c) experiência'.",
+    resposta: "CERTO",
+    explicacao:
+      "Dois-pontos = sinal de anúncio. Introduz: lista, fala de personagem, esclarecimento, consequência. Em redação oficial, é recurso válido para organizar informações de forma clara.",
+    dificuldade: 1,
+    tags: ["pontuação", "dois-pontos", "enumeração", "redação oficial"],
+    fonte_legal: ["Manual de Redação da Presidência da República"],
+    banca_referencia: "FCC",
+    assunto: "Pontuação",
+    ano: 2024,
+  },
+  {
+    id: "port-025",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O ponto e vírgula é empregado para separar itens de uma enumeração quando estes já contêm vírgulas internas, ou para separar orações coordenadas extensas: 'Compareceram: o diretor, que chegou atrasado; a secretária, que trouxe os documentos; e o assessor'.",
+    resposta: "CERTO",
+    explicacao:
+      "Ponto e vírgula = pausa intermediária. Usos principais: (1) separar itens complexos em listas; (2) separar orações coordenadas longas; (3) antes de conectivos adversativos/conclusivos ('contudo', 'portanto').",
+    dificuldade: 3,
+    tags: [
+      "pontuação",
+      "ponto e vírgula",
+      "enumeração complexa",
+      "orações longas",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Pontuação",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 9: CONCORDÂNCIAS NOMINAL E VERBAL
+  // ============================================================
+  {
+    id: "port-026",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "Com expressões partitivas ('a maioria de', 'grande parte de') seguidas de substantivo plural, o verbo pode concordar com o núcleo da expressão (singular) ou com o especificador (plural): 'A maioria dos servidores compareceu/compareceram'.",
+    resposta: "CERTO",
+    explicacao:
+      "Concordância atrativa: com coletivos partitivos, ambas as concordâncias são aceitas. Preferência da norma culta: singular (com o núcleo). Mas o plural não é erro.",
+    dificuldade: 2,
+    tags: [
+      "concordância verbal",
+      "expressões partitivas",
+      "maioria",
+      "flexibilidade",
+    ],
+    banca_referencia: "CEBRASPE",
+    assunto: "Concordância Verbal",
+    ano: 2024,
+  },
+  {
+    id: "port-027",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O adjetivo posposto a substantivos de gêneros diferentes concorda com o mais próximo ou vai para o plural masculino: 'Documento e planilha anexos' ou 'Documento e planilha anexa' (concordância atrativa).",
+    resposta: "CERTO",
+    explicacao:
+      "Adjetivo após substantivos de gêneros distintos: (1) plural masculino (regra geral); (2) concordância com o mais próximo (aceita). 'Anexos' (✓) ou 'anexa' (✓ se 'planilha' for o mais próximo).",
+    dificuldade: 3,
+    tags: ["concordância nominal", "adjetivo posposto", "gêneros diferentes"],
+    banca_referencia: "FCC",
+    assunto: "Concordância Nominal",
+    ano: 2022,
+  },
+  {
+    id: "port-028",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O verbo 'ser' pode concordar com o predicativo do sujeito quando este for plural e o sujeito for pronome indefinido ou interrogativo: 'Tudo são flores' (aceitável) × 'Tudo é flores' (preferencial).",
+    resposta: "CERTO",
+    explicacao:
+      "Verbo 'ser': concorda com o sujeito, mas pode atrair para o predicativo quando este for plural e o sujeito for indefinido/interrogativo. Ambas as formas são aceitas, com preferência pela concordância com o sujeito.",
+    dificuldade: 3,
+    tags: ["concordância verbal", "verbo ser", "predicativo", "flexibilidade"],
+    banca_referencia: "VUNESP",
+    assunto: "Concordância Verbal",
+    ano: 2023,
+  },
+
+  // ============================================================
+  // TÓPICO 10: REGÊNCIAS NOMINAL E VERBAL
+  // ============================================================
+  {
+    id: "port-029",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O verbo 'assistir' no sentido de 'ver, presenciar' é transitivo indireto e rege preposição 'a': 'Assistiu ao filme' (✓) × 'Assistiu o filme' (✗).",
+    resposta: "CERTO",
+    explicacao:
+      "Assistir: (1) ver = VTI + 'a' ('Assistiu ao jogo'); (2) ajudar = VTD ou VTI ('Assistiu os necessitados' / 'Assistiu aos necessitados'); (3) caber = VTI + 'a' ('Assiste ao juiz decidir').",
+    dificuldade: 2,
+    tags: ["regência verbal", "assistir", "preposição a", "polissemia"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Regência Verbal",
+    ano: 2024,
+  },
+  {
+    id: "port-030",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O nome 'ciente' rege preposição 'de': 'Está ciente das normas' (✓). A construção 'ciente que' é coloquial e deve ser evitada em textos oficiais, preferindo-se 'ciente de que'.",
+    resposta: "CERTO",
+    explicacao:
+      "Regência nominal: 'ciente de algo'. Em textos formais, mantenha a preposição antes da conjunção integrante: 'ciente de que', 'ciente de que o prazo...'.",
+    dificuldade: 2,
+    tags: ["regência nominal", "ciente", "preposição de", "formalidade"],
+    fonte_legal: ["Manual de Redação da Presidência da República"],
+    banca_referencia: "FCC",
+    assunto: "Regência Nominal",
+    ano: 2023,
+  },
+  {
+    id: "port-031",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O verbo 'preferir', na norma culta, é transitivo direto e indireto, não aceitando 'do que' após comparativo: 'Prefiro café a chá' (✓) × 'Prefiro café do que chá' (✗).",
+    resposta: "CERTO",
+    explicacao:
+      "Preferir = VTDI: prefere-se algo A algo B. A preposição é 'a', não 'do que'. Erro comum em linguagem coloquial. Em concurso, a banca cobra a regência clássica.",
+    dificuldade: 2,
+    tags: ["regência verbal", "preferir", "comparação", "norma culta"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Regência Verbal",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 11: SIGNIFICAÇÃO DAS PALAVRAS
+  // ============================================================
+  {
+    id: "port-032",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "As palavras 'iminente' e 'eminente' são parônimas: 'iminente' = prestes a acontecer; 'eminente' = ilustre, elevado. 'Perigo iminente' (✓) × 'Perigo eminente' (✗).",
+    resposta: "CERTO",
+    explicacao:
+      "Parônimos = palavras semelhantes na forma, diferentes no significado. 'Iminente' (de 'iminência') = próximo. 'Eminente' (de 'eminência') = destacado. Confusão frequente em provas.",
+    dificuldade: 1,
+    tags: ["parônimos", "iminente vs eminente", "significação", "homônimos"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Significação das Palavras",
+    ano: 2024,
+  },
+  {
+    id: "port-033",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A palavra 'ratificar' significa confirmar, validar; 'retificar' significa corrigir, emendar. 'Ratificar o acordo' (✓ confirmar) × 'Retificar o texto' (✓ corrigir).",
+    resposta: "CERTO",
+    explicacao:
+      "Parônimos clássicos: ratificar (de 'rato' = firme) = confirmar; retificar (de 'reto' = corrigir) = emendar. Uso inadequado gera ambiguidade em textos jurídicos e oficiais.",
+    dificuldade: 2,
+    tags: [
+      "parônimos",
+      "ratificar vs retificar",
+      "significação",
+      "precisão lexical",
+    ],
+    banca_referencia: "FGV",
+    assunto: "Significação das Palavras",
+    ano: 2023,
+  },
+  {
+    id: "port-034",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "O termo 'descrição' refere-se ao ato de descrever; 'discrição' significa reserva, prudência. 'Fazer a descrição do fato' (✓) × 'Agir com discrição' (✓).",
+    resposta: "CERTO",
+    explicacao:
+      "Homônimos homófonos: mesma pronúncia, grafia e significado diferentes. 'Descrição' (de 'descrever'); 'Discrição' (de 'discreto'). Erro comum em redação oficial.",
+    dificuldade: 1,
+    tags: ["homônimos", "descrição vs discrição", "significação", "ortografia"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Significação das Palavras",
+    ano: 2022,
+  },
+
+  // ============================================================
+  // TÓPICO 12: REDAÇÃO DE CORRESPONDÊNCIAS OFICIAIS
+  // ============================================================
+  {
+    id: "port-035",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "Conforme o Manual de Redação da Presidência da República, o pronome de tratamento 'Vossa Senhoria' deve ser abreviado como 'V. Sa.' em textos oficiais, e a concordância verbal e nominal deve ser feita na 3ª pessoa.",
+    resposta: "CERTO",
+    explicacao:
+      "Manual de Redação: 'Vossa Senhoria' = V. Sa. (abreviatura). Concordância: sempre na 3ª pessoa ('V. Sa. está convidado', não 'estais'). Tratamento formal impessoal.",
+    dificuldade: 1,
+    tags: [
       "Manual de Redação",
-      "memorandos",
-      "formas de tratamento",
+      "Vossa Senhoria",
+      "abreviatura",
+      "concordância",
+    ],
+    fonte_legal: ["Manual de Redação da Presidência da República"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Redação de Correspondências Oficiais",
+    ano: 2024,
+  },
+  {
+    id: "port-036",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "Em ofícios, o fecho 'Atenciosamente' é utilizado para autoridades de hierarquia superior, enquanto 'Respeitosamente' é empregado para destinatários de mesma hierarquia ou inferiores.",
+    resposta: "ERRADO",
+    explicacao:
+      "Manual de Redação: 'Atenciosamente' = para autoridades de mesma hierarquia ou inferiores; 'Respeitosamente' = para autoridades superiores. A assertiva inverte a regra.",
+    dificuldade: 2,
+    tags: [
+      "Manual de Redação",
+      "fecho",
+      "Atenciosamente",
+      "Respeitosamente",
       "hierarquia",
     ],
     fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-027-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "O pronome de tratamento 'Vossa Magnificência' é utilizado no tratamento a reitores de universidades públicas e dirigentes de instituições de ensino superior, conforme estabelecido no Manual de Redação da Presidência da República.",
-    resposta: "CERTO",
-    explicacao:
-      "O Manual de Redação da Presidência da República estabelece 'Vossa Magnificência' para Reitores de Universidades e 'Vossa Reverendíssima' para autoridades eclesiásticas. É uma das formas de tratamento específicas previstas.",
-    dificuldade: 3,
-    tags: [
-      "Manual de Redação",
-      "formas de tratamento",
-      "reitores",
-      "universidades",
-    ],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
     banca_referencia: "FCC",
-    assunto: "Redação de correspondências oficiais",
+    assunto: "Redação de Correspondências Oficiais",
+    ano: 2023,
   },
   {
-    id: "port-028-v2",
+    id: "port-037",
     disciplina: "PORTUGUES",
     enunciado:
-      "A expressão 'no intuito de' é considerada prolixa pelo Manual de Redação da Presidência da República, devendo ser substituída por 'para' ou 'a fim de' em textos oficiais para garantir a concisão recomendada.",
-    resposta: "ERRADO",
-    explicacao:
-      "'No intuito de' é aceita e é sinônima de 'a fim de'. O Manual critica excessos de 'de' (preposições em excesso) e vícios como 'o mesmo', 'em relação a' (quando 'sobre' serve), mas 'no intuito de' é locução válida. 'A fim de' é mais comum, mas ambas são aceitas.",
-    dificuldade: 3,
-    tags: [
-      "Manual de Redação",
-      "prolixidade",
-      "concisão",
-      "locuções prepositivas",
-    ],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-029-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "Em textos oficiais, o uso de 'e tal' ou 'etc.' no final de enumerações é admitido quando se deseja indicar que a lista não é exaustiva, desde que já haja pelo menos dois itens explícitos antes.",
-    resposta: "ERRADO",
-    explicacao:
-      "O Manual de Redação da Presidência da República proíbe o uso de 'etc.' e 'e tal' em textos oficiais por serem abreviaturas coloquiais e imprecisas. Deve-se ou completar a enumeração ou usar 'entre outros', 'entre outras', ou reformular a frase.",
-    dificuldade: 2,
-    tags: [
-      "Manual de Redação",
-      "enumeração",
-      "etc",
-      "proibições",
-      "formalidade",
-    ],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-030-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A expressão 'em anexo' deve ser grafada separadamente, sem hífen, quando usada como locução adverbial ('envio o documento em anexo'), mas recebe hífen quando usada como adjetivo antes do substantivo ('o anexo-documento').",
+      "O uso de expressões como 'venho por meio deste' é considerado vício de linguagem em textos oficiais, devendo ser substituído por formas mais diretas como 'solicito', 'informo' ou 'comunico'.",
     resposta: "CERTO",
     explicacao:
-      "'Em anexo' (locução adverbial, separado) vs 'anexo' (adjetivo). Quanto ao hífen, 'anexo' como adjetivo não leva hífen ('documento anexo'), mas quando substantivo composto pode haver hífen ('anexo-documento' é raro). A regra geral é: 'em anexo' separado, 'anexo' junto como adjetivo pós-posto.",
-    dificuldade: 3,
-    tags: ["Manual de Redação", "anexo", "hífen", "locuções", "ortografia"],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "FCC",
-    assunto: "Ortografia oficial",
-  },
-  {
-    id: "port-031-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "O uso de parágrafos numerados em textos oficiais é obrigatório apenas em decretos e portarias, sendo facultativo em ofícios e memorandos, conforme determinação expressa do Manual de Redação da Presidência da República.",
-    resposta: "ERRADO",
-    explicacao:
-      "O Manual recomenda a divisão em parágrafos numerados (1º, 2º, etc.) para TODOS os textos oficiais que sejam estruturados em argumentos ou itens, facilitando a referência. Não é obrigatório, mas é recomendado para ofícios extensos. A afirmação de 'obrigatório apenas em decretos' é falsa.",
-    dificuldade: 3,
-    tags: [
-      "Manual de Redação",
-      "estrutura textual",
-      "parágrafos numerados",
-      "ofícios",
-    ],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-032-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A expressão 'no tocante a' é considerada arcaica e deve ser evitada em textos oficiais modernos, sendo preferível o uso de 'quanto a', 'a respeito de' ou 'sobre'.",
-    resposta: "ERRADO",
-    explicacao:
-      "'No tocante a' é formal, mas não é arcaica. É aceita na linguagem oficial, embora 'sobre', 'quanto a', 'a respeito de' sejam mais simples. O Manual não proíbe 'no tocante a', apenas sugere preferência por termos mais diretos quando possível.",
-    dificuldade: 2,
-    tags: ["Manual de Redação", "arcaísmos", "formalidade", "locuções"],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-033-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "O pronome de segunda pessoa 'você' é aceito em textos oficiais quando o destinatário é pessoa física de hierarquia equivalente à do remetente, desde que não seja autoridade com tratamento específico.",
-    resposta: "ERRADO",
-    explicacao:
-      "O Manual de Redação da Presidência da República proíbe expressamente o uso de 'você' em textos oficiais. Deve-se usar 'Vossa Senhoria' (VS) ou, no vocativo, 'Senhor'/'Senhora'. 'Você' é considerado tratamento informal, inadequado para a Administração Pública.",
-    dificuldade: 2,
-    tags: [
-      "Manual de Redação",
-      "você",
-      "proibições",
-      "tratamento",
-      "formalidade",
-    ],
-    fonte_legal: ["Manual de Redação da Presidência da República"],
-    banca_referencia: "CEBRASPE/FCC",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-034-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "Em ofícios dirigidos a autoridades estrangeiras, o tratamento deve seguir as normas diplomáticas internacionais, podendo-se utilizar 'Your Excellency' para autoridades de nível ministerial, independentemente do Manual de Redação da Presidência da República.",
-    resposta: "CERTO",
-    explicacao:
-      "Para autoridades estrangeiras, aplicam-se as normas do Protocolo do Itamaraty e convenções diplomáticas. 'Your Excellency' é tratamento adequado para ministros e equivalentes em correspondência internacional.",
-    dificuldade: 3,
-    tags: [
-      "Manual de Redação",
-      "correspondência internacional",
-      "protocolo",
-      "autoridades estrangeiras",
-    ],
-    fonte_legal: [
-      "Manual de Redação da Presidência da República",
-      "Protocolo do Itamaraty",
-    ],
-    banca_referencia: "FGV",
-    assunto: "Redação de correspondências oficiais",
-  },
-  {
-    id: "port-035-v2",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "A expressão 'fazendo jus ao expediente' é vício de linguagem comum em textos administrativos e deve ser substituída por 'conforme solicitado' ou 'atendendo ao pedido', segundo as recomendações do Manual de Redação.",
-    resposta: "CERTO",
-    explicacao:
-      "'Fazendo jus ao expediente' é considerada expressão burocrática, viciada e desnecessária. O Manual recomenda linguagem direta: 'conforme solicitado', 'atendendo ao pedido', 'em resposta ao ofício'.",
+      "Manual de Redação: evita-se prolixidade. 'Venho por meio deste' é redundante (todo ofício é meio de comunicação). Prefira verbos diretos no início: 'Solicito...', 'Informo que...'.",
     dificuldade: 2,
     tags: [
       "Manual de Redação",
       "vícios de linguagem",
-      "burocratismos",
+      "prolixidade",
       "concisão",
     ],
     fonte_legal: ["Manual de Redação da Presidência da República"],
     banca_referencia: "CEBRASPE",
-    assunto: "Redação de correspondências oficiais",
+    assunto: "Redação de Correspondências Oficiais",
+    ano: 2024,
   },
   {
-    id: "port-036-v2",
+    id: "port-038",
     disciplina: "PORTUGUES",
     enunciado:
-      "A grafia 'para' é a única forma correta da preposição, sendo incorretas as formas 'prá', 'pra' ou 'p'ra', mesmo em textos informais ou coloquiais.",
-    resposta: "CERTO",
+      "A expressão 'o mesmo' como pronome pessoal ('Encaminho o processo para análise e o mesmo será devolvido') é aceita em textos oficiais quando evita repetição desnecessária.",
+    resposta: "ERRADO",
     explicacao:
-      "Na norma culta escrita, apenas 'para' é aceito. 'Pra', 'prá', 'p'ra' são formas coloquiais/fonéticas, inadequadas para textos oficiais e formais. O Manual de Redação exige a forma completa 'para'.",
-    dificuldade: 1,
-    tags: ["ortografia", "preposições", "para vs pra", "norma culta"],
-    banca_referencia: "FCC",
-    assunto: "Ortografia oficial",
-  },
-  {
-    id: "port-037-v3",
-    disciplina: "PORTUGUES",
-    enunciado:
-      "No trecho de decisão judicial: 'Diante do exposto, julgo PARCIALMENTE PROCEDENTE o pedido para reconhecer o direito do autor à correção monetária, nos termos da fundamentação.' A expressão 'Diante do exposto' estabelece coesão sequencial, remetendo aos argumentos anteriormente apresentados, sendo recurso adequado em textos jurídicos.",
-    resposta: "CERTO",
-    explicacao:
-      "'Diante do exposto' é locução conectora de fechamento, típica de textos jurídicos e oficiais. Estabelece coesão referencial anafórica, retomando todo o conteúdo anterior. É amplamente aceita e recomendada em peças processuais e decisões judiciais.",
+      "Manual de Redação: 'o mesmo' como pronome é vício de estilo (ambiguidade, imprecisão). Substitua por 'ele', 'este', 'aquele' ou reestruture a frase: '...e será devolvido'.",
     dificuldade: 2,
-    tags: [
-      "coesão textual",
-      "anáfora",
-      "texto jurídico",
-      "decisão judicial",
-      "fechamento",
-    ],
+    tags: ["Manual de Redação", "o mesmo", "vício de estilo", "coesão"],
+    fonte_legal: ["Manual de Redação da Presidência da República"],
     banca_referencia: "FGV",
-    assunto: "Coesão textual em textos jurídicos",
+    assunto: "Redação de Correspondências Oficiais",
     ano: 2023,
   },
   {
-    id: "port-038-v3",
+    id: "port-039",
     disciplina: "PORTUGUES",
     enunciado:
-      "A construção 'Haviam muitos recursos pendentes de análise no tribunal' está gramaticalmente correta, pois o verbo 'haver' no sentido de 'existir' pode ser flexionado no plural quando o sujeito posposto está explícito.",
-    resposta: "ERRADO",
+      "Em memorandos, o campo 'Assunto' deve ser redigido de forma clara e sintética, permitindo a identificação imediata do tema, conforme recomendação do Manual de Redação.",
+    resposta: "CERTO",
     explicacao:
-      "O verbo 'haver' no sentido de 'existir' ou 'acontecer' é IMPESSOAL, portanto invariável. O correto é 'Havia muitos recursos pendentes' (singular). A flexão para o plural ('haviam') é erro gramatical grave, característico da linguagem coloquial, inadmissível em textos formais e jurídicos.",
+      "Manual de Redação: 'Assunto' = síntese do conteúdo. Deve permitir triagem e arquivamento eficiente. Evite generalidades ('Diversos') ou frases longas.",
+    dificuldade: 1,
+    tags: ["Manual de Redação", "memorando", "campo Assunto", "clareza"],
+    fonte_legal: ["Manual de Redação da Presidência da República"],
+    banca_referencia: "CEBRASPE",
+    assunto: "Redação de Correspondências Oficiais",
+    ano: 2022,
+  },
+  {
+    id: "port-040",
+    disciplina: "PORTUGUES",
+    enunciado:
+      "A assinatura em documentos digitais oficiais deve ser feita com certificado digital ICP-Brasil, conferindo autenticidade, integridade e não repúdio, nos termos da MP 2.200-2/2001.",
+    resposta: "CERTO",
+    explicacao:
+      "MP 2.200-2/2001 e Lei 14.063/2020: certificado digital ICP-Brasil tem fé pública. Garante autoria (autenticidade), não alteração (integridade) e impossibilidade de negar autoria (não repúdio).",
     dificuldade: 2,
     tags: [
-      "concordância verbal",
-      "haver impessoal",
-      "erro comum",
-      "texto formal",
+      "assinatura digital",
+      "ICP-Brasil",
+      "MP 2.200-2/2001",
+      "validade jurídica",
     ],
-    banca_referencia: "CEBRASPE",
-    assunto: "Concordância verbal com verbo haver",
-    ano: 2022,
+    fonte_legal: ["MP 2.200-2/2001", "Lei 14.063/2020"],
+    banca_referencia: "VUNESP",
+    assunto: "Redação de Correspondências Oficiais",
+    ano: 2024,
   },
 ];
 
-// Estatísticas do módulo
 export const totalQuestoesPortugues = questoesPortugues.length;
+
 export const distribuicaoDificuldadePortugues = {
   1: questoesPortugues.filter((q) => q.dificuldade === 1).length,
   2: questoesPortugues.filter((q) => q.dificuldade === 2).length,
