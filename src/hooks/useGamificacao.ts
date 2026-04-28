@@ -1,17 +1,16 @@
 "use client";
 
 import {
-  XP_REWARDS,
-  calcularNivel,
-  criarProgressoInicial,
-  verificarNovasConquistas,
-} from "@/data/gamificacao";
-import {
   BadgeType,
   Disciplina,
   ModoSimulado,
   UserProgress,
-} from "@/data/types";
+  XP_REWARDS,
+  calcularNivel,
+  criarProgressoInicial,
+  verificarNovasConquistas,
+} from "@/data/index";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ─── Chave de storage ──────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { HistoricoSimulado, QuestaoRespondida } from "@/data/types";
+import { HistoricoSimulado, QuestaoRespondida } from "@/data/index";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { calcularEstatisticas } from "@/lib/simulado-logic";
 
@@ -61,22 +61,14 @@ export function useFinalizarSimulado() {
         const tempoTotal = Math.floor((Date.now() - tempoInicio) / 1000);
         const estatisticas = calcularEstatisticas(questoes, tempoTotal);
 
+        // FIX: passa `estatisticas` diretamente em vez de replicar cada campo
+        // manualmente — evita erros de compilação quando novos campos são
+        // adicionados à interface EstatisticasSimulado (como `naoRespondidas`).
         const historico: HistoricoSimulado = {
           id: `sim_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           data: new Date().toISOString(),
           modo,
-          estatisticas: {
-            pontuacao: estatisticas.pontuacao,
-            acertos: estatisticas.acertos,
-            erros: estatisticas.erros,
-            brancos: estatisticas.brancos,
-            percentual: estatisticas.percentual,
-            tempoTotal: estatisticas.tempoTotal,
-            totalQuestoes: estatisticas.totalQuestoes,
-            tempoMedioPorQuestao: estatisticas.tempoMedioPorQuestao,
-            desempenhoPorDisciplina: estatisticas.desempenhoPorDisciplina,
-            taxaResposta: estatisticas.taxaResposta,
-          },
+          estatisticas,
           questoes: questoes.map((q) => ({
             ...q,
             disciplina: q.disciplina || "GERAL",

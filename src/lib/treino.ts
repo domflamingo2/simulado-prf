@@ -1,5 +1,5 @@
 import { questoes } from "@/data";
-import { Disciplina } from "@/data/types";
+import { Disciplina } from "@/data/index";
 import { embaralhar } from "./simulado-logic";
 
 export interface TreinoConfig {

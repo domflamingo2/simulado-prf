@@ -218,7 +218,7 @@ const ResultadoCard = memo(({ resultado }: { resultado: NotaCEBRASPE }) => {
           <div className="flex justify-between items-center text-xs">
             <span className="text-slate-400">Média necessária:</span>
             <span className="text-emerald-400 font-bold">
-              {resultado.estatisticas.mediaNecessaria} acertos
+              {resultado.estatisticas.notaMinimaAprovacao} acertos
             </span>
           </div>
           <div className="flex justify-between items-center text-xs mt-1">

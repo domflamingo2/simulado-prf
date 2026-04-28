@@ -1,6 +1,6 @@
 "use client";
 
-import { QuestaoRespondida } from "@/data/types";
+import { QuestaoRespondida } from "@/data/index";
 
 interface MiniQuestaoDotProps {
   questao: QuestaoRespondida;

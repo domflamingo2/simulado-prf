@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
-import { HistoricoSimulado } from "@/data/types";
+import { HistoricoSimulado } from "@/data/index";
 import { ErroComMetadados } from "@/types/erros";
 
 const LS_HISTORICO = "prf_historico";

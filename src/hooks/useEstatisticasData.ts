@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DISCIPLINAS_NOME, DISCIPLINAS_RADAR } from "@/constants/disciplinas";
-import { HistoricoSimulado } from "@/data/types";
+import { HistoricoSimulado } from "@/data/index";
 import { gerarAnaliseAdaptativa } from "@/lib/adaptativo";
 
 const LS_HISTORICO = "prf_historico";

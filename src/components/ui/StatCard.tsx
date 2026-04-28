@@ -59,7 +59,7 @@ export default function StatCard({
         onClick ? "cursor-pointer hover:scale-[1.02] active:scale-[0.98]" : ""
       }`}
       glow={glow ? (glowColor as any) : undefined}
-      intensity={glow ? "medium" : "subtle"}
+      glowIntensity={glow ? "medium" : "subtle"}
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-2">

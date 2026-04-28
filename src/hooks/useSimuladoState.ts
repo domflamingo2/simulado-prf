@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Questao, QuestaoRespondida } from "@/data/types";
+import { Questao, QuestaoRespondida } from "@/data/index";
 import {
   gerarAnaliseAdaptativa,
   selecionarQuestoesAdaptativas,

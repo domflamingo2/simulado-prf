@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
-import { QuestaoRespondida } from "@/data/types";
+import { QuestaoRespondida } from "@/data/index";
 
 const QuestaoCard = lazy(() => import("@/components/QuestaoCard"));
 

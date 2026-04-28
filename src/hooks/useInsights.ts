@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
-import { HistoricoSimulado } from "@/data/types";
+import { HistoricoSimulado } from "@/data/index";
 
 interface Insight {
   id: string;

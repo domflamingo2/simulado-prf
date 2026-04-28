@@ -1,4 +1,4 @@
-import { Questao } from "../types";
+import { Questao } from "../index";
 
 export const questoesDireitoAdministrativo: Questao[] = [
   // ============================================================

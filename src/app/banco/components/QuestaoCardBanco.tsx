@@ -15,7 +15,7 @@ import {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { Questao } from "@/data/types";
+import { Questao } from "@/data/index";
 
 // FIX: Toaster removido daqui — deve estar em app/layout.tsx.
 // Renderizar um Toaster por card em uma lista de 60 items criava 60 instâncias.

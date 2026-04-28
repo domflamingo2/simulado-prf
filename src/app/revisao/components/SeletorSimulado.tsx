@@ -1,7 +1,7 @@
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { HistoricoSimulado } from "@/data/types";
+import { HistoricoSimulado } from "@/data/index";
 
 interface SeletorSimuladoProps {
   simulados: HistoricoSimulado[];

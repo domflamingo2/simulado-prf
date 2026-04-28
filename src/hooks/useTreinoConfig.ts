@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { questoes } from "@/data";
-import { Disciplina } from "@/data/types";
+import { Disciplina } from "@/data/index";
 
 export function useTreinoConfig() {
   const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<

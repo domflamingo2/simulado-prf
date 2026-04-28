@@ -10,7 +10,7 @@ import {
   type LinkItem,
   type RecursoItem,
   type Tecnologia,
-} from "@/config/footer";
+} from "@/components/layout/config/footer";
 
 import {
   motion,

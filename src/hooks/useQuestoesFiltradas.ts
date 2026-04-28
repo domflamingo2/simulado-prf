@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { QuestaoRespondida } from "@/data/types";
+import { QuestaoRespondida } from "@/data/index";
 
 type FiltroRevisao = "todas" | "erros" | "acertos" | "brancos" | "marcadas";
 type OrdenacaoRevisao = "numero" | "disciplina" | "dificuldade";

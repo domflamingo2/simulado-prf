@@ -1,4 +1,4 @@
-// src/hooks/useScrollReveal.ts (VERSÃO OTIMIZADA)
+// src/hooks/useScrollReveal.ts
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";

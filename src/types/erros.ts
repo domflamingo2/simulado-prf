@@ -1,4 +1,4 @@
-import { Disciplina, Questao } from "@/data/types";
+import { Disciplina, Questao } from "@/data/index";
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS DE DOMÍNIO — Banco de Erros

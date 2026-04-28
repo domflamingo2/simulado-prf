@@ -3,7 +3,7 @@
 import { Layers } from "lucide-react";
 
 import { questoes } from "@/data";
-import { Disciplina } from "@/data/types";
+import { Disciplina } from "@/data/index";
 
 import { DisciplinaCard } from "./DisciplinaCard";
 

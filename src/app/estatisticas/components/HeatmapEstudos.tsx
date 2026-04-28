@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 
-import { HistoricoSimulado } from "@/data/types";
+import { HistoricoSimulado } from "@/data/index";
 
 function getDiaLocal(dataISO: string): string {
   const d = new Date(dataISO);

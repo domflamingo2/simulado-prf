@@ -25,7 +25,7 @@ import { StatsGrid } from "@/components/Dashboard/StatsGrid";
 import { WelcomeScreen } from "@/components/Dashboard/WelcomeScreen";
 import Footer from "@/components/layout/Footer";
 import { NewBadgeNotification } from "@/components/ui/Badge";
-import { NIVEIS } from "@/data/gamificacao";
+import { NIVEIS } from "@/data/index";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { classificarDesempenho } from "@/lib/simulado-logic";

@@ -4,7 +4,7 @@ import {
   HistoricoSimulado,
   Questao,
   QuestaoRespondida,
-} from "@/data/types";
+} from "@/data/index";
 import { embaralhar } from "./simulado-logic";
 
 // ═══════════════════════════════════════════════════════════

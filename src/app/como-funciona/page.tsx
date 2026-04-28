@@ -1,4 +1,4 @@
-// src/app/como-funciona/page.tsx (VERSÃO ULTRA OTIMIZADA)
+// src/app/como-funciona/page.tsx
 "use client";
 
 import Footer from "@/components/layout/Footer";

@@ -7,7 +7,7 @@ import {
   ModoSimulado,
   Questao,
   QuestaoRespondida,
-} from "@/data/types";
+} from "@/data/index";
 
 import { ESTRUTURA_PROVA } from "@/data";
 
@@ -69,31 +69,17 @@ export class SimuladoError extends Error {
 // FUNÇÕES DE EMBARALHAMENTO E SELEÇÃO
 // ═══════════════════════════════════════════════════════════
 
-/**
- * Gera uma nova seed derivada sempre positiva e nunca zero.
- */
 function deriveSeed(baseSeed: number, modifier: number): number {
-  // FIX: garante que o resultado nunca seja 0 (seed 0 em embaralhar é
-  // tecnicamente válido mas pode produzir resultados previsíveis).
-  // +1 no final garante que o resultado mínimo seja 1.
   const val = (Math.abs(baseSeed) * 31 + Math.abs(modifier)) % 2147483647;
   return val === 0 ? 1 : val;
 }
 
-/**
- * Embaralha uma CÓPIA do array usando Fisher-Yates com seed opcional.
- *
- * FIX crítico: a versão anterior mutava o array original in-place.
- * Isso corromperia a ordem de `todasQuestoes` (banco global de questões)
- * a cada chamada de `selecionarQuestoes`. Agora retorna sempre uma nova cópia.
- */
 export function embaralhar<T>(array: readonly T[], seed?: number): T[] {
-  // Cria cópia para não mutar o original
   const copia = [...array];
   let m = copia.length;
   let s =
     seed !== undefined
-      ? Math.abs(seed) || 1 // seed 0 → 1
+      ? Math.abs(seed) || 1
       : Math.floor(Math.random() * 1_000_000) + 1;
 
   while (m) {
@@ -105,7 +91,6 @@ export function embaralhar<T>(array: readonly T[], seed?: number): T[] {
   return copia;
 }
 
-/** Gera seed baseado em data para simulados diários consistentes */
 export function gerarSeedDiario(): number {
   const hoje = new Date();
   return (
@@ -119,12 +104,6 @@ interface SelecionarQuestoesOptions {
   garantirCobertura?: boolean;
 }
 
-/**
- * Seleciona questões proporcionalmente por disciplina.
- *
- * FIX: `embaralhar` agora retorna cópia — o banco original nunca é mutado.
- * FIX: o retorno de `embaralhar` é atribuído à variável antes do slice.
- */
 export function selecionarQuestoes(
   todasQuestoes: readonly Questao[],
   options: SelecionarQuestoesOptions,
@@ -156,8 +135,6 @@ export function selecionarQuestoes(
       }
 
       const seedDisciplina = deriveSeed(baseSeed, ++seedIncremental);
-
-      // FIX: embaralhar retorna nova cópia — atribuímos ao resultado
       const embaralhadas = embaralhar(questoesDisponiveis, seedDisciplina);
 
       if (embaralhadas.length < qtd) {
@@ -225,6 +202,7 @@ function inicializarEstatisticasDisciplina(): Record<
       acertos: 0,
       erros: 0,
       brancos: 0,
+      naoRespondidas: 0,
       percentual: 0,
       pontuacao: 0,
     };
@@ -236,7 +214,12 @@ function inicializarEstatisticasDisciplina(): Record<
 function processarQuestao(
   questao: QuestaoRespondida,
   stats: Record<string, EstatisticasDisciplina>,
-  contadores: { acertos: number; erros: number; brancos: number },
+  contadores: {
+    acertos: number;
+    erros: number;
+    brancos: number;
+    naoRespondidas: number;
+  },
 ): void {
   const disc = questao.disciplina;
 
@@ -246,6 +229,7 @@ function processarQuestao(
       acertos: 0,
       erros: 0,
       brancos: 0,
+      naoRespondidas: 0,
       percentual: 0,
       pontuacao: 0,
     };
@@ -256,7 +240,12 @@ function processarQuestao(
 
   const resposta = questao.respostaUsuario;
 
-  if (resposta === null || resposta === undefined) {
+  if (resposta === undefined) {
+    // Questão ainda não vista — não desconta ponto no CEBRASPE
+    contadores.naoRespondidas++;
+    stat.naoRespondidas++;
+  } else if (resposta === null) {
+    // Usuário explicitamente deixou em branco — também não desconta
     contadores.brancos++;
     stat.brancos++;
   } else if (resposta === questao.resposta) {
@@ -273,28 +262,18 @@ function finalizarEstatisticasDisciplina(
 ): void {
   for (const [, stat] of Object.entries(stats)) {
     if (stat.total > 0) {
-      // FIX: percentual = acertos / total × 100 (taxa de acerto real, 0–100)
-      // Isso é consistente com como o restante do app usa `percentual`.
-      // A pontuação CEBRASPE (acertos - erros) fica em `pontuacao`.
       stat.percentual = (stat.acertos / stat.total) * 100;
       stat.pontuacao = stat.acertos - stat.erros;
     }
   }
 }
 
-/**
- * Calcula estatísticas completas de um simulado.
- *
- * FIX: `percentual` agora é a taxa de acerto (acertos / total × 100),
- * separado de `pontuacao` que é a pontuação CEBRASPE (acertos - erros).
- * Antes, `percentual = pontuacao / total × 100` podia ser negativo.
- */
 export function calcularEstatisticas(
   questoes: QuestaoRespondida[],
   tempoTotal: number,
   tempoLimite?: number,
 ): EstatisticasSimulado {
-  const contadores = { acertos: 0, erros: 0, brancos: 0 };
+  const contadores = { acertos: 0, erros: 0, brancos: 0, naoRespondidas: 0 };
   const desempenhoPorDisciplina = inicializarEstatisticasDisciplina();
 
   for (const q of questoes) {
@@ -305,8 +284,6 @@ export function calcularEstatisticas(
 
   const total = questoes.length;
   const pontuacao = contadores.acertos - contadores.erros;
-
-  // FIX: percentual = taxa de acerto real (sempre 0–100)
   const percentual = total > 0 ? (contadores.acertos / total) * 100 : 0;
 
   const tempoEfetivo =
@@ -319,6 +296,7 @@ export function calcularEstatisticas(
     acertos: contadores.acertos,
     erros: contadores.erros,
     brancos: contadores.brancos,
+    naoRespondidas: contadores.naoRespondidas,
     pontuacao,
     percentual,
     tempoTotal: tempoEfetivo,
@@ -335,23 +313,6 @@ export function calcularEstatisticas(
 // ANÁLISE E CLASSIFICAÇÃO
 // ═══════════════════════════════════════════════════════════
 
-/**
- * Classifica o desempenho baseado na pontuação CEBRASPE bruta.
- *
- * FIX crítico: a assinatura foi clarificada.
- *
- * `pontuacaoBruta` é a pontuação CEBRASPE (acertos - erros), que vai de
- * -totalQuestoes até +totalQuestoes.
- *
- * O código anterior era chamado com `percentual` (0–100) em algumas páginas
- * e com pontuação bruta em outras, causando classificações sempre "excelente"
- * quando chamado com percentual já calculado.
- *
- * BREAKING CHANGE: se você chamava `classificarDesempenho(percentual, 60)`,
- * passe agora `classificarDesempenho(pontuacaoBruta, totalQuestoes)`.
- * O dashboard foi corrigido para passar `estatisticas.pontuacao` em vez de
- * um percentual pré-calculado.
- */
 export function classificarDesempenho(
   pontuacaoBruta: number,
   totalQuestoes: number,
@@ -366,13 +327,9 @@ export function classificarDesempenho(
     };
   }
 
-  // Converte para percentual de aproveitamento (0–100) para exibição
-  // Fórmula: (pontuacao + total) / (2 * total) × 100
-  // Onde: pontuacao = -total → 0%, pontuacao = 0 → 50%, pontuacao = +total → 100%
   const scoreAproveitamento =
     ((pontuacaoBruta + totalQuestoes) / (2 * totalQuestoes)) * 100;
 
-  // Limiares baseados na pontuação bruta proporcional (igual ao original)
   if (pontuacaoBruta >= totalQuestoes * 0.6) {
     return {
       nivel: "excelente",
@@ -415,10 +372,6 @@ export function classificarDesempenho(
   };
 }
 
-/**
- * Identifica disciplinas com aproveitamento abaixo do limite.
- * FIX: não muta o array interno — usa [...].sort() para retornar nova cópia.
- */
 export function identificarPontosFracos(
   estatisticas: EstatisticasSimulado,
   limitePercentual = 50,
@@ -432,8 +385,6 @@ export function identificarPontosFracos(
     }
   }
 
-  // FIX: sort em cópia nova — fracas foi recém-criado, mas por clareza
-  // e consistência usamos [...fracas].sort()
   return [...fracas].sort((a, b) => {
     const pa = estatisticas.desempenhoPorDisciplina[a]?.percentual ?? 0;
     const pb = estatisticas.desempenhoPorDisciplina[b]?.percentual ?? 0;
@@ -441,13 +392,6 @@ export function identificarPontosFracos(
   });
 }
 
-/**
- * Calcula tendência comparando o simulado atual com a média do histórico.
- *
- * FIX: exclui o simulado atual do histórico antes de calcular a média,
- * para evitar que o próprio atual entre na comparação (viés de referência).
- * Recebe `historicoAnterior` — o histórico SEM o simulado atual.
- */
 export function calcularTendencia(
   estatisticasAtual: EstatisticasSimulado,
   historicoAnterior: EstatisticasSimulado[],
@@ -455,7 +399,6 @@ export function calcularTendencia(
   if (historicoAnterior.length < 2) return "estavel";
 
   const qtd = Math.min(historicoAnterior.length, 3);
-  // Pega os mais recentes do histórico anterior
   const recentes = historicoAnterior.slice(-qtd);
 
   const mediaRecente =
@@ -516,9 +459,6 @@ export function formatarTempoLegivel(segundos: number): string {
   return formatarTempo(segundos, { abreviado: true });
 }
 
-/**
- * FIX: trata string vazia e retorna 0 em vez de lançar erro genérico.
- */
 export function parseTempo(tempoStr: string): number {
   if (!tempoStr?.trim()) return 0;
 
@@ -539,10 +479,6 @@ export function parseTempo(tempoStr: string): number {
 // UTILITÁRIOS DE SIMULADO
 // ═══════════════════════════════════════════════════════════
 
-/**
- * FIX: usa DISCIPLINAS_NOME para exibir nomes legíveis no resumo.
- * Antes exibia chaves brutas como "PORTUGUES" em vez de "Língua Portuguesa".
- */
 export function gerarResumoSimulado(
   estatisticas: EstatisticasSimulado,
 ): string {
@@ -568,7 +504,6 @@ export function gerarResumoSimulado(
     for (const disc of pontosFracos.slice(0, 3)) {
       const stat = estatisticas.desempenhoPorDisciplina[disc];
       if (stat) {
-        // FIX: exibe nome legível em vez da chave bruta
         const nome = DISCIPLINAS_NOME[disc] ?? disc;
         linhas.push(
           `  • ${nome}: ${stat.percentual.toFixed(0)}% (${stat.pontuacao} pts)`,
@@ -580,16 +515,9 @@ export function gerarResumoSimulado(
   return linhas.join("\n");
 }
 
-/**
- * Exporta estatísticas por disciplina em formato CSV.
- *
- * FIX: campos de texto são envolvidos em aspas para evitar corrupção
- * caso o nome da disciplina contenha vírgula (ex: dados externos).
- */
 export function exportarCSV(estatisticas: EstatisticasSimulado): string {
   const escapar = (v: string | number): string => {
     const s = String(v);
-    // Envolve em aspas se contém vírgula, aspas ou quebra de linha
     return s.includes(",") || s.includes('"') || s.includes("\n")
       ? `"${s.replace(/"/g, '""')}"`
       : s;
@@ -601,6 +529,7 @@ export function exportarCSV(estatisticas: EstatisticasSimulado): string {
     "Acertos",
     "Erros",
     "Brancos",
+    "Não respondidas",
     "% Acerto",
     "Pontuação (Acertos - Erros)",
   ];
@@ -609,14 +538,15 @@ export function exportarCSV(estatisticas: EstatisticasSimulado): string {
     const stat = estatisticas.desempenhoPorDisciplina[disc as Disciplina];
     const nome = DISCIPLINAS_NOME[disc] ?? disc;
     if (!stat) {
-      return [escapar(nome), 0, 0, 0, 0, "0,0", 0].join(",");
+      return [escapar(nome), 0, 0, 0, 0, 0, "0,0", 0].join(",");
     }
     return [
-      escapar(nome), // FIX: nome legível + escapado
+      escapar(nome),
       stat.total,
       stat.acertos,
       stat.erros,
       stat.brancos,
+      stat.naoRespondidas,
       stat.percentual.toFixed(1).replace(".", ","),
       stat.pontuacao,
     ].join(",");
@@ -624,7 +554,6 @@ export function exportarCSV(estatisticas: EstatisticasSimulado): string {
 
   const rows = ORDEM_DISCIPLINAS.map(montarLinha);
 
-  // Disciplinas extras (fora da ordem padrão)
   const disciplinasExtras = Object.keys(
     estatisticas.desempenhoPorDisciplina,
   ).filter((d) => !ORDEM_DISCIPLINAS.includes(d as Disciplina));

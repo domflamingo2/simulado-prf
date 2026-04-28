@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, Grid3x3 } from "lucide-react";
 
-import { Disciplina } from "@/data/types";
+import { Disciplina } from "@/data/index";
 
 interface DisciplinaCardProps {
   disciplina: {
