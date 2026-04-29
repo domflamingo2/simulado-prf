@@ -1,5 +1,5 @@
 // ============================================================
-// index.ts — arquivo único consolidado
+// index.ts — arquivo único consolidado (VERSÃO MELHORADA)
 // Contém: tipos, validação Zod, gamificação e banco de questões
 // ============================================================
 
@@ -64,6 +64,77 @@ export type TipoTendencia =
   | "piorando"
   | "estavel"
   | "insuficiente";
+
+// ============================================================
+// SEÇÃO 1.1 — TIPOS MELHORADOS
+// ============================================================
+
+/** Tipos para XP_REWARDS */
+export type XPRewardKey = keyof typeof XP_REWARDS;
+
+export interface XPRewardInfo {
+  value: number;
+  descricao: string;
+  categoria: "questao" | "simulado" | "streak" | "recorde" | "conquista";
+}
+
+/** Tipos para badges niveladas */
+export interface BadgeNivel {
+  nivel: 1 | 2 | 3;
+  meta: number;
+  badgeId: BadgeType;
+  descricao: string;
+}
+
+export interface BadgeNiveladaConfig {
+  nome: string;
+  descricaoBase: string;
+  niveis: BadgeNivel[];
+}
+
+/** Métricas de performance */
+export interface PerformanceMetrics {
+  tempoMedioPorDisciplina: Record<Disciplina, number>;
+  taxaAcertoPorDificuldade: Record<NivelDificuldade, number>;
+  questoesMaisErradas: {
+    id: string;
+    taxaErro: number;
+    disciplina: Disciplina;
+  }[];
+  eficienciaPorTempo: number;
+  consistencia: "alta" | "media" | "baixa";
+  disciplinaMaisForte: Disciplina | null;
+  disciplinaMaisFraca: Disciplina | null;
+}
+
+/** Configuração para seleção adaptativa */
+export interface SelecaoAdaptativaOptions {
+  priorizarFraquezas: boolean;
+  evitarRepetidos: boolean;
+  limiteQuestoesVistas: number;
+  pesoRecencia: number;
+  pesoDificuldade: number;
+  pesoErro: number;
+}
+
+/** Resultado da validação de integridade */
+export interface IntegridadeBanco {
+  valido: boolean;
+  erros: string[];
+  duplicados: string[];
+  estatisticas: {
+    totalQuestoes: number;
+    questoesComErro: number;
+    questoesDuplicadas: number;
+  };
+}
+
+/** Resultado da validação de estado consistente */
+export interface EstadoConsistenteResult {
+  ok: boolean;
+  inconsistencias: string[];
+  sugestoes: string[];
+}
 
 // ============================================================
 // SEÇÃO 2 — INTERFACES
@@ -641,7 +712,7 @@ export const NIVEIS: NivelInfo[] = [
 
 const NIVEL_MAXIMO = NIVEIS[NIVEIS.length - 1];
 
-// ── Recompensas de XP ─────────────────────────────────────────
+// ── Recompensas de XP (MELHORADO) ─────────────────────────────────────────
 
 export const XP_REWARDS = {
   QUESTAO_RESPONDIDA: 1,
@@ -661,7 +732,123 @@ export const XP_REWARDS = {
   PROVA_PERFEITA: 200,
 } as const;
 
-// ── Configuração de badges ────────────────────────────────────
+/**
+ * Informações detalhadas sobre recompensas de XP
+ * @example
+ * const rewardInfo = XP_REWARDS_INFO.ACERTO;
+ * console.log(`${rewardInfo.descricao}: ${rewardInfo.value} XP`);
+ */
+export const XP_REWARDS_INFO: Record<XPRewardKey, XPRewardInfo> = {
+  QUESTAO_RESPONDIDA: {
+    value: 1,
+    descricao: "Responder qualquer questão",
+    categoria: "questao",
+  },
+  ACERTO: {
+    value: 10,
+    descricao: "Acertar uma questão",
+    categoria: "questao",
+  },
+  SIMULADO_COMPLETO: {
+    value: 50,
+    descricao: "Completar simulado completo",
+    categoria: "simulado",
+  },
+  SIMULADO_TURBO: {
+    value: 30,
+    descricao: "Completar modo turbo",
+    categoria: "simulado",
+  },
+  SIMULADO_ADAPTATIVO: {
+    value: 60,
+    descricao: "Completar modo adaptativo",
+    categoria: "simulado",
+  },
+  TREINO_DISCIPLINA: {
+    value: 20,
+    descricao: "Completar treino por disciplina",
+    categoria: "simulado",
+  },
+  REVISAO_ERROS: {
+    value: 15,
+    descricao: "Completar revisão de erros",
+    categoria: "simulado",
+  },
+  STREAK_DIA: {
+    value: 25,
+    descricao: "Manter streak diário",
+    categoria: "streak",
+  },
+  STREAK_3: {
+    value: 50,
+    descricao: "3 dias consecutivos",
+    categoria: "streak",
+  },
+  STREAK_7: {
+    value: 100,
+    descricao: "7 dias consecutivos",
+    categoria: "streak",
+  },
+  STREAK_30: {
+    value: 500,
+    descricao: "30 dias consecutivos",
+    categoria: "streak",
+  },
+  NOVO_RECORDE_PONTUACAO: {
+    value: 75,
+    descricao: "Bater recorde de pontuação",
+    categoria: "recorde",
+  },
+  NOVO_RECORDE_VELOCIDADE: {
+    value: 50,
+    descricao: "Bater recorde de velocidade",
+    categoria: "recorde",
+  },
+  DISCIPLINA_DOMINADA: {
+    value: 100,
+    descricao: "Dominar uma disciplina",
+    categoria: "conquista",
+  },
+  PROVA_PERFEITA: {
+    value: 200,
+    descricao: "Acerrar todas as questões",
+    categoria: "conquista",
+  },
+};
+
+// ── Configuração de badges (MELHORADO COM NÍVEIS) ─────────────────────────
+
+/**
+ * Badges niveladas (streaks)
+ */
+export const BADGES_NIVELADAS: Record<string, BadgeNiveladaConfig> = {
+  streak: {
+    nome: "Consistência",
+    descricaoBase: "Dias consecutivos de estudo",
+    niveis: [
+      { nivel: 1, meta: 3, badgeId: "streak-3", descricao: "3 dias" },
+      { nivel: 2, meta: 7, badgeId: "streak-7", descricao: "7 dias" },
+      { nivel: 3, meta: 30, badgeId: "streak-30", descricao: "30 dias" },
+    ],
+  },
+};
+
+/**
+ * @example
+ * const streakBadges = getBadgesPorNivel("streak", progress.streakDias);
+ * console.log(`Desbloqueou: ${streakBadges.length} badges de streak`);
+ */
+export function getBadgesPorNivel(
+  categoria: string,
+  valor: number,
+): BadgeType[] {
+  const config = BADGES_NIVELADAS[categoria];
+  if (!config) return [];
+
+  return config.niveis
+    .filter((nivel) => valor >= nivel.meta)
+    .map((nivel) => nivel.badgeId);
+}
 
 export const BADGES_CONFIG: Record<
   BadgeType,
@@ -776,6 +963,10 @@ export const BADGES_CONFIG: Record<
 /**
  * Calcula o nível correspondente ao XP total.
  * Guard para xpTotal negativo (dados corrompidos).
+ *
+ * @example
+ * const nivel = calcularNivel(1250);
+ * console.log(`Nível ${nivel.nivel}: ${nivel.nome} ${nivel.icone}`);
  */
 export function calcularNivel(xpTotal: number): NivelInfo {
   const xp = Math.max(0, xpTotal);
@@ -788,6 +979,10 @@ export function calcularNivel(xpTotal: number): NivelInfo {
 /**
  * Retorna o XP restante para o próximo nível.
  * No nível máximo retorna 0 — o usuário já chegou ao topo.
+ *
+ * @example
+ * const restante = xpParaProximoNivel(250);
+ * console.log(`Faltam ${restante} XP para o próximo nível`);
  */
 export function xpParaProximoNivel(xpTotal: number): number {
   const nivel = calcularNivel(xpTotal);
@@ -798,6 +993,10 @@ export function xpParaProximoNivel(xpTotal: number): number {
 /**
  * Calcula o progresso percentual dentro do nível atual (0–100).
  * No nível máximo retorna 100 imediatamente — a barra está cheia.
+ *
+ * @example
+ * const progresso = calcularProgressoNivel(250);
+ * console.log(`Progresso: ${progresso}%`);
  */
 export function calcularProgressoNivel(xpTotal: number): number {
   const xp = Math.max(0, xpTotal);
@@ -837,6 +1036,10 @@ export function verificarNovasConquistas(
 /**
  * Cria um objeto de progresso inicial para um novo usuário.
  * Fonte única — não duplicar em outros módulos.
+ *
+ * @example
+ * const novoUsuario = criarProgressoInicial();
+ * console.log(`Bem vindo! Você está no nível ${novoUsuario.nivel}`);
  */
 export function criarProgressoInicial(): UserProgress {
   return {
@@ -970,6 +1173,199 @@ export const questoes: Questao[] = [
 ];
 
 // ============================================================
+// SEÇÃO 6.1 — CACHE PARA QUERIES FREQUENTES
+// ============================================================
+
+/**
+ * Cache singleton para queries frequentes
+ * Melhora performance evitando recálculos desnecessários
+ *
+ * @example
+ * const cache = QuestaoCache.getInstance();
+ * const questoesPortugues = cache.getQuestoesPorDisciplina("PORTUGUES");
+ */
+export class QuestaoCache {
+  private static instance: QuestaoCache;
+  private cache = new Map<string, any>();
+  private timestamps = new Map<string, number>();
+  private readonly TTL = 5 * 60 * 1000; // 5 minutos
+
+  private constructor() {}
+
+  static getInstance(): QuestaoCache {
+    if (!QuestaoCache.instance) {
+      QuestaoCache.instance = new QuestaoCache();
+    }
+    return QuestaoCache.instance;
+  }
+
+  private isExpired(key: string): boolean {
+    const timestamp = this.timestamps.get(key);
+    if (!timestamp) return true;
+    return Date.now() - timestamp > this.TTL;
+  }
+
+  private setCache(key: string, value: any): void {
+    this.cache.set(key, value);
+    this.timestamps.set(key, Date.now());
+  }
+
+  getQuestoesPorDisciplina(disciplina: Disciplina): Questao[] {
+    const key = `disciplina:${disciplina}`;
+    if (!this.isExpired(key) && this.cache.has(key)) {
+      return this.cache.get(key)!;
+    }
+    const result = questoes.filter((q) => q.disciplina === disciplina);
+    this.setCache(key, result);
+    return result;
+  }
+
+  getQuestoesPorDificuldade(dificuldade: NivelDificuldade): Questao[] {
+    const key = `dificuldade:${dificuldade}`;
+    if (!this.isExpired(key) && this.cache.has(key)) {
+      return this.cache.get(key)!;
+    }
+    const result = questoes.filter((q) => q.dificuldade === dificuldade);
+    this.setCache(key, result);
+    return result;
+  }
+
+  getQuestoesPorBanca(banca: string): Questao[] {
+    const key = `banca:${banca}`;
+    if (!this.isExpired(key) && this.cache.has(key)) {
+      return this.cache.get(key)!;
+    }
+    const result = questoes.filter((q) => q.banca_referencia === banca);
+    this.setCache(key, result);
+    return result;
+  }
+
+  getEstatisticasBanco(): StatsData {
+    const key = "estatisticas:banco";
+    if (!this.isExpired(key) && this.cache.has(key)) {
+      return this.cache.get(key)!;
+    }
+    const result = getEstatisticasBanco();
+    this.setCache(key, result);
+    return result;
+  }
+
+  invalidate(): void {
+    this.cache.clear();
+    this.timestamps.clear();
+  }
+
+  invalidateKey(key: string): void {
+    this.cache.delete(key);
+    this.timestamps.delete(key);
+  }
+}
+
+// ── Índices para buscas frequentes (otimização) ───────────────────────────
+
+/**
+ * Índices para buscas rápidas usando Map
+ * Performance O(1) em vez de O(n)
+ */
+export class QuestaoIndices {
+  private static instance: QuestaoIndices;
+  private indices: {
+    porId: Map<string, Questao>;
+    porDisciplina: Map<Disciplina, Questao[]>;
+    porDificuldade: Map<NivelDificuldade, Questao[]>;
+    porAno: Map<number, Questao[]>;
+    porAssunto: Map<string, Questao[]>;
+  };
+
+  private constructor() {
+    this.indices = {
+      porId: new Map(),
+      porDisciplina: new Map(),
+      porDificuldade: new Map(),
+      porAno: new Map(),
+      porAssunto: new Map(),
+    };
+    this.construirIndices();
+  }
+
+  static getInstance(): QuestaoIndices {
+    if (!QuestaoIndices.instance) {
+      QuestaoIndices.instance = new QuestaoIndices();
+    }
+    return QuestaoIndices.instance;
+  }
+
+  private construirIndices(): void {
+    // Inicializar maps
+    DISCIPLINAS_ENUM.forEach((d) => this.indices.porDisciplina.set(d, []));
+    ["administracao"] as any; // Placeholder
+
+    // Construir índices
+    for (const q of questoes) {
+      // Índice por ID
+      this.indices.porId.set(q.id, q);
+
+      // Índice por disciplina
+      this.indices.porDisciplina.get(q.disciplina)?.push(q);
+
+      // Índice por dificuldade
+      if (!this.indices.porDificuldade.has(q.dificuldade)) {
+        this.indices.porDificuldade.set(q.dificuldade, []);
+      }
+      this.indices.porDificuldade.get(q.dificuldade)!.push(q);
+
+      // Índice por ano
+      if (q.ano) {
+        if (!this.indices.porAno.has(q.ano)) {
+          this.indices.porAno.set(q.ano, []);
+        }
+        this.indices.porAno.get(q.ano)!.push(q);
+      }
+
+      // Índice por assunto
+      if (q.assunto) {
+        const assuntoKey = q.assunto.toLowerCase();
+        if (!this.indices.porAssunto.has(assuntoKey)) {
+          this.indices.porAssunto.set(assuntoKey, []);
+        }
+        this.indices.porAssunto.get(assuntoKey)!.push(q);
+      }
+    }
+  }
+
+  getQuestaoById(id: string): Questao | undefined {
+    return this.indices.porId.get(id);
+  }
+
+  getQuestoesPorDisciplina(disciplina: Disciplina): Questao[] {
+    return this.indices.porDisciplina.get(disciplina) || [];
+  }
+
+  getQuestoesPorDificuldade(dificuldade: NivelDificuldade): Questao[] {
+    return this.indices.porDificuldade.get(dificuldade) || [];
+  }
+
+  getQuestoesPorAno(ano: number): Questao[] {
+    return this.indices.porAno.get(ano) || [];
+  }
+
+  getQuestoesPorAssunto(assunto: string): Questao[] {
+    return this.indices.porAssunto.get(assunto.toLowerCase()) || [];
+  }
+
+  rebuild(): void {
+    this.indices = {
+      porId: new Map(),
+      porDisciplina: new Map(),
+      porDificuldade: new Map(),
+      porAno: new Map(),
+      porAssunto: new Map(),
+    };
+    this.construirIndices();
+  }
+}
+
+// ============================================================
 // SEÇÃO 7 — ESTATÍSTICAS E ANÁLISE DO BANCO
 // ============================================================
 
@@ -1022,6 +1418,45 @@ export function contarQuestoesPorDisciplina(): Record<Disciplina, number> {
   }
 
   return contagem;
+}
+
+/**
+ * Estatísticas por dificuldade (NOVO)
+ *
+ * @example
+ * const stats = getEstatisticasPorDificuldade();
+ * console.log(`Questões fáceis: ${stats[1].total} (${stats[1].percentual}%)`);
+ */
+export function getEstatisticasPorDificuldade(disciplina?: Disciplina) {
+  const filtro = disciplina
+    ? questoes.filter((q) => q.disciplina === disciplina)
+    : questoes;
+
+  const total = filtro.length;
+
+  const stats = {
+    1: {
+      total: filtro.filter((q) => q.dificuldade === 1).length,
+      percentual: 0,
+    },
+    2: {
+      total: filtro.filter((q) => q.dificuldade === 2).length,
+      percentual: 0,
+    },
+    3: {
+      total: filtro.filter((q) => q.dificuldade === 3).length,
+      percentual: 0,
+    },
+  };
+
+  // Calcular percentuais
+  if (total > 0) {
+    stats[1].percentual = (stats[1].total / total) * 100;
+    stats[2].percentual = (stats[2].total / total) * 100;
+    stats[3].percentual = (stats[3].total / total) * 100;
+  }
+
+  return stats;
 }
 
 export function getEstatisticasBanco(): StatsData {
@@ -1090,15 +1525,186 @@ export function getEstatisticasBanco(): StatsData {
 }
 
 // ============================================================
+// SEÇÃO 7.1 — MÉTRICAS DE PERFORMANCE (NOVO)
+// ============================================================
+
+/**
+ * Calcula métricas de performance baseadas no histórico do usuário
+ *
+ * @example
+ * const metrics = calcularMetricasPerformance(historicoSimulados);
+ * console.log(`Disciplina mais forte: ${metrics.disciplinaMaisForte}`);
+ * console.log(`Consistência: ${metrics.consistencia}`);
+ */
+export function calcularMetricasPerformance(
+  historico: HistoricoSimulado[],
+): PerformanceMetrics {
+  // Inicializar acumuladores
+  const tempoPorDisciplina: Record<
+    Disciplina,
+    { total: number; count: number }
+  > = {} as any;
+  const acertosPorDificuldade: Record<
+    NivelDificuldade,
+    { acertos: number; total: number }
+  > = {
+    1: { acertos: 0, total: 0 },
+    2: { acertos: 0, total: 0 },
+    3: { acertos: 0, total: 0 },
+  };
+  const errosPorQuestao: Map<
+    string,
+    { erros: number; total: number; disciplina: Disciplina }
+  > = new Map();
+
+  // Inicializar registros de disciplina
+  DISCIPLINAS_ENUM.forEach((d) => {
+    tempoPorDisciplina[d] = { total: 0, count: 0 };
+  });
+
+  // Processar histórico
+  for (const simulado of historico) {
+    for (const questao of simulado.questoes) {
+      // Tempo por disciplina
+      if (questao.tempoGasto) {
+        tempoPorDisciplina[questao.disciplina].total += questao.tempoGasto;
+        tempoPorDisciplina[questao.disciplina].count++;
+      }
+
+      // Acertos por dificuldade
+      if (questao.respostaUsuario === questao.resposta) {
+        acertosPorDificuldade[questao.dificuldade].acertos++;
+      }
+      acertosPorDificuldade[questao.dificuldade].total++;
+
+      // Erros por questão
+      if (
+        questao.respostaUsuario &&
+        questao.respostaUsuario !== questao.resposta
+      ) {
+        const stats = errosPorQuestao.get(questao.id) || {
+          erros: 0,
+          total: 0,
+          disciplina: questao.disciplina,
+        };
+        stats.erros++;
+        stats.total++;
+        errosPorQuestao.set(questao.id, stats);
+      } else if (questao.respostaUsuario === questao.resposta) {
+        const stats = errosPorQuestao.get(questao.id) || {
+          erros: 0,
+          total: 0,
+          disciplina: questao.disciplina,
+        };
+        stats.total++;
+        errosPorQuestao.set(questao.id, stats);
+      }
+    }
+  }
+
+  // Calcular tempo médio por disciplina
+  const tempoMedioPorDisciplina = {} as Record<Disciplina, number>;
+  for (const [disc, data] of Object.entries(tempoPorDisciplina)) {
+    tempoMedioPorDisciplina[disc as Disciplina] =
+      data.count > 0 ? data.total / data.count : 0;
+  }
+
+  // Calcular taxa de acerto por dificuldade
+  const taxaAcertoPorDificuldade = {} as Record<NivelDificuldade, number>;
+  for (const [dificuldade, data] of Object.entries(acertosPorDificuldade)) {
+    taxaAcertoPorDificuldade[Number(dificuldade) as NivelDificuldade] =
+      data.total > 0 ? (data.acertos / data.total) * 100 : 0;
+  }
+
+  // Identificar questões mais erradas
+  const questoesMaisErradas = Array.from(errosPorQuestao.entries())
+    .map(([id, data]) => ({
+      id,
+      taxaErro: data.total > 0 ? (data.erros / data.total) * 100 : 0,
+      disciplina: data.disciplina,
+    }))
+    .sort((a, b) => b.taxaErro - a.taxaErro)
+    .slice(0, 10);
+
+  // Calcular eficiência por tempo (acertos por minuto)
+  const totalAcertos = historico.reduce(
+    (sum, h) => sum + h.estatisticas.acertos,
+    0,
+  );
+  const totalTempo = historico.reduce(
+    (sum, h) => sum + h.estatisticas.tempoTotal,
+    0,
+  );
+  const eficienciaPorTempo =
+    totalTempo > 0 ? totalAcertos / (totalTempo / 60) : 0;
+
+  // Calcular consistência (desvio padrão das pontuações)
+  const pontuacoes = historico.map((h) => h.estatisticas.percentual);
+  const media = pontuacoes.reduce((a, b) => a + b, 0) / pontuacoes.length;
+  const desvioPadrao = Math.sqrt(
+    pontuacoes.reduce((sq, n) => sq + Math.pow(n - media, 2), 0) /
+      pontuacoes.length,
+  );
+  const consistencia =
+    desvioPadrao < 10 ? "alta" : desvioPadrao < 20 ? "media" : "baixa";
+
+  // Identificar disciplina mais forte e mais fraca
+  const desempenhoPorDisciplina = new Map<
+    Disciplina,
+    { acertos: number; total: number }
+  >();
+  for (const simulado of historico) {
+    for (const [disc, stats] of Object.entries(
+      simulado.estatisticas.desempenhoPorDisciplina,
+    )) {
+      const current = desempenhoPorDisciplina.get(disc as Disciplina) || {
+        acertos: 0,
+        total: 0,
+      };
+      current.acertos += stats.acertos;
+      current.total += stats.total;
+      desempenhoPorDisciplina.set(disc as Disciplina, current);
+    }
+  }
+
+  let disciplinaMaisForte: Disciplina | null = null;
+  let disciplinaMaisFraca: Disciplina | null = null;
+  let melhorTaxa = -1;
+  let piorTaxa = 101;
+
+  for (const [disc, data] of desempenhoPorDisciplina) {
+    const taxa = data.total > 0 ? (data.acertos / data.total) * 100 : 0;
+    if (taxa > melhorTaxa && data.total >= 5) {
+      melhorTaxa = taxa;
+      disciplinaMaisForte = disc;
+    }
+    if (taxa < piorTaxa && data.total >= 5) {
+      piorTaxa = taxa;
+      disciplinaMaisFraca = disc;
+    }
+  }
+
+  return {
+    tempoMedioPorDisciplina,
+    taxaAcertoPorDificuldade,
+    questoesMaisErradas,
+    eficienciaPorTempo,
+    consistencia,
+    disciplinaMaisForte,
+    disciplinaMaisFraca,
+  };
+}
+
+// ============================================================
 // SEÇÃO 8 — FUNÇÕES DE SELEÇÃO E BUSCA
 // ============================================================
 
 export function getQuestoesPorDisciplina(disciplina: Disciplina): Questao[] {
-  return questoes.filter((q) => q.disciplina === disciplina);
+  return QuestaoIndices.getInstance().getQuestoesPorDisciplina(disciplina);
 }
 
 export function getQuestoesPorDificuldade(dificuldade: 1 | 2 | 3): Questao[] {
-  return questoes.filter((q) => q.dificuldade === dificuldade);
+  return QuestaoIndices.getInstance().getQuestoesPorDificuldade(dificuldade);
 }
 
 export function getQuestoesPorBanca(banca: string): Questao[] {
@@ -1116,8 +1722,7 @@ export function buscarQuestoes(termo: string): Questao[] {
 }
 
 export function getQuestoesPorAssunto(assunto: string): Questao[] {
-  const t = assunto.toLowerCase();
-  return questoes.filter((q) => q.assunto?.toLowerCase().includes(t));
+  return QuestaoIndices.getInstance().getQuestoesPorAssunto(assunto);
 }
 
 /** Fisher-Yates shuffle — retorna novo array sem modificar o original */
@@ -1178,66 +1783,399 @@ export function selecionarQuestoesBalanceadas(): {
   return { questoes: selecionadas, avisos };
 }
 
-export function verificarCobertura(): { ok: boolean; faltantes: Disciplina[] } {
-  const necessario = {
-    ...ESTRUTURA_PROVA.conhecimentosBasicos.disciplinas,
-    ...ESTRUTURA_PROVA.conhecimentosEspecificos.disciplinas,
-  };
-  const disponivel = contarQuestoesPorDisciplina();
-  const faltantes: Disciplina[] = [];
+// ============================================================
+// SEÇÃO 8.1 — SELEÇÃO ADAPTATIVA MELHORADA
+// ============================================================
 
-  for (const [disc, qtd] of Object.entries(necessario)) {
-    if (disponivel[disc as Disciplina] < (qtd ?? 0) * 3) {
-      faltantes.push(disc as Disciplina);
+/**
+ * Seleção adaptativa de questões baseada no histórico do usuário
+ *
+ * @example
+ * const result = selecionarQuestoesAdaptativas(historico, 20, {
+ *   priorizarFraquezas: true,
+ *   evitarRepetidos: true
+ * });
+ * console.log(`Priorizadas: ${result.metadados.disciplinasPriorizadas.join(", ")}`);
+ */
+export function selecionarQuestoesAdaptativas(
+  historico: HistoricoSimulado[],
+  quantidade: number,
+  options?: Partial<SelecaoAdaptativaOptions>,
+): SelecaoAdaptativaResult {
+  const opts: SelecaoAdaptativaOptions = {
+    priorizarFraquezas: true,
+    evitarRepetidos: true,
+    limiteQuestoesVistas: 3,
+    pesoRecencia: 0.3,
+    pesoDificuldade: 0.3,
+    pesoErro: 0.4,
+    ...options,
+  };
+
+  // Calcular pesos por disciplina baseado no histórico
+  const pesosDisciplina = new Map<Disciplina, number>();
+  const questoesVistas = new Map<string, number>(); // Questão -> vezes vista
+  const questoesErradas = new Map<string, number>(); // Questão -> vezes errada
+
+  // Contar questões vistas e erradas
+  for (const simulado of historico) {
+    for (const questao of simulado.questoes) {
+      const vezes = questoesVistas.get(questao.id) || 0;
+      questoesVistas.set(questao.id, vezes + 1);
+
+      if (
+        questao.respostaUsuario &&
+        questao.respostaUsuario !== questao.resposta
+      ) {
+        const erros = questoesErradas.get(questao.id) || 0;
+        questoesErradas.set(questao.id, erros + 1);
+      }
     }
   }
 
-  return { ok: faltantes.length === 0, faltantes };
-}
+  // Calcular taxa de erro por disciplina
+  const taxaErroPorDisciplina = new Map<Disciplina, number>();
+  const questoesPorDisciplina = new Map<
+    Disciplina,
+    { erros: number; total: number }
+  >();
 
-export function getQuestaoById(id: string): Questao | undefined {
-  return questoes.find((q) => q.id === id);
-}
-
-export function getQuestoesByIds(ids: string[]): Questao[] {
-  const set = new Set(ids);
-  return questoes.filter((q) => set.has(q.id));
-}
-
-export function validarQuestoesExistentes(ids: string[]): {
-  validos: string[];
-  invalidos: string[];
-} {
-  const existing = new Set(questoes.map((q) => q.id));
-  const validos: string[] = [];
-  const invalidos: string[] = [];
-  for (const id of ids) {
-    (existing.has(id) ? validos : invalidos).push(id);
+  for (const simulado of historico) {
+    for (const [disc, stats] of Object.entries(
+      simulado.estatisticas.desempenhoPorDisciplina,
+    )) {
+      const current = questoesPorDisciplina.get(disc as Disciplina) || {
+        erros: 0,
+        total: 0,
+      };
+      current.erros += stats.erros;
+      current.total += stats.total;
+      questoesPorDisciplina.set(disc as Disciplina, current);
+    }
   }
-  return { validos, invalidos };
-}
 
-export function agruparQuestoesPorDisciplina(): Map<Disciplina, Questao[]> {
-  const mapa = new Map<Disciplina, Questao[]>(
-    DISCIPLINAS_ENUM.map((d) => [d, []]),
+  for (const [disc, data] of questoesPorDisciplina) {
+    const taxa = data.total > 0 ? data.erros / data.total : 0;
+    taxaErroPorDisciplina.set(disc, taxa);
+  }
+
+  // Calcular peso para cada disciplina
+  for (const disc of DISCIPLINAS_ENUM) {
+    let peso = 1.0;
+
+    if (opts.priorizarFraquezas) {
+      const taxaErro = taxaErroPorDisciplina.get(disc) || 0;
+      peso += taxaErro * 2; // Dar mais peso para disciplinas com alta taxa de erro
+    }
+
+    pesosDisciplina.set(disc, peso);
+  }
+
+  // Normalizar pesos
+  const somaPesos = Array.from(pesosDisciplina.values()).reduce(
+    (a, b) => a + b,
+    0,
   );
-  for (const q of questoes) {
-    mapa.get(q.disciplina)?.push(q);
+  const pesosNormalizados = new Map<Disciplina, number>();
+  for (const [disc, peso] of pesosDisciplina) {
+    pesosNormalizados.set(disc, peso / somaPesos);
   }
-  return mapa;
+
+  // Selecionar questões
+  const selecionadas: Questao[] = [];
+  const disciplinasPriorizadas: Disciplina[] = [];
+
+  // Determinar quantas questões por disciplina baseado nos pesos
+  const questoesPorDisciplinaSelecao = new Map<Disciplina, number>();
+  let restante = quantidade;
+
+  for (const disc of DISCIPLINAS_ENUM) {
+    const qtd = Math.floor(pesosNormalizados.get(disc)! * quantidade);
+    if (qtd > 0) {
+      questoesPorDisciplinaSelecao.set(disc, qtd);
+      restante -= qtd;
+      disciplinasPriorizadas.push(disc);
+    }
+  }
+
+  // Distribuir questões restantes
+  let index = 0;
+  while (restante > 0 && index < DISCIPLINAS_ENUM.length) {
+    const disc = DISCIPLINAS_ENUM[index];
+    const current = questoesPorDisciplinaSelecao.get(disc) || 0;
+    questoesPorDisciplinaSelecao.set(disc, current + 1);
+    restante--;
+    index++;
+  }
+
+  // Selecionar questões específicas
+  const questoesDisponiveis = getQuestoesDisponiveis(historico, opts);
+
+  for (const [disc, qtd] of questoesPorDisciplinaSelecao) {
+    const disponiveis = questoesDisponiveis.filter(
+      (q) => q.disciplina === disc,
+    );
+    const selecionadasDisc = shuffle(disponiveis).slice(0, qtd);
+    selecionadas.push(...selecionadasDisc);
+  }
+
+  // Calcular estatísticas
+  const distribuicaoPorDisciplina: Record<string, number> = {};
+  for (const q of selecionadas) {
+    distribuicaoPorDisciplina[q.disciplina] =
+      (distribuicaoPorDisciplina[q.disciplina] || 0) + 1;
+  }
+
+  const novas = selecionadas.filter((q) => !questoesVistas.has(q.id)).length;
+  const revisao = selecionadas.filter((q) => questoesVistas.has(q.id)).length;
+
+  return {
+    questoes: selecionadas,
+    metadados: {
+      distribuicaoPorDisciplina,
+      percentualNovas: (novas / quantidade) * 100,
+      percentualRevisao: (revisao / quantidade) * 100,
+      disciplinasPriorizadas: disciplinasPriorizadas.slice(0, 5),
+      nivelAdaptacao: Math.min(1, historico.length / 10),
+    },
+  };
 }
 
-export function getTotalQuestoes(): number {
-  return questoes.length;
-}
+function getQuestoesDisponiveis(
+  historico: HistoricoSimulado[],
+  opts: SelecaoAdaptativaOptions,
+): Questao[] {
+  const questoesVistas = new Set<string>();
+  const questoesIds = new Set<string>();
 
-export function getDisciplinasDisponiveis(): Disciplina[] {
-  const contagem = contarQuestoesPorDisciplina();
-  return DISCIPLINAS_ENUM.filter((d) => contagem[d] > 0);
+  if (opts.evitarRepetidos) {
+    for (const simulado of historico.slice(-opts.limiteQuestoesVistas)) {
+      for (const questao of simulado.questoes) {
+        questoesVistas.add(questao.id);
+      }
+    }
+  }
+
+  // Filtrar questões não vistas recentemente
+  let disponiveis = questoes.filter((q) => !questoesVistas.has(q.id));
+
+  if (disponiveis.length === 0) {
+    // Fallback: todas as questões
+    disponiveis = [...questoes];
+  }
+
+  return disponiveis;
 }
 
 // ============================================================
-// SEÇÃO 9 — CÁLCULO DE ESTATÍSTICAS
+// SEÇÃO 9 — VALIDAÇÕES E INTEGRIDADE
+// ============================================================
+
+/**
+ * Valida integridade do banco de questões
+ *
+ * @example
+ * const integridade = validarIntegridadeBanco();
+ * if (!integridade.valido) {
+ *   console.error("Erros encontrados:", integridade.erros);
+ * }
+ */
+export function validarIntegridadeBanco(): IntegridadeBanco {
+  const ids = new Map<string, Questao[]>();
+  const duplicados: string[] = [];
+  const erros: string[] = [];
+
+  // Verificar duplicados
+  for (const q of questoes) {
+    const existing = ids.get(q.id);
+    if (existing) {
+      if (!duplicados.includes(q.id)) {
+        duplicados.push(q.id);
+      }
+      existing.push(q);
+    } else {
+      ids.set(q.id, [q]);
+    }
+  }
+
+  // Verificar integridade das questões
+  for (const q of questoes) {
+    if (!q.id?.trim()) erros.push(`Questão sem ID: ${JSON.stringify(q)}`);
+    if (!q.enunciado?.trim()) erros.push(`Q${q.id}: enunciado vazio`);
+    if (!q.resposta) erros.push(`Q${q.id}: resposta inválida`);
+    if (!q.explicacao?.trim()) erros.push(`Q${q.id}: explicação vazia`);
+    if (!q.disciplina || !isDisciplina(q.disciplina)) {
+      erros.push(`Q${q.id}: disciplina inválida (${q.disciplina})`);
+    }
+    if (![1, 2, 3].includes(q.dificuldade)) {
+      erros.push(`Q${q.id}: dificuldade inválida (${q.dificuldade})`);
+    }
+  }
+
+  // Verificar distribuição por disciplina
+  const contagem = contarQuestoesPorDisciplina();
+  const disciplinasVazias = DISCIPLINAS_ENUM.filter((d) => contagem[d] === 0);
+  if (disciplinasVazias.length > 0) {
+    erros.push(`Disciplinas sem questões: ${disciplinasVazias.join(", ")}`);
+  }
+
+  // Verificar cobertura da prova
+  const { ok, faltantes } = verificarCobertura();
+  if (!ok) {
+    erros.push(
+      `Disciplinas com cobertura insuficiente: ${faltantes.join(", ")}`,
+    );
+  }
+
+  return {
+    valido: erros.length === 0 && duplicados.length === 0,
+    erros,
+    duplicados,
+    estatisticas: {
+      totalQuestoes: questoes.length,
+      questoesComErro: erros.length,
+      questoesDuplicadas: duplicados.length,
+    },
+  };
+}
+
+/**
+ * Middleware de validação para produção
+ * Verifica consistência do estado do usuário
+ *
+ * @example
+ * const validacao = validarEstadoConsistente(progress, historico);
+ * if (!validacao.ok) {
+ *   console.warn("Inconsistências:", validacao.inconsistencias);
+ *   // Aplicar correções sugeridas
+ * }
+ */
+export function validarEstadoConsistente(
+  progress: UserProgress,
+  historico: HistoricoSimulado[],
+): EstadoConsistenteResult {
+  const inconsistencias: string[] = [];
+  const sugestoes: string[] = [];
+
+  // Verificar se XP total bate com o histórico
+  const xpDeHistorico = historico.reduce((sum, h) => sum + (h.xpGanho || 0), 0);
+  if (progress.xpTotal !== xpDeHistorico) {
+    inconsistencias.push(
+      `XP mismatch: ${progress.xpTotal} no progresso vs ${xpDeHistorico} no histórico`,
+    );
+    sugestoes.push(
+      `Recalcular XP total baseado no histórico: usar ${xpDeHistorico}`,
+    );
+  }
+
+  // Verificar nível baseado no XP
+  const nivelEsperado = calcularNivel(progress.xpTotal).nivel;
+  if (progress.nivel !== nivelEsperado) {
+    inconsistencias.push(
+      `Nível incorreto: ${progress.nivel} vs esperado ${nivelEsperado}`,
+    );
+    sugestoes.push(`Atualizar nível para ${nivelEsperado}`);
+  }
+
+  // Verificar conquistas
+  const conquistasEsperadas = new Set(
+    historico.flatMap((h) => h.conquistas || []),
+  );
+  const conquistasAtuais = new Set(progress.badges.map((b) => b.id));
+
+  const faltando = Array.from(conquistasEsperadas).filter(
+    (c) => !conquistasAtuais.has(c),
+  );
+  if (faltando.length > 0) {
+    inconsistencias.push(
+      `Conquistas não sincronizadas: ${faltando.join(", ")}`,
+    );
+    sugestoes.push(`Adicionar conquistas faltantes: ${faltando.join(", ")}`);
+  }
+
+  // Verificar streak
+  if (progress.ultimoDiaEstudo) {
+    const ultimoDia = new Date(progress.ultimoDiaEstudo);
+    const hoje = new Date();
+    const diffDias = Math.floor(
+      (hoje.getTime() - ultimoDia.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diffDias > 1 && progress.streakDias > 0) {
+      inconsistencias.push(
+        `Streak ${progress.streakDias} mas último estudo há ${diffDias} dias`,
+      );
+      sugestoes.push(`Resetar streak para 0 ou atualizar últimoDiaEstudo`);
+    }
+  }
+
+  // Verificar recordes
+  const melhorPontuacaoHistorico = Math.max(
+    ...historico.map((h) => h.estatisticas.pontuacao),
+    0,
+  );
+  if (progress.recordes.melhorPontuacao !== melhorPontuacaoHistorico) {
+    inconsistencias.push(
+      `Recorde de pontuação mismatch: ${progress.recordes.melhorPontuacao} vs ${melhorPontuacaoHistorico}`,
+    );
+    sugestoes.push(`Atualizar recorde para ${melhorPontuacaoHistorico}`);
+  }
+
+  const turboMaisRapidoHistorico = Math.min(
+    ...historico
+      .filter((h) => h.modo === "TURBO")
+      .map((h) => h.estatisticas.tempoTotal),
+    Infinity,
+  );
+  const turboRecorde =
+    turboMaisRapidoHistorico !== Infinity ? turboMaisRapidoHistorico : null;
+  if (progress.recordes.turboMaisRapido !== turboRecorde) {
+    inconsistencias.push(
+      `Recorde turbo mismatch: ${progress.recordes.turboMaisRapido} vs ${turboRecorde}`,
+    );
+    sugestoes.push(`Atualizar recorde turbo para ${turboRecorde}`);
+  }
+
+  return {
+    ok: inconsistencias.length === 0,
+    inconsistencias,
+    sugestoes,
+  };
+}
+
+// ============================================================
+// SEÇÃO 9.1 — CONSTANTES CALCULADAS (NOVO)
+// ============================================================
+
+/**
+ * Metadados do banco de questões (calculados uma vez)
+ *
+ * @example
+ * console.log(`Total de questões: ${METADADOS_BANCO.totalQuestoes}`);
+ * console.log(`Última atualização: ${METADADOS_BANCO.ultimaAtualizacao}`);
+ */
+export const METADADOS_BANCO = {
+  totalQuestoes: getTotalQuestoes(),
+  disciplinasCount: getStatsPorDisciplina(),
+  distribuicaoDificuldade: getEstatisticasPorDificuldade(),
+  ultimaAtualizacao: new Date().toISOString(),
+  versao: "2.0.0",
+  integridade: validarIntegridadeBanco(),
+} as const;
+
+/**
+ * Recursos do sistema (constantes calculadas)
+ */
+export const RECURSOS_SISTEMA = {
+  totalBadges: Object.keys(BADGES_CONFIG).length,
+  niveisTotal: NIVEIS.length,
+  xpMaximo: NIVEIS[NIVEIS.length - 1].xpMax,
+  modosDisponiveis: Object.keys(MODOS_CONFIG).length,
+  disciplinasTotal: DISCIPLINAS_ENUM.length,
+} as const;
+
+// ============================================================
+// SEÇÃO 10 — CÁLCULO DE ESTATÍSTICAS
 // ============================================================
 
 /**
@@ -1288,6 +2226,64 @@ export function calcularEstatisticas(
   };
 }
 
+export function verificarCobertura(): { ok: boolean; faltantes: Disciplina[] } {
+  const necessario = {
+    ...ESTRUTURA_PROVA.conhecimentosBasicos.disciplinas,
+    ...ESTRUTURA_PROVA.conhecimentosEspecificos.disciplinas,
+  };
+  const disponivel = contarQuestoesPorDisciplina();
+  const faltantes: Disciplina[] = [];
+
+  for (const [disc, qtd] of Object.entries(necessario)) {
+    if (disponivel[disc as Disciplina] < (qtd ?? 0) * 3) {
+      faltantes.push(disc as Disciplina);
+    }
+  }
+
+  return { ok: faltantes.length === 0, faltantes };
+}
+
+export function getQuestaoById(id: string): Questao | undefined {
+  return QuestaoIndices.getInstance().getQuestaoById(id);
+}
+
+export function getQuestoesByIds(ids: string[]): Questao[] {
+  const set = new Set(ids);
+  return questoes.filter((q) => set.has(q.id));
+}
+
+export function validarQuestoesExistentes(ids: string[]): {
+  validos: string[];
+  invalidos: string[];
+} {
+  const existing = new Set(questoes.map((q) => q.id));
+  const validos: string[] = [];
+  const invalidos: string[] = [];
+  for (const id of ids) {
+    (existing.has(id) ? validos : invalidos).push(id);
+  }
+  return { validos, invalidos };
+}
+
+export function agruparQuestoesPorDisciplina(): Map<Disciplina, Questao[]> {
+  const mapa = new Map<Disciplina, Questao[]>(
+    DISCIPLINAS_ENUM.map((d) => [d, []]),
+  );
+  for (const q of questoes) {
+    mapa.get(q.disciplina)?.push(q);
+  }
+  return mapa;
+}
+
+export function getTotalQuestoes(): number {
+  return questoes.length;
+}
+
+export function getDisciplinasDisponiveis(): Disciplina[] {
+  const contagem = contarQuestoesPorDisciplina();
+  return DISCIPLINAS_ENUM.filter((d) => contagem[d] > 0);
+}
+
 // ============================================================
 // EXPORT DEFAULT (compatibilidade)
 // ============================================================
@@ -1305,16 +2301,23 @@ export default {
   DISCIPLINAS_ENUM,
   NIVEIS,
   XP_REWARDS,
+  XP_REWARDS_INFO,
   XP_MAX_NIVEL,
   BADGES_CONFIG,
-  // funções
+  BADGES_NIVELADAS,
+  // funções gamificação
   calcularNivel,
   xpParaProximoNivel,
   calcularProgressoNivel,
   verificarNovasConquistas,
+  getBadgesPorNivel,
   criarProgressoInicial,
+  // estatísticas banco
   getStatsPorDisciplina,
   contarQuestoesPorDisciplina,
+  getEstatisticasBanco,
+  getEstatisticasPorDificuldade,
+  // seleção questões
   getQuestoesPorDisciplina,
   getQuestoesPorDificuldade,
   getQuestoesPorBanca,
@@ -1323,16 +2326,20 @@ export default {
   selecionarQuestoesAleatorias,
   selecionarQuestoesPorDisciplina,
   selecionarQuestoesBalanceadas,
+  selecionarQuestoesAdaptativas,
   verificarCobertura,
-  getEstatisticasBanco,
   getQuestaoById,
   getQuestoesByIds,
   validarQuestoesExistentes,
   agruparQuestoesPorDisciplina,
   getTotalQuestoes,
   getDisciplinasDisponiveis,
+  // cálculos
   calcularEstatisticas,
+  calcularMetricasPerformance,
   // validação
+  validarIntegridadeBanco,
+  validarEstadoConsistente,
   validateHistoricoSimulado,
   validateUserProgress,
   validateUserSettings,
@@ -1341,4 +2348,10 @@ export default {
   isModoSimulado,
   getDisciplinaLabel,
   getDisciplinaCor,
+  // cache e índices
+  QuestaoCache,
+  QuestaoIndices,
+  // constantes calculadas
+  METADADOS_BANCO,
+  RECURSOS_SISTEMA,
 };
