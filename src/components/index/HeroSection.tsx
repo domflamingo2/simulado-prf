@@ -17,7 +17,8 @@ export function HeroSection({
     propPrefersReducedMotion ?? hookPrefersReducedMotion;
 
   const { dias, horas, minutos, segundos, expirado } = useContadorConcurso({
-    dataConcurso: "2026-11-30T09:00:00",
+    // Previsão não oficial
+    dataConcurso: "2026-10-25T09:00:00",
     onExpirado: () => console.log("🔥 Expirou"),
   });
 

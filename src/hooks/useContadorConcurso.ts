@@ -1,4 +1,4 @@
-// src/hooks/useContadorConcurso.ts
+// hooks/useContadorConcurso.ts
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
