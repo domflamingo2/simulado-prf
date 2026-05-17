@@ -1,6 +1,6 @@
 {
   "name": "simulado-prf",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,13 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "analyze": "next build --debug",
-    "bundle": "npm run build && npm run bundle-analyze"
+    "bundle": "npm run build && npm run bundle-analyze",
+    "python:scrape": "python scripts/scraper_questoes.py",
+    "python:analyze": "python scripts/analise_banco.py",
+    "python:validate": "python scripts/validador_banco.py",
+    "python:export": "python scripts/exportador.py",
+    "python:maintain": "python scripts/manutencao.py",
+    "python:api": "uvicorn api.index:app --reload"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.24",

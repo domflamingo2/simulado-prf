@@ -72,10 +72,10 @@ export const linksRapidos: LinkItem[] = [
     description: "Acompanhe seu progresso",
   },
   {
-    href: "/como-funciona",
-    label: "Como Funciona",
+    href: "/dashboard",
+    label: "Dashboard",
     icon: Settings,
-    description: "Guia da plataforma",
+    description: "Dashboard da plataforma",
   },
   {
     href: "/banco",
@@ -83,6 +83,12 @@ export const linksRapidos: LinkItem[] = [
     icon: BookOpen,
     description: "+5.000 questões",
     badge: "Novo",
+  },
+  {
+    href: "/VideoAulas",
+    label: "Videoaulas",
+    icon: FileText,
+    description: "Conteúdo dos Video Anexado",
   },
 ];
 
@@ -149,7 +155,7 @@ export const frasesMotivacionais: string[] = [
 
 // ============ INFORMAÇÕES ADICIONAIS ============
 export const footerInfo = {
-  version: "2.0.0",
+  version: "3.0.0",
   beta: true,
   year: new Date().getFullYear(),
   stats: {
