@@ -6,4 +6,4 @@ seaborn==0.12.2
 fpdf==1.7.2
 fastapi==0.100.0
 uvicorn==0.23.1
-python-dotenv==1.0.0
+python-dotenv==1.2.2
