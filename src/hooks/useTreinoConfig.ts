@@ -1,27 +1,105 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { questoes } from "@/data";
+import { DISCIPLINAS_LABELS, questoes } from "@/data";
+
 import { Disciplina } from "@/data/index";
+
+type PerformanceLevel = "bom" | "medio" | "baixo";
+
+interface DisciplinaStats {
+  nome: string;
+  total: number;
+  taxaAcerto: number;
+}
+
+interface TreinoStats {
+  count: number;
+  max: number;
+
+  totalQuestoes: number;
+  streak: number;
+  taxaAcerto: number;
+
+  performance: Record<string, PerformanceLevel>;
+
+  disciplinaStats?: DisciplinaStats;
+}
 
 export function useTreinoConfig() {
   const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<
     Disciplina | ""
   >("");
+
   const [quantidade, setQuantidade] = useState(10);
+
   const [mostrarExplicacao, setMostrarExplicacao] = useState(false);
 
-  const stats = useMemo(() => {
-    if (!disciplinaSelecionada) return { count: 0, max: 0 };
+  const stats = useMemo<TreinoStats>(() => {
+    const totalQuestoes = questoes.length;
+
+    // Mock temporário
+    const streak = 12;
+    const taxaAcerto = 78;
+
+    const performance: Record<string, PerformanceLevel> = {
+      portugues: "bom",
+      matematica: "medio",
+      constitucional: "baixo",
+      administrativo: "medio",
+      informatica: "bom",
+    };
+
+    if (!disciplinaSelecionada) {
+      return {
+        count: 0,
+        max: 0,
+
+        totalQuestoes,
+        streak,
+        taxaAcerto,
+
+        performance,
+      };
+    }
+
     const filtered = questoes.filter(
       (q) => q.disciplina === disciplinaSelecionada,
     );
-    return { count: filtered.length, max: Math.min(filtered.length, 50) };
+
+    const total = filtered.length;
+
+    const max = Math.min(total, 50);
+
+    const disciplinaStats: DisciplinaStats = {
+      nome:
+        DISCIPLINAS_LABELS[
+          disciplinaSelecionada as keyof typeof DISCIPLINAS_LABELS
+        ] ?? disciplinaSelecionada,
+
+      total,
+
+      // Mock temporário
+      taxaAcerto: Math.floor(Math.random() * 40) + 60,
+    };
+
+    return {
+      count: total,
+      max,
+
+      totalQuestoes,
+      streak,
+      taxaAcerto,
+
+      performance,
+
+      disciplinaStats,
+    };
   }, [disciplinaSelecionada]);
 
-  // Ajusta quantidade se mudar a disciplina e o limite for menor
-  useMemo(() => {
+  // Ajusta quantidade automaticamente
+  useEffect(() => {
     if (quantidade > stats.max && stats.max > 0) {
       setQuantidade(stats.max);
     }
@@ -29,8 +107,11 @@ export function useTreinoConfig() {
 
   const selecionarDisciplina = (disciplina: Disciplina) => {
     setDisciplinaSelecionada(disciplina);
+
     const filtered = questoes.filter((q) => q.disciplina === disciplina);
+
     const max = Math.min(filtered.length, 50);
+
     if (quantidade > max) {
       setQuantidade(Math.min(10, max));
     }
@@ -40,7 +121,9 @@ export function useTreinoConfig() {
     disciplinaSelecionada,
     quantidade,
     mostrarExplicacao,
+
     stats,
+
     setQuantidade,
     setMostrarExplicacao,
     selecionarDisciplina,

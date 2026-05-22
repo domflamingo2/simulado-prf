@@ -133,15 +133,6 @@ const PageHeader = () => (
             <p className="text-xs text-slate-400">Banca CEBRASPE</p>
           </div>
         </a>
-
-        <div className="flex items-center gap-3">
-          <a
-            href="/"
-            className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors text-sm font-medium"
-          >
-            Começar Agora
-          </a>
-        </div>
       </div>
     </div>
   </header>
@@ -152,7 +143,7 @@ export default function ComoFuncionaPage() {
   // Pré-carregar componentes críticos quando o mouse se aproxima do link
   useEffect(() => {
     const prefetchComponents = () => {
-      const links = document.querySelectorAll('a[href="/"]');
+      const links = document.querySelectorAll('a[href="/dashboard"]');
       links.forEach((link) => {
         link.addEventListener("mouseenter", () => {
           // Pré-carregar componentes importantes

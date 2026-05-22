@@ -1,22 +1,25 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Database, Loader2, Search, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Command,
+  Database,
+  Home,
+  Loader2,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
-
-// FIX: Toaster removido — deve estar em app/layout.tsx.
-// O header fica montado a página toda mas o padrão do projeto é
-// um único Toaster no root para evitar stacking de instâncias.
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS
 // ═══════════════════════════════════════════════════════════
 
 export interface HeaderBancoProps {
-  /** Total de questões no banco (exibido no badge) */
   total?: number;
   isLoading?: boolean;
   onBuscaRapida?: (termo: string) => Promise<void> | void;
@@ -39,18 +42,19 @@ function formatNumber(num?: number): string {
 
 function SkeletonHeader() {
   return (
-    // FIX: aria-busy no container do skeleton
     <div
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4"
       aria-busy="true"
-      aria-label="Carregando cabeçalho"
     >
-      <div className="flex items-center gap-4">
-        <div className="w-9 h-9 bg-slate-800/60 rounded-xl animate-pulse" />
-        <div className="space-y-2">
-          <div className="h-6 w-44 bg-slate-800/60 rounded-lg animate-pulse" />
-          <div className="h-3.5 w-28 bg-slate-800/60 rounded animate-pulse" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-slate-800/60 rounded-xl animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-6 w-48 bg-slate-800/60 rounded-lg animate-pulse" />
+            <div className="h-3 w-32 bg-slate-800/60 rounded animate-pulse" />
+          </div>
         </div>
+        <div className="w-24 h-9 bg-slate-800/60 rounded-xl animate-pulse" />
       </div>
     </div>
   );
@@ -58,7 +62,6 @@ function SkeletonHeader() {
 
 // ═══════════════════════════════════════════════════════════
 // MODAL DE BUSCA RÁPIDA
-// Extraído em componente separado para isolar estado e lógica
 // ═══════════════════════════════════════════════════════════
 
 interface BuscaRapidaModalProps {
@@ -72,7 +75,6 @@ function BuscaRapidaModal({ onBuscar, onFechar }: BuscaRapidaModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogId = useId();
 
-  // Foca o input ao montar
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -88,7 +90,7 @@ function BuscaRapidaModal({ onBuscar, onFechar }: BuscaRapidaModalProps) {
     try {
       await onBuscar(t);
       onFechar();
-      toast.success(`Buscando por: "${t}"`, { duration: 2500 });
+      toast.success(`🔍 Buscando por: "${t}"`);
     } catch {
       toast.error("Erro ao realizar busca. Tente novamente.");
     } finally {
@@ -97,38 +99,45 @@ function BuscaRapidaModal({ onBuscar, onFechar }: BuscaRapidaModalProps) {
   }, [termo, onBuscar, onFechar]);
 
   return (
-    // FIX: role="dialog" + aria-modal para leitores de tela
-    // FIX: AnimatePresence gerencia o exit corretamente (pai deve envolver com AnimatePresence)
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[15vh] px-4"
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-start justify-center pt-[15vh] px-4"
       onClick={onFechar}
-      // Não usar aria-hidden aqui — o overlay em si não é o dialog
     >
       <motion.div
-        initial={{ scale: 0.96, opacity: 0, y: -12 }}
+        initial={{ scale: 0.95, opacity: 0, y: -20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.96, opacity: 0, y: -12 }}
-        transition={{ type: "spring", damping: 24, stiffness: 300 }}
+        exit={{ scale: 0.95, opacity: 0, y: -20 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${dialogId}-title`}
-        className="w-full max-w-lg bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/60 overflow-hidden"
+        className="w-full max-w-md bg-gradient-to-br from-slate-900 to-slate-950 rounded-2xl shadow-2xl border border-white/10 overflow-hidden"
       >
+        {/* Header do modal */}
+        <div className="px-5 pt-5 pb-3 border-b border-white/10">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600">
+              <Search className="w-3.5 h-3.5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Busca Rápida</h3>
+          </div>
+          <p className="text-[11px] text-slate-500">
+            Encontre questões por palavra-chave
+          </p>
+        </div>
+
         {/* Input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-800">
-          <Search
-            className="w-4 h-4 text-slate-400 flex-shrink-0"
-            aria-hidden="true"
-          />
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10">
+          <Search className="w-4 h-4 text-blue-400 flex-shrink-0" />
           <input
             ref={inputRef}
             id={`${dialogId}-title`}
             type="text"
-            placeholder="Buscar por enunciado, assunto ou tag..."
+            placeholder="Digite um termo, assunto ou tag..."
             value={termo}
             onChange={(e) => setTermo(e.target.value)}
             onKeyDown={(e) => {
@@ -137,19 +146,15 @@ function BuscaRapidaModal({ onBuscar, onFechar }: BuscaRapidaModalProps) {
             }}
             disabled={buscando}
             className="flex-1 bg-transparent text-white text-sm placeholder-slate-500 outline-none disabled:opacity-50"
-            aria-label="Buscar questões"
             autoComplete="off"
-            spellCheck={false}
           />
-          {/* Limpar */}
           {termo && !buscando && (
             <button
               onClick={() => {
                 setTermo("");
                 inputRef.current?.focus();
               }}
-              className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
-              aria-label="Limpar busca"
+              className="p-1 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -157,38 +162,36 @@ function BuscaRapidaModal({ onBuscar, onFechar }: BuscaRapidaModalProps) {
         </div>
 
         {/* Ações */}
-        <div className="p-4 space-y-3">
-          {/* Hints de atalho */}
-          <p className="flex items-center gap-2 text-[11px] text-slate-600">
-            <span>
-              <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-[10px]">
-                Enter
-              </kbd>{" "}
-              buscar
+        <div className="p-5 space-y-3">
+          <div className="flex items-center justify-center gap-3 text-[10px] text-slate-600">
+            <span className="flex items-center gap-1">
+              <kbd className="px-2 py-0.5 bg-slate-800 rounded text-[9px] font-mono border border-white/10">
+                ↵
+              </kbd>
+              <span>Buscar</span>
             </span>
-            <span>
-              <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-[10px]">
+            <span className="flex items-center gap-1">
+              <kbd className="px-2 py-0.5 bg-slate-800 rounded text-[9px] font-mono border border-white/10">
                 Esc
-              </kbd>{" "}
-              fechar
+              </kbd>
+              <span>Fechar</span>
             </span>
-          </p>
+          </div>
 
-          {/* Botão buscar */}
           <button
             onClick={handleBuscar}
             disabled={buscando || !termo.trim()}
-            className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
           >
             {buscando ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                Buscando…
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Buscando...
               </>
             ) : (
               <>
-                <Search className="w-4 h-4" aria-hidden="true" />
-                Buscar{termo.trim() ? ` "${termo.trim()}"` : ""}
+                <Search className="w-4 h-4" />
+                Buscar{termo.trim() ? ` por "${termo.trim()}"` : ""}
               </>
             )}
           </button>
@@ -209,42 +212,33 @@ export function HeaderBanco({
 }: HeaderBancoProps) {
   const router = useRouter();
   const [modalAberto, setModalAberto] = useState(false);
-
-  // FIX: onBuscaRapida em ref — evita recriação de handleBuscar
-  // quando o pai passa função inline (recriada a cada render)
   const onBuscaRapidaRef = useRef(onBuscaRapida);
+
   useEffect(() => {
     onBuscaRapidaRef.current = onBuscaRapida;
   });
 
-  // ── Atalhos de teclado ──────────────────────────────────────────────────────
-  // FIX: deps [] com refs — o handler nunca fica stale e o listener
-  // é registrado/removido apenas uma vez (não a cada abertura do modal)
+  // Atalhos de teclado
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + K → abre busca (apenas se não há input focado)
+      // Ctrl/Cmd + K → abre busca
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         const active = document.activeElement;
         const isInput =
-          active?.tagName === "INPUT" ||
-          active?.tagName === "TEXTAREA" ||
-          (active as HTMLElement)?.isContentEditable;
-
-        // Se o modal já está aberto e o usuário está no input, não reopena
+          active?.tagName === "INPUT" || active?.tagName === "TEXTAREA";
         if (isInput && modalAberto) return;
-
         e.preventDefault();
         setModalAberto((p) => !p);
         return;
       }
 
-      // FIX: ESC lido via ref do estado atual — sem dep stale
+      // ESC fecha modal
       if (e.key === "Escape") {
         setModalAberto(false);
         return;
       }
 
-      // Alt + ← → volta (sem toast — o router.back() já navega)
+      // Alt + ← volta
       if (e.altKey && e.key === "ArrowLeft") {
         e.preventDefault();
         router.back();
@@ -253,11 +247,7 @@ export function HeaderBanco({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router]); // router é estável no App Router do Next.js 13+
-
-  // FIX: modal aberto também fecha com a prop `modalAberto` via ref
-  // (o `setModalAberto(false)` no handler acima já usa o setter funcional,
-  // que sempre opera sobre o estado mais recente — sem stale closure)
+  }, [router, modalAberto]);
 
   const handleBuscar = useCallback(async (termo: string) => {
     await onBuscaRapidaRef.current?.(termo);
@@ -266,115 +256,110 @@ export function HeaderBanco({
   const fecharModal = useCallback(() => setModalAberto(false), []);
   const abrirModal = useCallback(() => setModalAberto(true), []);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  if (isLoading) return <SkeletonHeader />;
 
   return (
     <>
       <motion.header
-        initial={{ opacity: 0, y: -16 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-xl border-b border-white/8"
+        transition={{ duration: 0.4, type: "spring" }}
+        className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-white/10 shadow-lg"
         role="banner"
-        aria-label="Cabeçalho do banco de questões"
       >
-        {isLoading ? (
-          <SkeletonHeader />
-        ) : (
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
-            <div className="flex items-center justify-between gap-4">
-              {/* ── Esquerda: navegação + título ── */}
-              <div className="flex items-center gap-3 min-w-0">
-                {/* Botão voltar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* Lado esquerdo */}
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Botão voltar */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Link
                   href="/"
-                  className="flex-shrink-0 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="flex-shrink-0 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 transition-all group"
                   aria-label="Voltar ao início"
-                  title="Voltar ao início (Alt + ←)"
                 >
-                  <ArrowLeft className="w-4 h-4 text-slate-300" />
+                  <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
                 </Link>
+              </motion.div>
 
-                {/* Ícone + título + breadcrumb */}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Database
-                      className="w-5 h-5 text-blue-400 flex-shrink-0"
-                      aria-hidden="true"
-                    />
-                    <h1 className="text-lg sm:text-xl font-bold text-white truncate">
-                      Banco de Questões
-                    </h1>
-
-                    {/* FIX: total agora é exibido (era recebido como prop mas nunca renderizado) */}
-                    {total > 0 && (
-                      <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-[11px] font-semibold text-blue-400 tabular-nums">
-                        {formatNumber(total)}
-                      </span>
-                    )}
+              {/* Ícone e título */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg shadow-blue-500/25">
+                    <Database className="w-4 h-4 text-white" />
                   </div>
-
-                  {/* Breadcrumb */}
-                  <nav aria-label="Localização atual" className="mt-0.5">
-                    <ol className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                      <li>
-                        <Link
-                          href="/"
-                          className="hover:text-slate-300 transition-colors"
-                        >
-                          Início
-                        </Link>
-                      </li>
-                      <li aria-hidden="true" className="text-slate-700">
-                        /
-                      </li>
-                      <li aria-current="page" className="text-slate-400">
-                        Banco de Questões
-                      </li>
-                    </ol>
-                  </nav>
+                  <h1 className="text-lg sm:text-xl font-bold text-white truncate">
+                    Banco de Questões
+                  </h1>
+                  {total > 0 && (
+                    <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 text-[11px] font-semibold text-blue-400">
+                      {formatNumber(total)} questões
+                    </span>
+                  )}
                 </div>
-              </div>
 
-              {/* ── Direita: busca rápida ── */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Total em mobile */}
-                {total > 0 && (
-                  <span className="sm:hidden text-[11px] font-semibold text-slate-400 tabular-nums">
-                    {formatNumber(total)} questões
-                  </span>
-                )}
-
-                {/* Botão busca */}
-                {onBuscaRapida && (
-                  <button
-                    onClick={abrirModal}
-                    className={`
-                      flex items-center gap-2 px-3 py-2 rounded-xl text-sm
-                      border border-slate-700/60 bg-slate-800/50 text-slate-400
-                      hover:bg-slate-800 hover:text-slate-200 hover:border-slate-600
-                      transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                    `}
-                    aria-label="Abrir busca rápida (Ctrl+K)"
-                    aria-keyshortcuts="Control+K"
-                    aria-expanded={modalAberto}
-                    aria-haspopup="dialog"
-                  >
-                    <Search className="w-4 h-4" aria-hidden="true" />
-                    <span className="hidden md:inline text-xs">Buscar</span>
-                    <kbd className="hidden lg:inline px-1.5 py-0.5 bg-slate-700/80 rounded text-[10px] text-slate-500">
-                      ⌘K
-                    </kbd>
-                  </button>
-                )}
+                {/* Breadcrumb */}
+                <nav className="mt-0.5">
+                  <ol className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <li>
+                      <Link
+                        href="/"
+                        className="flex items-center gap-1 hover:text-slate-300 transition-colors"
+                      >
+                        <Home className="w-3 h-3" />
+                        Início
+                      </Link>
+                    </li>
+                    <li className="text-slate-600">/</li>
+                    <li className="text-slate-400">Banco de Questões</li>
+                  </ol>
+                </nav>
               </div>
             </div>
+
+            {/* Lado direito - Busca rápida */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {total > 0 && (
+                <span className="sm:hidden text-[11px] font-semibold text-blue-400 tabular-nums">
+                  {formatNumber(total)} questões
+                </span>
+              )}
+
+              {onBuscaRapida && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={abrirModal}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm border border-slate-700/60 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200 hover:border-slate-600 transition-all group"
+                  aria-label="Abrir busca rápida (Ctrl+K)"
+                  aria-expanded={modalAberto}
+                >
+                  <Search className="w-4 h-4 group-hover:text-blue-400 transition-colors" />
+                  <span className="hidden md:inline text-xs">
+                    Buscar questões
+                  </span>
+                  <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-700/80 rounded text-[10px] text-slate-400">
+                    <Command className="w-2.5 h-2.5" />K
+                  </kbd>
+                </motion.button>
+              )}
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Barra decorativa */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 origin-left"
+        />
       </motion.header>
 
-      {/* ── Modal de busca rápida ── */}
-      {/* FIX: AnimatePresence para que o exit animation funcione */}
+      {/* Modal de busca rápida */}
       <AnimatePresence>
         {modalAberto && (
           <BuscaRapidaModal onBuscar={handleBuscar} onFechar={fecharModal} />

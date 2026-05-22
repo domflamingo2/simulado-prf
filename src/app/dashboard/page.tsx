@@ -512,18 +512,20 @@ export default function Dashboard() {
         nivelCor={nivelAtual?.cor ?? "#3b82f6"}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {!hasValidData ? (
           <WelcomeScreen onIniciar={handleIniciarPrimeiroSimulado} />
         ) : (
           <>
+            {/* Filtro de período */}
             <PeriodoFilter
               periodo={periodoFiltro}
               onChange={setPeriodoFiltro}
               hasDataInPeriod={historicoFiltrado.length > 0}
             />
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+            {/* Grid principal: Nível + Estatísticas */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <NivelCard
                 nivel={progress?.nivel ?? 1}
                 nivelNome={nivelAtual?.nome ?? "Iniciante"}
@@ -554,21 +556,25 @@ export default function Dashboard() {
               )}
             </div>
 
+            {/* Alertas de desempenho */}
             <AlertasDesempenho
               classificacaoNivel={estatisticas?.classificacao?.nivel}
               disciplinaFraca={estatisticas?.disciplinaFraca || undefined}
               streakDias={progress?.streakDias ?? 0}
             />
 
+            {/* Busca de modos */}
             <SearchModos value={searchTerm} onChange={setSearchTerm} />
 
+            {/* Grid de modos de estudo */}
             <ModosEstudoGrid
               modos={modosFiltrados}
               searchTerm={searchTerm}
               onClearSearch={() => setSearchTerm("")}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Regra CEBRASPE e Backup */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <RegraCEBRASPE />
               <BackupCard
                 totalSimulados={historicoNormalizado.length}

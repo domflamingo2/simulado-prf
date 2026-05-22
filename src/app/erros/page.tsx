@@ -1,9 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { Filter, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Toaster, toast } from "sonner";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
@@ -34,6 +34,11 @@ export default function ErrosPage() {
   const [busca, setBusca] = useState("");
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
   const [ordenacao, setOrdenacao] = useState<OrdenacaoType>("vezes");
+  const [isPageLoaded, setIsPageLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsPageLoaded(true);
+  }, []);
 
   // Estatísticas por disciplina
   const statsPorDisciplina = useMemo(() => {
@@ -88,6 +93,7 @@ export default function ErrosPage() {
     setBusca("");
     setFiltroDisciplina("todas");
     setOrdenacao("vezes");
+    toast.success("Filtros limpos");
   }, []);
 
   const iniciarTreinoErros = useCallback(() => {
@@ -124,7 +130,7 @@ export default function ErrosPage() {
   const exportarErros = useCallback(() => {
     const data = {
       exportadoEm: new Date().toISOString(),
-      versao: "1.0",
+      versao: "2.0",
       totalSimulados,
       totalErrosUnicos: errosAtivos.length,
       totalErrosContabilizados: errosAtivos.reduce(
@@ -182,21 +188,29 @@ export default function ErrosPage() {
     toast.info(`${naoRevisados} erros não revisados`);
   }, [naoRevisados]);
 
-  // Estados de carregamento e vazio
+  // Loading state
   if (carregando) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-4"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-5"
         >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 rounded-xl border-2 border-rose-500 border-t-transparent"
-          />
-          <p className="text-slate-400">Analisando seus erros...</p>
+          <div className="relative">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+              className="w-14 h-14 rounded-full border-3 border-rose-500/20 border-t-rose-500 border-r-purple-500/50"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-rose-400 animate-pulse" />
+            </div>
+          </div>
+          <p className="text-slate-400 font-medium">Analisando seus erros...</p>
+          <p className="text-[10px] text-slate-500">
+            Isso pode levar alguns segundos
+          </p>
         </motion.div>
       </div>
     );
@@ -221,20 +235,22 @@ export default function ErrosPage() {
         }}
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white pb-12">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
         <HeaderErros
           totalErros={errosAtivos.length}
           onExportar={exportarErros}
           onLimparHistorico={limparHistoricoCompleto}
         />
 
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          {/* Painel de estatísticas */}
           <PainelEstatisticas
             erros={errosAtivos}
             totalQuestoesRespondidas={totalQuestoesRespondidas}
             revisados={revisados}
           />
 
+          {/* Ação principal */}
           <AcaoPrincipal
             totalSimulados={totalSimulados}
             totalErros={errosAtivos.length}
@@ -250,6 +266,7 @@ export default function ErrosPage() {
             onIniciarTreino={iniciarTreinoErros}
           />
 
+          {/* Filtros */}
           <FiltrosErros
             busca={busca}
             setBusca={setBusca}
@@ -261,26 +278,48 @@ export default function ErrosPage() {
             limparFiltros={limparFiltros}
           />
 
+          {/* Lista de erros */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.35 }}
             className="space-y-3"
           >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-lg bg-rose-500/20">
+                  <Filter className="w-3.5 h-3.5 text-rose-400" />
+                </div>
+                <span className="text-xs text-slate-400">
+                  {errosFiltrados.length} erro
+                  {errosFiltrados.length !== 1 ? "s" : ""} encontrado
+                  {errosFiltrados.length !== errosAtivos.length &&
+                    ` (filtrado de ${errosAtivos.length})`}
+                </span>
+              </div>
+              {busca && (
+                <span className="text-xs text-blue-400">
+                  🔍 Resultados para "{busca}"
+                </span>
+              )}
+            </div>
+
             <AnimatePresence mode="popLayout">
               {errosFiltrados.length === 0 ? (
                 <motion.div
                   key="empty-filtered"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-center py-12 text-slate-500"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="text-center py-16 rounded-xl bg-slate-800/30 border border-white/10"
                 >
-                  <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhum erro encontrado com os filtros atuais.</p>
+                  <Search className="w-14 h-14 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400 font-medium">
+                    Nenhum erro encontrado com os filtros atuais
+                  </p>
                   <button
                     onClick={limparFiltros}
-                    className="mt-2 text-blue-400 hover:underline text-sm"
+                    className="mt-3 text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center gap-1"
                   >
                     Limpar filtros
                   </button>
@@ -300,6 +339,7 @@ export default function ErrosPage() {
             </AnimatePresence>
           </motion.div>
 
+          {/* Footer */}
           {errosFiltrados.length > 0 && (
             <FooterErros
               exibindo={errosFiltrados.length}

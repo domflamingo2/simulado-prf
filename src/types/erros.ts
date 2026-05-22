@@ -25,16 +25,25 @@ export interface ErroComMetadados extends Questao {
  */
 export interface StatsData {
   totalErrosContabilizados: number;
-  /** Taxa de acerto média (0–100). Requer `totalQuestoesRespondidas > 0`. */
+
+  /** Taxa de acerto média (0–100). */
   taxaAcertoMedia: number;
+
   mediaErrosPorQuestao: number;
+
   /** null quando não há erros cadastrados */
   disciplinaMaisDificil: string | null;
+
   disciplinaMaisDificilCount: number;
+
   /** null quando não há erros com data registrada */
   diaComMaisErros: string | null;
+
   /** Percentual de erros revisados (0–100) */
   progressoRevisao: number;
+
+  /** Evolução/melhora comparada ao período anterior */
+  melhoraPercentual: number;
 }
 
 /**

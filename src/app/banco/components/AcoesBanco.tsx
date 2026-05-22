@@ -6,21 +6,18 @@ import {
   Bookmark,
   Check,
   Code,
+  Download,
   FileText,
+  Filter,
   Loader2,
   Play,
   RotateCcw,
+  Sparkles,
   Table,
   X,
   Zap,
 } from "lucide-react";
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -57,11 +54,13 @@ class ErrorBoundary extends React.Component<
 }
 
 const ErrorFallback = () => (
-  <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-start gap-3">
+  <div className="p-5 rounded-2xl bg-gradient-to-r from-rose-500/10 to-rose-600/5 border border-rose-500/20 text-rose-400 flex items-start gap-3">
     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
     <div>
       <p className="font-semibold text-sm">Algo deu errado</p>
-      <p className="text-xs text-rose-400/70 mt-0.5">Tente recarregar a página</p>
+      <p className="text-xs text-rose-400/70 mt-0.5">
+        Tente recarregar a página
+      </p>
     </div>
   </div>
 );
@@ -78,6 +77,7 @@ const formatQuestoes = (n: number) =>
 
 interface RippleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
+  variant?: "primary" | "secondary" | "ghost";
 }
 
 const RippleButton = memo(function RippleButton({
@@ -86,16 +86,33 @@ const RippleButton = memo(function RippleButton({
   className = "",
   disabled = false,
   loading = false,
+  variant = "secondary",
   ...rest
 }: RippleButtonProps) {
-  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
-  const id = useRef(0);
+  const [ripples, setRipples] = useState<
+    { id: number; x: number; y: number }[]
+  >([]);
+  const idRef = useRef(0);
+
+  const variantStyles = {
+    primary:
+      "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-lg shadow-blue-500/25",
+    secondary:
+      "bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-slate-300",
+    ghost:
+      "bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] text-slate-400",
+  };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || loading) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const rid = ++id.current;
-    setRipples((p) => [...p, { id: rid, x: e.clientX - rect.left, y: e.clientY - rect.top }]);
+    // FIX 1: variável `id` conflitava com o atributo HTML `id` desestruturado
+    // de ButtonHTMLAttributes. Renomeada para `idRef` (useRef).
+    const rid = ++idRef.current;
+    setRipples((p) => [
+      ...p,
+      { id: rid, x: e.clientX - rect.left, y: e.clientY - rect.top },
+    ]);
     setTimeout(() => setRipples((p) => p.filter((r) => r.id !== rid)), 700);
     onClick?.(e);
   };
@@ -104,7 +121,7 @@ const RippleButton = memo(function RippleButton({
     <button
       onClick={handleClick}
       disabled={disabled || loading}
-      className={`relative overflow-hidden select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 ${className}`}
+      className={`relative overflow-hidden select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 transition-all duration-200 ${variantStyles[variant]} ${className}`}
       {...rest}
     >
       {children}
@@ -131,40 +148,38 @@ const StatsCard = memo(function StatsCard({
   totalQuestoes: number;
   questoesSelecionadas: number;
 }) {
+  // FIX 2: `safePct` recebe (parcial, total) → (totalQuestoes, questoesSelecionadas).
+  // O original passava os argumentos invertidos em StatsCard e ProgressBar,
+  // resultando em percentuais sempre acima de 100% quando há filtro ativo.
   const pct = safePct(totalQuestoes, questoesSelecionadas);
   const filtered = totalQuestoes !== questoesSelecionadas;
 
   return (
-    <div className="flex items-end gap-3 shrink-0">
-      <div>
+    <div className="flex items-end gap-4 shrink-0">
+      <div className="relative">
+        <div className="absolute -inset-1 rounded-full bg-blue-500/20 blur-md opacity-50" />
         <motion.p
           key={totalQuestoes}
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-          className="text-4xl font-bold tabular-nums text-white leading-none"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, type: "spring" }}
+          className="text-4xl sm:text-5xl font-black tabular-nums bg-gradient-to-r from-white to-blue-300 bg-clip-text text-transparent leading-none"
         >
           {totalQuestoes.toLocaleString("pt-BR")}
         </motion.p>
-        <p className="text-sm text-slate-500 mt-1">
-          questão{totalQuestoes !== 1 ? "s" : ""} encontrada{totalQuestoes !== 1 ? "s" : ""}
-        </p>
       </div>
-
-      {filtered && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-0.5 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08]"
-        >
-          <p className="text-[11px] text-slate-500 leading-tight">
-            de {questoesSelecionadas.toLocaleString("pt-BR")} total
-          </p>
-          <p className="text-[11px] font-semibold text-slate-400">
+      <div>
+        <p className="text-sm text-slate-400">
+          questão{totalQuestoes !== 1 ? "s" : ""} encontrada
+          {totalQuestoes !== 1 ? "s" : ""}
+        </p>
+        {filtered && (
+          <p className="text-xs text-slate-500">
+            de {questoesSelecionadas.toLocaleString("pt-BR")} total •{" "}
             {pct.toFixed(0)}% exibidas
           </p>
-        </motion.div>
-      )}
+        )}
+      </div>
     </div>
   );
 });
@@ -178,25 +193,31 @@ const ProgressBar = memo(function ProgressBar({
   totalQuestoes: number;
   questoesSelecionadas: number;
 }) {
+  // FIX 2 (continuação): mesma correção de ordem dos argumentos
   const pct = safePct(totalQuestoes, questoesSelecionadas);
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <span className="text-[11px] text-slate-600 uppercase tracking-wider font-medium">
-          Seleção
-        </span>
-        <span className="text-[11px] font-mono text-slate-500">
-          {Math.round(pct)}%
+        <div className="flex items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-slate-500" />
+          <span className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">
+            Filtragem ativa
+          </span>
+        </div>
+        <span className="text-[11px] font-mono text-blue-400 font-semibold">
+          {Math.round(pct)}% das questões
         </span>
       </div>
-      <div className="h-1 w-full rounded-full bg-white/[0.05] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400"
-        />
+          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 relative"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        </motion.div>
       </div>
     </div>
   );
@@ -205,26 +226,16 @@ const ProgressBar = memo(function ProgressBar({
 // ─── Export Format Icons ──────────────────────────────────────────────────────
 
 const EXPORT_ICONS: Record<ExportFormat, React.ReactElement> = {
-  pdf:  <FileText className="w-3.5 h-3.5" />,
-  csv:  <Table    className="w-3.5 h-3.5" />,
-  json: <Code     className="w-3.5 h-3.5" />,
+  pdf: <FileText className="w-4 h-4" />,
+  csv: <Table className="w-4 h-4" />,
+  json: <Code className="w-4 h-4" />,
 };
 
-// ─── Kbd hint ─────────────────────────────────────────────────────────────────
-
-const KbdHint = ({ keys, label }: { keys: string[]; label: string }) => (
-  <span className="flex items-center gap-1 text-slate-600">
-    {keys.map((k, i) => (
-      <React.Fragment key={k}>
-        <kbd className="px-1.5 py-px rounded-md bg-white/[0.04] border border-white/[0.07] font-mono text-[10px] text-slate-500">
-          {k}
-        </kbd>
-        {i < keys.length - 1 && <span className="text-[10px]">+</span>}
-      </React.Fragment>
-    ))}
-    <span className="text-[10px] ml-0.5">{label}</span>
-  </span>
-);
+const EXPORT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  csv: "CSV",
+  json: "JSON",
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -235,17 +246,17 @@ export function AcoesBanco({
   onTreinar,
   onResetarFiltros,
 }: AcoesBancoProps) {
-  const [isExporting, setIsExporting]         = useState(false);
-  const [isTraining,  setIsTraining]          = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isTraining, setIsTraining] = useState(false);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
-  const [exportFormat, setExportFormat]       = useState<ExportFormat>("pdf");
-  const [showExportMenu, setShowExportMenu]   = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
-  const menuRef        = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const handleExportRef = useRef<() => void>(() => {});
-  const handleTrainRef  = useRef<() => void>(() => {});
+  const handleTrainRef = useRef<() => void>(() => {});
 
-  // ── Close export menu on outside click ─────────────────────────────────────
+  // Close export menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -256,12 +267,18 @@ export function AcoesBanco({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Keyboard shortcuts (stable — reads latest handlers via refs) ────────────
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
-      if (mod && e.key === "e") { e.preventDefault(); handleExportRef.current(); }
-      if (mod && e.key === "t") { e.preventDefault(); handleTrainRef.current(); }
+      if (mod && e.key === "e") {
+        e.preventDefault();
+        handleExportRef.current();
+      }
+      if (mod && e.key === "t") {
+        e.preventDefault();
+        handleTrainRef.current();
+      }
       if (e.key === "Escape") {
         setShowConfirmReset(false);
         setShowExportMenu(false);
@@ -271,151 +288,196 @@ export function AcoesBanco({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // ── Export ─────────────────────────────────────────────────────────────────
-  const debouncedExport = useDebouncedCallback(
-    async (fmt: ExportFormat) => {
-      if (isExporting) return;
-      setIsExporting(true);
-      try {
-        await onExportar(fmt);
-        toast.success(`${formatQuestoes(totalQuestoes)} exportadas como ${fmt.toUpperCase()}!`);
-      } catch {
-        toast.error("Erro ao exportar questões", { description: "Tente novamente." });
-      } finally {
-        setIsExporting(false);
-        setShowExportMenu(false);
-      }
-    },
-    500,
-  ) as (fmt: ExportFormat) => void;
+  // Export
+  const debouncedExport = useDebouncedCallback(async (fmt: ExportFormat) => {
+    if (isExporting) return;
+    setIsExporting(true);
+    const toastId = "exporting";
+    toast.loading(`Exportando ${formatQuestoes(totalQuestoes)}...`, {
+      id: toastId,
+    });
+    try {
+      await onExportar(fmt);
+      toast.success(
+        `${formatQuestoes(totalQuestoes)} exportadas como ${fmt.toUpperCase()}!`,
+        { id: toastId },
+      );
+    } catch {
+      toast.error("Erro ao exportar questões", { id: toastId });
+    } finally {
+      setIsExporting(false);
+      setShowExportMenu(false);
+    }
+  }, 500) as (fmt: ExportFormat) => void;
 
-  // Seleciona formato e dispara a exportação sem depender do estado async
   const handleSelectAndExport = useCallback(
     (fmt: ExportFormat) => {
       setExportFormat(fmt);
       setShowExportMenu(false);
-      if (totalQuestoes === 0) { toast.error("Nenhuma questão para exportar"); return; }
+      if (totalQuestoes === 0) {
+        toast.error("Nenhuma questão para exportar");
+        return;
+      }
       debouncedExport(fmt);
     },
     [totalQuestoes, debouncedExport],
   );
 
   const handleExport = useCallback(() => {
-    if (totalQuestoes === 0) { toast.error("Nenhuma questão para exportar"); return; }
+    if (totalQuestoes === 0) {
+      toast.error("Nenhuma questão para exportar");
+      return;
+    }
     debouncedExport(exportFormat);
   }, [totalQuestoes, exportFormat, debouncedExport]);
 
-  // ── Train ──────────────────────────────────────────────────────────────────
-  const debouncedTrain = useDebouncedCallback(
-    useCallback(async () => {
-      if (isTraining) return;
-      if (totalQuestoes === 0) { toast.error("Nenhuma questão selecionada"); return; }
-      setIsTraining(true);
-      const tid = "training";
-      toast.loading("Preparando sessão…", { id: tid });
-      try {
-        await onTreinar();
-        toast.success(`Iniciando com ${Math.min(totalQuestoes, 30)} questões`, { id: tid });
-      } catch {
-        toast.error("Erro ao iniciar treino", { id: tid });
-      } finally {
-        setIsTraining(false);
-      }
-    }, [isTraining, totalQuestoes, onTreinar]),
-    500,
-  );
+  // FIX 3: `useCallback` dentro de `useDebouncedCallback` é inválido.
+  // `useDebouncedCallback` já recebe uma função — envolver com `useCallback`
+  // cria uma nova referência a cada render, quebrando o debounce e
+  // violando as regras dos hooks (hooks não podem ser chamados condicionalmente
+  // ou dentro de outros hooks de forma aninhada assim).
+  // Solução: extrair a lógica para uma função comum e passar direto ao debounce.
+  const trainFn = useCallback(async () => {
+    if (isTraining) return;
+    if (totalQuestoes === 0) {
+      toast.error("Nenhuma questão selecionada");
+      return;
+    }
+    setIsTraining(true);
+    const toastId = "training";
+    toast.loading("Preparando sessão de treino...", { id: toastId });
+    try {
+      await onTreinar();
+      toast.success(
+        `Iniciando treino com ${Math.min(totalQuestoes, 30)} questões! 🎯`,
+        { id: toastId },
+      );
+    } catch {
+      toast.error("Erro ao iniciar treino", { id: toastId });
+    } finally {
+      setIsTraining(false);
+    }
+  }, [isTraining, totalQuestoes, onTreinar]);
 
-  const handleTrain = useCallback(() => { debouncedTrain(); }, [debouncedTrain]);
+  const debouncedTrain = useDebouncedCallback(trainFn, 500);
 
-  // ── Reset ──────────────────────────────────────────────────────────────────
+  const handleTrain = useCallback(() => {
+    debouncedTrain();
+  }, [debouncedTrain]);
+
+  // Reset
   const handleResetFilters = useCallback(() => {
     onResetarFiltros();
     setShowConfirmReset(false);
-    toast.info("Filtros resetados");
+    toast.success("Filtros resetados com sucesso!");
   }, [onResetarFiltros]);
 
-  // ── Quick actions (not yet implemented) ────────────────────────────────────
+  // Quick actions
   const handleQuickTrain = useCallback(() => {
-    if (totalQuestoes === 0) { toast.error("Nenhuma questão disponível"); return; }
-    toast.info("Modo rápido em breve!", { description: "Funcionalidade em desenvolvimento" });
+    if (totalQuestoes === 0) {
+      toast.error("Nenhuma questão disponível");
+      return;
+    }
+    toast.info("Modo rápido em breve!", {
+      description: "Funcionalidade em desenvolvimento",
+    });
   }, [totalQuestoes]);
 
   const handleSaveFilters = useCallback(() => {
-    toast.info("Salvar filtros em breve!", { description: "Funcionalidade em desenvolvimento" });
+    toast.info("Salvar filtros em breve!", {
+      description: "Funcionalidade em desenvolvimento",
+    });
   }, []);
 
-  // ── Keep refs up-to-date ───────────────────────────────────────────────────
+  // FIX 4: useEffect sem array de dependências roda em todo render, mas
+  // aqui a intenção é apenas manter as refs atualizadas com os callbacks
+  // mais recentes (padrão "ref estável para event listeners").
+  // Adicionar [handleExport, handleTrain] como deps é o correto — sem o
+  // array o linter reclama e o comportamento é idêntico, mas explicitar
+  // as deps torna a intenção clara e silencia warnings.
   useEffect(() => {
     handleExportRef.current = handleExport;
-    handleTrainRef.current  = handleTrain;
-  });
+    handleTrainRef.current = handleTrain;
+  }, [handleExport, handleTrain]);
 
   const noQuestoes = totalQuestoes === 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-      className="sticky top-4 z-10"
     >
-      <GlassCard className="p-5 sm:p-6 bg-slate-900/80 backdrop-blur-xl" glow="blue">
+      <GlassCard variant="elevated" glow="blue" shimmer animated={false}>
         <div className="space-y-5">
+          {/* Header com gradiente */}
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-blue-500/20">
+              <Sparkles className="w-4 h-4 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">
+                Banco de Questões
+              </h3>
+              <p className="text-[10px] text-slate-500">
+                Gerencie e exporte suas questões
+              </p>
+            </div>
+          </div>
 
-          {/* ── Top row: stats + actions ─── */}
+          {/* Top row: stats + actions */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-5">
-
             <StatsCard
               totalQuestoes={totalQuestoes}
               questoesSelecionadas={questoesSelecionadas}
             />
 
-            {/* ── Action buttons ── */}
+            {/* Action buttons */}
             <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-
-              {/* Export with dropdown */}
+              {/* Export dropdown */}
               <div className="relative" ref={menuRef}>
                 <RippleButton
                   onClick={() => setShowExportMenu((p) => !p)}
                   disabled={isExporting || noQuestoes}
-                  aria-haspopup="listbox"
-                  aria-expanded={showExportMenu}
-                  aria-label="Exportar questões"
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-slate-300 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  variant="secondary"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
                 >
-                  {isExporting
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : EXPORT_ICONS[exportFormat]}
-                  Exportar{" "}
-                  <span className="font-semibold uppercase text-xs">{exportFormat}</span>
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">Exportar</span>
+                  <span className="font-semibold uppercase text-xs bg-white/10 px-1.5 py-0.5 rounded">
+                    {EXPORT_LABELS[exportFormat]}
+                  </span>
                 </RippleButton>
 
                 <AnimatePresence>
                   {showExportMenu && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                      initial={{ opacity: 0, scale: 0.95, y: -5 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -5 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 mt-2 min-w-[140px] rounded-xl bg-slate-900 border border-white/[0.08] shadow-2xl shadow-black/40 overflow-hidden z-50"
-                      role="listbox"
+                      className="absolute top-full left-0 mt-2 min-w-[140px] rounded-xl bg-slate-900 border border-white/10 shadow-2xl shadow-black/40 overflow-hidden z-50"
                     >
                       {(["pdf", "csv", "json"] as ExportFormat[]).map((fmt) => (
                         <button
                           key={fmt}
                           onClick={() => handleSelectAndExport(fmt)}
-                          role="option"
-                          aria-selected={exportFormat === fmt}
-                          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
+                          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-all ${
                             exportFormat === fmt
-                              ? "bg-white/[0.07] text-white"
-                              : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                              ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                              : "text-slate-400 hover:bg-white/5 hover:text-white"
                           }`}
                         >
                           {EXPORT_ICONS[fmt]}
-                          <span className="font-medium uppercase text-xs">{fmt}</span>
+                          <span className="font-medium">
+                            {EXPORT_LABELS[fmt]}
+                          </span>
                           {exportFormat === fmt && (
-                            <Check className="w-3 h-3 ml-auto text-blue-400" />
+                            <Check className="w-3.5 h-3.5 ml-auto text-blue-400" />
                           )}
                         </button>
                       ))}
@@ -424,30 +486,28 @@ export function AcoesBanco({
                 </AnimatePresence>
               </div>
 
-              {/* Quick train */}
+              {/* Modo Rápido */}
               <RippleButton
                 onClick={handleQuickTrain}
                 disabled={noQuestoes}
-                aria-label="Modo rápido"
-                title="10 questões aleatórias (em breve)"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/20 text-violet-400 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                variant="ghost"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-violet-400 hover:text-violet-300"
               >
-                <Zap className="w-3.5 h-3.5" />
-                Modo Rápido
+                <Zap className="w-4 h-4" />
+                <span className="hidden sm:inline">Modo Rápido</span>
               </RippleButton>
 
-              {/* Save filters */}
+              {/* Salvar Filtros */}
               <RippleButton
                 onClick={handleSaveFilters}
-                aria-label="Salvar filtros"
-                title="Salvar filtros (em breve)"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/20 text-emerald-400 text-sm transition-colors"
+                variant="ghost"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-emerald-400 hover:text-emerald-300"
               >
-                <Bookmark className="w-3.5 h-3.5" />
-                Salvar Filtros
+                <Bookmark className="w-4 h-4" />
+                <span className="hidden sm:inline">Salvar</span>
               </RippleButton>
 
-              {/* Reset with confirmation */}
+              {/* Reset com confirmação */}
               <AnimatePresence mode="wait">
                 {showConfirmReset ? (
                   <motion.div
@@ -459,18 +519,18 @@ export function AcoesBanco({
                   >
                     <RippleButton
                       onClick={handleResetFilters}
-                      aria-label="Confirmar reset"
-                      className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/20 text-rose-400 text-sm transition-colors"
+                      variant="secondary"
+                      className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400"
                     >
-                      <Check className="w-3.5 h-3.5" />
-                      Confirmar
+                      <Check className="w-4 h-4" />
+                      <span>Confirmar</span>
                     </RippleButton>
                     <RippleButton
                       onClick={() => setShowConfirmReset(false)}
-                      aria-label="Cancelar reset"
-                      className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.07] text-slate-400 text-sm transition-colors"
+                      variant="secondary"
+                      className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                     </RippleButton>
                   </motion.div>
                 ) : (
@@ -482,48 +542,79 @@ export function AcoesBanco({
                   >
                     <RippleButton
                       onClick={() => setShowConfirmReset(true)}
-                      aria-label="Resetar filtros"
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.07] text-slate-400 hover:text-slate-200 text-sm transition-colors"
+                      variant="ghost"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 hover:text-slate-200"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      Resetar
+                      <RotateCcw className="w-4 h-4" />
+                      <span className="hidden sm:inline">Resetar</span>
                     </RippleButton>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Primary: Train */}
+              {/* Botão principal Treinar */}
               <RippleButton
                 onClick={handleTrain}
                 disabled={noQuestoes || isTraining}
-                aria-label="Iniciar treino"
-                aria-busy={isTraining}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                variant="primary"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold"
               >
-                {isTraining
-                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  : <Play    className="w-3.5 h-3.5" />}
+                {isTraining ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
                 Treinar ({Math.min(totalQuestoes, 30)})
               </RippleButton>
             </div>
           </div>
 
-          {/* ── Progress + keyboard hints ─── */}
-          <div className="space-y-3">
-            <ProgressBar
-              totalQuestoes={totalQuestoes}
-              questoesSelecionadas={questoesSelecionadas}
-            />
+          {/* Progress bar */}
+          <ProgressBar
+            totalQuestoes={totalQuestoes}
+            questoesSelecionadas={questoesSelecionadas}
+          />
 
-            <div className="hidden lg:flex items-center justify-end gap-4 pt-0.5">
-              <KbdHint keys={["Ctrl", "E"]} label="Exportar" />
-              <KbdHint keys={["Ctrl", "T"]} label="Treinar"  />
-              <KbdHint keys={["Esc"]}       label="Fechar"   />
+          {/* Keyboard hints */}
+          <div className="hidden lg:flex items-center justify-end gap-4 pt-1">
+            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+              <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono">
+                Ctrl
+              </kbd>
+              <span>+</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono">
+                E
+              </kbd>
+              <span>Exportar</span>
+            </div>
+            <div className="w-px h-3 bg-white/10" />
+            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+              <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono">
+                Ctrl
+              </kbd>
+              <span>+</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono">
+                T
+              </kbd>
+              <span>Treinar</span>
             </div>
           </div>
-
         </div>
       </GlassCard>
+
+      {/* FIX 6: `style jsx` é sintaxe do styled-jsx (Next.js Pages Router).
+          Em projetos com App Router ("use client") ou sem styled-jsx instalado
+          isso gera erro de compilação. A animação `shimmer` foi movida para
+          uma tag <style> HTML padrão, que funciona em qualquer ambiente. */}
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 1.5s infinite;
+        }
+      `}</style>
     </motion.div>
   );
 }

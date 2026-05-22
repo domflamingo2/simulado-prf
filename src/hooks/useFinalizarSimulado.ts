@@ -14,15 +14,13 @@ function lerHistoricoStorage(): HistoricoSimulado[] {
     const raw = localStorage.getItem("prf_historico");
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      !Array.isArray(parsed) &&
-      "data" in parsed
-    ) {
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    if (parsed && typeof parsed === "object" && "data" in parsed) {
       return Array.isArray(parsed.data) ? parsed.data : [];
     }
-    return Array.isArray(parsed) ? parsed : [];
+    return [];
   } catch {
     return [];
   }
@@ -61,11 +59,11 @@ export function useFinalizarSimulado() {
         const tempoTotal = Math.floor((Date.now() - tempoInicio) / 1000);
         const estatisticas = calcularEstatisticas(questoes, tempoTotal);
 
-        // FIX: passa `estatisticas` diretamente em vez de replicar cada campo
-        // manualmente — evita erros de compilação quando novos campos são
-        // adicionados à interface EstatisticasSimulado (como `naoRespondidas`).
-        const historico: HistoricoSimulado = {
-          id: `sim_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        // Criar ID único para o simulado
+        const simuladoId = `sim_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+        const simulado: HistoricoSimulado = {
+          id: simuladoId,
           data: new Date().toISOString(),
           modo,
           estatisticas,
@@ -76,17 +74,12 @@ export function useFinalizarSimulado() {
           xpGanho: 0,
         };
 
+        // Atualizar histórico
         const historicoExistente = lerHistoricoStorage();
-        const novoHistorico = [historico, ...historicoExistente];
+        const novoHistorico = [simulado, ...historicoExistente];
         salvarHistoricoStorage(novoHistorico);
 
-        window.dispatchEvent(
-          new StorageEvent("storage", {
-            key: "prf_historico",
-            newValue: JSON.stringify(novoHistorico),
-          }),
-        );
-
+        // Registrar atividade e ganhar XP
         const { xpGanho } = registrarAtividade("simulado", {
           pontuacao: estatisticas.pontuacao,
           acertos: estatisticas.acertos,
@@ -95,16 +88,32 @@ export function useFinalizarSimulado() {
           tempo: tempoTotal,
         });
 
-        historico.xpGanho = xpGanho;
-        salvarHistoricoStorage([historico, ...historicoExistente]);
+        // Atualizar XP no simulado
+        simulado.xpGanho = xpGanho;
+        salvarHistoricoStorage([simulado, ...historicoExistente]);
+
+        // Salvar como último resultado para fácil acesso
+        localStorage.setItem("prf_ultimo_resultado", JSON.stringify(simulado));
+
+        // Disparar evento para sincronizar outras abas
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: "prf_historico",
+            newValue: JSON.stringify([simulado, ...historicoExistente]),
+          }),
+        );
 
         limparProgresso();
 
         onSuccess?.();
 
+        // Redirecionar para página de resultado com o ID
         setTimeout(() => {
-          if (isMountedRef.current) router.push("/resultado");
-        }, 1000);
+          if (isMountedRef.current) {
+            console.log("🚀 Redirecionando para /resultado?id=", simuladoId);
+            router.push(`/resultado?id=${simuladoId}`);
+          }
+        }, 500);
       } catch (err) {
         console.error("Erro ao finalizar simulado:", err);
         alert("Erro ao salvar resultados. Tente novamente.");

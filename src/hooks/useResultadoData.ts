@@ -1,13 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { HistoricoSimulado } from "@/data/index";
 import { classificarDesempenho } from "@/lib/simulado-logic";
 
 const STORAGE_KEYS = {
-  ULTIMO_SIMULADO: "prf_ultimo_simulado",
+  ULTIMO_SIMULADO: "prf_ultimo_resultado", // Corrigido para bater com o finalizar
   HISTORICO: "prf_historico",
 } as const;
 
@@ -21,6 +21,7 @@ interface ComparacaoAnterior {
 
 export function useResultadoData() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [simulado, setSimulado] = useState<HistoricoSimulado | null>(null);
   const [historico, setHistorico] = useState<HistoricoSimulado[]>([]);
   const [comparacao, setComparacao] = useState<ComparacaoAnterior | null>(null);
@@ -32,46 +33,68 @@ export function useResultadoData() {
     inicializadoRef.current = true;
 
     try {
-      const dados = localStorage.getItem(STORAGE_KEYS.ULTIMO_SIMULADO);
-      const historicoDados = localStorage.getItem(STORAGE_KEYS.HISTORICO);
+      // Tentar buscar por ID na URL primeiro
+      const resultadoId = searchParams.get("id");
+      let simuladoAtual: HistoricoSimulado | null = null;
 
-      if (!dados) {
-        router.push("/");
+      // Buscar histórico completo
+      const historicoDados = localStorage.getItem(STORAGE_KEYS.HISTORICO);
+      let historicoLista: HistoricoSimulado[] = [];
+
+      if (historicoDados) {
+        try {
+          const parsed = JSON.parse(historicoDados);
+          if (Array.isArray(parsed)) {
+            historicoLista = parsed;
+          } else if (parsed && typeof parsed === "object" && "data" in parsed) {
+            historicoLista = parsed.data;
+          }
+        } catch (e) {
+          console.error("Erro ao parsear histórico:", e);
+        }
+      }
+
+      // Se tem ID na URL, buscar pelo ID
+      if (resultadoId) {
+        simuladoAtual =
+          historicoLista.find((h) => h.id === resultadoId) || null;
+      }
+
+      // Se não encontrou pelo ID, tentar último resultado salvo
+      if (!simuladoAtual) {
+        const ultimoDados = localStorage.getItem(STORAGE_KEYS.ULTIMO_SIMULADO);
+        if (ultimoDados) {
+          simuladoAtual = JSON.parse(ultimoDados);
+        }
+      }
+
+      // Se ainda não tem resultado, tentar o primeiro do histórico
+      if (!simuladoAtual && historicoLista.length > 0) {
+        simuladoAtual = historicoLista[0];
+      }
+
+      if (!simuladoAtual) {
+        console.warn("Nenhum resultado encontrado");
+        router.push("/dashboard");
         return;
       }
 
-      const simuladoAtual: HistoricoSimulado = JSON.parse(dados);
-
+      // Validar dados
       if (!simuladoAtual.estatisticas || !simuladoAtual.questoes) {
         throw new Error("Dados do simulado inválidos");
-      }
-
-      let historicoLista: HistoricoSimulado[] = [];
-      if (historicoDados) {
-        const parsed = JSON.parse(historicoDados);
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          !Array.isArray(parsed) &&
-          "data" in parsed
-        ) {
-          historicoLista = parsed.data;
-        } else if (Array.isArray(parsed)) {
-          historicoLista = parsed;
-        }
       }
 
       setSimulado(simuladoAtual);
       setHistorico(historicoLista);
 
-      // Compara com anterior
-      if (historicoLista.length >= 2) {
-        const indexAtual = historicoLista.findIndex(
-          (h) => h.data === simuladoAtual.data,
-        );
+      // Compara com simulado anterior
+      const indexAtual = historicoLista.findIndex(
+        (h) => h.id === simuladoAtual.id,
+      );
 
-        if (indexAtual > 0) {
-          const anterior = historicoLista[indexAtual - 1];
+      if (indexAtual !== -1 && indexAtual < historicoLista.length - 1) {
+        const anterior = historicoLista[indexAtual + 1];
+        if (anterior) {
           const diferenca =
             simuladoAtual.estatisticas.pontuacao -
             anterior.estatisticas.pontuacao;
@@ -96,11 +119,11 @@ export function useResultadoData() {
         "Não foi possível carregar os resultados do simulado.",
       );
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   const classificacao = simulado
     ? classificarDesempenho(
-        simulado.estatisticas.pontuacao,
+        simulado.estatisticas.percentual,
         simulado.estatisticas.totalQuestoes,
       )
     : null;

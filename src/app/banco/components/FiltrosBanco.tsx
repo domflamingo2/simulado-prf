@@ -3,6 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
+  BarChart3,
+  ChevronDown,
   Clock,
   Filter,
   Keyboard,
@@ -10,6 +12,7 @@ import {
   LucideIcon,
   Search,
   Sparkles,
+  Tag,
   TrendingUp,
   X,
 } from "lucide-react";
@@ -23,12 +26,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { toast } from "sonner";
 
-// FIX: hook interno do projeto em vez de `use-debounce`
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
-
-// FIX: Toaster removido — deve estar em app/layout.tsx
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS
@@ -62,7 +61,12 @@ const DIFICULDADE_LABELS: Record<string, string> = {
   "3": "Difícil",
 };
 
-// Máximo de chips de disciplina exibidos diretamente
+const DIFICULDADE_CORES: Record<string, string> = {
+  "1": "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+  "2": "text-amber-400 bg-amber-500/10 border-amber-500/30",
+  "3": "text-rose-400 bg-rose-500/10 border-rose-500/30",
+};
+
 const MAX_CHIPS = 6;
 
 // ═══════════════════════════════════════════════════════════
@@ -75,7 +79,7 @@ function SkeletonChips() {
       {Array.from({ length: 6 }, (_, i) => (
         <div
           key={i}
-          className="h-7 rounded-full bg-slate-800/50 animate-pulse"
+          className="h-7 rounded-full bg-gradient-to-r from-slate-800/50 to-slate-700/30 animate-pulse"
           style={{
             width: `${60 + (i % 3) * 20}px`,
             animationDelay: `${i * 60}ms`,
@@ -87,12 +91,12 @@ function SkeletonChips() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// QUICK FILTER — tipagem correta
+// QUICK FILTER
 // ═══════════════════════════════════════════════════════════
 
 interface QuickFilterProps {
   label: string;
-  icon: LucideIcon; // FIX: LucideIcon em vez de `any`
+  icon: LucideIcon;
   onClick: () => void;
   active?: boolean;
 }
@@ -104,28 +108,29 @@ function QuickFilter({
   active = false,
 }: QuickFilterProps) {
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       onClick={onClick}
       aria-pressed={active}
       className={`
-        px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+        px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200
         flex items-center gap-1.5 border
         ${
           active
-            ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
-            : "bg-slate-800/60 text-slate-400 border-slate-700/60 hover:border-slate-600 hover:text-slate-300"
+            ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 border-blue-500/30 shadow-sm"
+            : "bg-slate-800/50 text-slate-400 border-slate-700/50 hover:border-slate-600 hover:text-slate-300"
         }
       `}
     >
-      <Icon className="w-3 h-3" aria-hidden="true" />
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
       {label}
-    </button>
+    </motion.button>
   );
 }
 
 // ═══════════════════════════════════════════════════════════
-// AUTOCOMPLETE — sem tags hardcoded de ensino médio
-// FIX: sugere apenas disciplinas reais do banco PRF
+// AUTOCOMPLETE SUGGESTIONS
 // ═══════════════════════════════════════════════════════════
 
 interface AutocompleteSuggestionsProps {
@@ -151,28 +156,28 @@ function AutocompleteSuggestions({
 
   return (
     <motion.ul
-      initial={{ opacity: 0, y: -6 }}
+      initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2 }}
       role="listbox"
       aria-label="Sugestões de disciplina"
-      className="absolute z-20 top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl"
+      className="absolute z-20 top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl"
     >
       {sugestoes.map((d) => (
-        <li key={d.disciplina} role="option" aria-selected={false}>
+        <li key={d.disciplina} role="option">
           <button
             onMouseDown={(e) => {
-              // mousedown antes de blur do input — mantém o foco no input
               e.preventDefault();
               onSelect(d.nome);
             }}
-            className="w-full px-3 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700 transition-colors flex items-center justify-between gap-2"
+            className="w-full px-3 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700 transition-colors flex items-center justify-between gap-2 group"
           >
             <span className="flex items-center gap-2">
-              <Search className="w-3 h-3 text-slate-500" aria-hidden="true" />
+              <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-400 transition-colors" />
               {d.nome}
             </span>
-            <span className="text-[10px] text-slate-500 tabular-nums">
+            <span className="text-[10px] text-slate-500 tabular-nums bg-slate-700/50 px-1.5 py-0.5 rounded-full">
               {d.count}
             </span>
           </button>
@@ -207,17 +212,15 @@ export function FiltrosBanco({
   const [autocompleteAberto, setAutocompleteAberto] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  // FIX: ref para o timeout de confirmação — permite cleanup no unmount
   const clearConfirmTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  // FIX: refs para callbacks do pai — evita stale closure nos atalhos de teclado
   const onLimparFiltrosRef = useRef(onLimparFiltros);
+
   useEffect(() => {
     onLimparFiltrosRef.current = onLimparFiltros;
   });
 
-  // Cleanup no unmount
   useEffect(() => {
     return () => {
       if (clearConfirmTimeoutRef.current)
@@ -225,8 +228,7 @@ export function FiltrosBanco({
     };
   }, []);
 
-  // ── Filtros ativos (valor derivado, não estado) ─────────────────────────────
-  // FIX: useMemo em vez de useEffect + setState — evita re-render extra
+  // Filtros ativos
   const filtrosAtivosCount = useMemo(() => {
     let c = 0;
     if (busca !== "") c++;
@@ -237,8 +239,7 @@ export function FiltrosBanco({
 
   const temFiltrosAtivos = filtrosAtivosCount > 0;
 
-  // ── Persistência da abertura dos filtros no localStorage ────────────────────
-
+  // Persistência da abertura dos filtros
   useEffect(() => {
     const saved = localStorage.getItem("filtros_abertos");
     if (saved !== null) {
@@ -248,7 +249,6 @@ export function FiltrosBanco({
     }
   }, []);
 
-  // FIX: debounce na escrita do localStorage — sem escrita em cada toggle rápido
   const salvarFiltrosAbertos = useDebouncedCallback(
     useCallback((aberto: boolean) => {
       localStorage.setItem("filtros_abertos", JSON.stringify(aberto));
@@ -264,9 +264,7 @@ export function FiltrosBanco({
     [salvarFiltrosAbertos],
   );
 
-  // ── URL Sync ────────────────────────────────────────────────────────────────
-  // FIX: debounce no router.replace para não criar entradas a cada keystroke.
-  // Sem debounce: cada letra no input → router.replace → URL flickers.
+  // URL Sync
   const sincronizarURL = useDebouncedCallback(
     useCallback(
       (b: string, disc: string, dif: DificuldadeLevel) => {
@@ -288,13 +286,11 @@ export function FiltrosBanco({
     sincronizarURL(busca, disciplinaFiltro, dificuldadeFiltro);
   }, [busca, disciplinaFiltro, dificuldadeFiltro, sincronizarURL]);
 
-  // ── Restaurar filtros da URL ────────────────────────────────────────────────
-  // FIX: executa apenas no mount — sem deps de funções do pai (stale closure)
-  // Usa refs para acessar as funções atuais no momento do mount
-
+  // Restaurar filtros da URL
   const setBuscaRef = useRef(setBusca);
   const setDisciplinaRef = useRef(setDisciplinaFiltro);
   const setDificuldadeRef = useRef(setDificuldadeFiltro);
+
   useEffect(() => {
     setBuscaRef.current = setBusca;
     setDisciplinaRef.current = setDisciplinaFiltro;
@@ -311,42 +307,31 @@ export function FiltrosBanco({
     if (urlDificuldade && ["1", "2", "3"].includes(urlDificuldade)) {
       setDificuldadeRef.current(urlDificuldade as DificuldadeLevel);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // mount only — intencional
+  }, []);
 
-  // ── Input controlado com debounce ─────────────────────────────────────────
-  // FIX: input controlado por `busca` (não `defaultValue`) para que reset
-  // externo (limpar filtros) reflita imediatamente no campo visível.
-  // O debounce está no `setValue` que propaga para cima, não no valor local.
+  // Input controlado
   const [inputLocal, setInputLocal] = useState(busca);
 
-  // Sincroniza input quando busca é resetada externamente (ex: limpar filtros)
   useEffect(() => {
     setInputLocal(busca);
   }, [busca]);
 
   const debouncedSetBusca = useDebouncedCallback(
-    useCallback(
-      (value: string) => {
-        setBusca(value);
-      },
-      [setBusca],
-    ),
+    useCallback((value: string) => setBusca(value), [setBusca]),
     300,
   );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const v = e.target.value;
-      setInputLocal(v); // atualiza o campo imediatamente
-      debouncedSetBusca(v); // propaga para o pai após debounce
+      setInputLocal(v);
+      debouncedSetBusca(v);
       setAutocompleteAberto(v.length >= 2);
     },
     [debouncedSetBusca],
   );
 
   const handleInputBlur = useCallback(() => {
-    // Pequeno delay para permitir que onMouseDown do autocomplete processe primeiro
     setTimeout(() => setAutocompleteAberto(false), 150);
   }, []);
 
@@ -367,21 +352,14 @@ export function FiltrosBanco({
     inputRef.current?.focus();
   }, [setBusca]);
 
-  // ── Limpar filtros ─────────────────────────────────────────────────────────
-
   const handleLimparFiltros = useCallback(() => {
-    try {
-      onLimparFiltrosRef.current();
-      setShowClearConfirm(false);
-    } catch {
-      toast.error("Erro ao limpar filtros. Tente novamente.");
-    }
+    onLimparFiltrosRef.current();
+    setShowClearConfirm(false);
   }, []);
 
   const handleLimparComConfirmacao = useCallback(() => {
     if (filtrosAtivosCount >= 2) {
       setShowClearConfirm(true);
-      // FIX: cleanup do timeout anterior antes de criar novo
       if (clearConfirmTimeoutRef.current)
         clearTimeout(clearConfirmTimeoutRef.current);
       clearConfirmTimeoutRef.current = setTimeout(() => {
@@ -393,10 +371,6 @@ export function FiltrosBanco({
     }
   }, [filtrosAtivosCount, handleLimparFiltros]);
 
-  // ── Seleção de disciplina — sem toast a cada clique ────────────────────────
-  // FIX: removido o toast em cada mudança de disciplina/dificuldade.
-  // Com chips clicáveis, o usuário pode clicar rápido em vários — os toasts
-  // se empilhavam e poluíam a UI. O feedback visual (chip ativo) é suficiente.
   const handleDisciplinaClick = useCallback(
     (disciplina: string) => {
       setDisciplinaFiltro((prev) =>
@@ -413,8 +387,7 @@ export function FiltrosBanco({
     [setDificuldadeFiltro],
   );
 
-  // ── Atalhos de teclado ─────────────────────────────────────────────────────
-  // FIX: deps vazias + refs — sem stale closure, sem re-registro desnecessário
+  // Atalhos de teclado
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const active = document.activeElement;
@@ -423,43 +396,27 @@ export function FiltrosBanco({
         active?.tagName === "TEXTAREA" ||
         (active as HTMLElement)?.isContentEditable;
 
-      // "/" — foca no campo de busca
       if (e.key === "/" && !isInput) {
         e.preventDefault();
         inputRef.current?.focus();
         return;
       }
 
-      // Ctrl+F — toggle filtros
       if ((e.ctrlKey || e.metaKey) && e.key === "f") {
         e.preventDefault();
-        setFiltrosAbertos((p) => {
-          const novo = !p;
-          salvarFiltrosAbertos(novo);
-          return novo;
-        });
+        toggleFiltros(!filtrosAbertos);
         return;
       }
 
-      // ESC — limpa filtros (apenas se não há input focado e há filtros ativos)
-      if (e.key === "Escape" && !isInput) {
-        // Usa o setter funcional para ler o estado atual sem dep
-        setFiltrosAbertos((opened) => {
-          if (opened) {
-            salvarFiltrosAbertos(false);
-            return false;
-          }
-          return opened;
-        });
+      if (e.key === "Escape" && !isInput && filtrosAbertos) {
+        toggleFiltros(false);
       }
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [salvarFiltrosAbertos]); // salvarFiltrosAbertos é estável (useDebouncedCallback)
+  }, [filtrosAbertos, toggleFiltros]);
 
-  // ── Chips de disciplinas ───────────────────────────────────────────────────
-  // FIX: disciplinasRestantes nunca negativo
   const disciplinasVisiveis = useMemo(
     () => statsPorDisciplina.slice(0, MAX_CHIPS),
     [statsPorDisciplina],
@@ -469,145 +426,132 @@ export function FiltrosBanco({
     [statsPorDisciplina],
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
-    <div className="space-y-3">
-      {/* ── Campo de busca ── */}
-      <div className="relative">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"
-          aria-hidden="true"
-        />
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Buscar por enunciado, assunto ou tags… (Pressione / para focar)"
-          value={inputLocal}
-          onChange={handleInputChange}
-          onBlur={handleInputBlur}
-          onFocus={() => inputLocal.length >= 2 && setAutocompleteAberto(true)}
-          className="w-full pl-10 pr-9 py-2.5 bg-slate-800/50 border border-slate-700/60 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
-          aria-label="Buscar questões"
-          aria-autocomplete="list"
-          aria-expanded={autocompleteAberto}
-          autoComplete="off"
-          spellCheck={false}
-        />
+    <div className="space-y-4">
+      {/* Campo de busca com gradiente */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Buscar por enunciado, assunto ou tags… (Pressione / para focar)"
+            value={inputLocal}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onFocus={() =>
+              inputLocal.length >= 2 && setAutocompleteAberto(true)
+            }
+            className="w-full pl-10 pr-9 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20 transition-all"
+            aria-label="Buscar questões"
+            aria-autocomplete="list"
+            aria-expanded={autocompleteAberto}
+            autoComplete="off"
+            spellCheck={false}
+          />
 
-        {/* Botão limpar */}
-        {inputLocal && (
-          <button
-            onClick={limparInput}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-            aria-label="Limpar busca"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Autocomplete */}
-        <AnimatePresence>
-          {autocompleteAberto && (
-            <AutocompleteSuggestions
-              busca={inputLocal}
-              onSelect={handleAutocompleteSelecionado}
-              statsPorDisciplina={statsPorDisciplina}
-            />
+          {inputLocal && (
+            <button
+              onClick={limparInput}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-500 hover:text-white hover:bg-slate-700 transition-all"
+              aria-label="Limpar busca"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
-        </AnimatePresence>
+
+          <AnimatePresence>
+            {autocompleteAberto && (
+              <AutocompleteSuggestions
+                busca={inputLocal}
+                onSelect={handleAutocompleteSelecionado}
+                statsPorDisciplina={statsPorDisciplina}
+              />
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* ── Contador de resultados + controles ── */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        {/* Contador */}
-        <AnimatePresence mode="wait">
+      {/* Barra de status */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
           {temFiltrosAtivos && (
-            <motion.p
-              key="contador"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="text-xs text-slate-400 flex items-center gap-1.5"
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2 px-2 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30"
             >
-              <TrendingUp className="w-3 h-3" aria-hidden="true" />
-              <span className="tabular-nums font-medium text-slate-300">
-                {totalQuestoesEncontradas}
+              <BarChart3 className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-blue-400 font-medium">
+                {totalQuestoesEncontradas} questão
+                {totalQuestoesEncontradas !== 1 ? "ões" : ""}
               </span>
-              questão{totalQuestoesEncontradas !== 1 ? "ões" : ""} encontrada
-              {totalQuestoesEncontradas !== 1 ? "s" : ""}
-              <span className="text-slate-600">
+              <span className="text-[10px] text-blue-400/70">
                 ({filtrosAtivosCount} filtro
-                {filtrosAtivosCount !== 1 ? "s" : ""} ativo
                 {filtrosAtivosCount !== 1 ? "s" : ""})
               </span>
-            </motion.p>
+            </motion.div>
           )}
-        </AnimatePresence>
+        </div>
 
-        {/* Toggle filtros + atalhos */}
-        <div className="flex items-center gap-3 ml-auto">
-          {/* Atalhos — apenas desktop */}
-          <div className="hidden lg:flex items-center gap-2 text-[10px] text-slate-600">
-            <Keyboard className="w-3 h-3" aria-hidden="true" />
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-800 rounded">/</kbd>
-              <span>buscar</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-800 rounded">⌘F</kbd>
-              <span>filtros</span>
-            </span>
+        <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2 text-[10px] text-slate-600 bg-slate-800/30 px-2 py-1 rounded-lg">
+            <Keyboard className="w-3 h-3" />
+            <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-[9px]">
+              /
+            </kbd>
+            <span>buscar</span>
+            <span className="mx-1">•</span>
+            <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-[9px]">
+              ⌘F
+            </kbd>
+            <span>filtros</span>
           </div>
 
           <button
             onClick={() => toggleFiltros(!filtrosAbertos)}
-            className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-            aria-label={filtrosAbertos ? "Ocultar filtros" : "Mostrar filtros"}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all"
             aria-expanded={filtrosAbertos}
-            aria-controls="painel-filtros"
           >
-            <Filter className="w-3.5 h-3.5" aria-hidden="true" />
-            {filtrosAbertos ? "Ocultar" : "Filtros"}
-            {/* Indicador de filtros ativos */}
+            <Filter className="w-3.5 h-3.5" />
+            {filtrosAbertos ? "Ocultar filtros" : "Filtros"}
             {temFiltrosAtivos && (
               <span className="relative flex w-2 h-2">
                 <span className="animate-ping absolute inset-0 rounded-full bg-blue-400 opacity-60" />
                 <span className="relative w-2 h-2 rounded-full bg-blue-500" />
               </span>
             )}
+            <ChevronDown
+              className={`w-3 h-3 transition-transform ${filtrosAbertos ? "rotate-180" : ""}`}
+            />
           </button>
         </div>
       </div>
 
-      {/* ── Painel de filtros expandíveis ── */}
+      {/* Painel de filtros expandível */}
       <AnimatePresence>
         {filtrosAbertos && (
           <motion.div
-            id="painel-filtros"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="pt-1 space-y-4">
-              {/* Selects de disciplina e dificuldade */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="pt-4 space-y-5">
+              {/* Grid de selects */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label
-                    htmlFor="select-disciplina"
-                    className="block text-[11px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider"
-                  >
+                  <label className="block text-[11px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider">
                     Disciplina
                   </label>
                   <select
-                    id="select-disciplina"
                     value={disciplinaFiltro}
                     onChange={(e) => handleDisciplinaClick(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/60 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/60 transition-colors"
+                    className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
                   >
-                    <option value="todas">Todas as disciplinas</option>
+                    <option value="todas">📚 Todas as disciplinas</option>
                     {statsPorDisciplina.map(({ disciplina, nome, count }) => (
                       <option key={disciplina} value={disciplina}>
                         {nome} ({count})
@@ -617,22 +561,18 @@ export function FiltrosBanco({
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="select-dificuldade"
-                    className="block text-[11px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider"
-                  >
+                  <label className="block text-[11px] text-slate-500 mb-1.5 font-medium uppercase tracking-wider">
                     Dificuldade
                   </label>
                   <select
-                    id="select-dificuldade"
                     value={dificuldadeFiltro}
                     onChange={handleDificuldadeChange}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/60 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/60 transition-colors"
+                    className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
                   >
-                    <option value="todas">Todas</option>
-                    <option value="1">Fácil</option>
-                    <option value="2">Médio</option>
-                    <option value="3">Difícil</option>
+                    <option value="todas">🎯 Todas</option>
+                    <option value="1">✅ Fácil</option>
+                    <option value="2">⚡ Médio</option>
+                    <option value="3">🔥 Difícil</option>
                   </select>
                 </div>
               </div>
@@ -640,7 +580,8 @@ export function FiltrosBanco({
               {/* Filtros rápidos */}
               {onFiltroRapido && (
                 <div>
-                  <p className="text-[11px] text-slate-500 mb-2 font-medium uppercase tracking-wider">
+                  <p className="text-[11px] text-slate-500 mb-2 font-medium uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3" />
                     Filtros rápidos
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -656,24 +597,24 @@ export function FiltrosBanco({
                     />
                     <QuickFilter
                       label="Sem tags"
-                      icon={Sparkles}
+                      icon={Tag}
                       onClick={() => onFiltroRapido("sem_tags")}
                     />
                   </div>
                 </div>
               )}
 
-              {/* Limpar filtros com confirmação */}
+              {/* Limpar filtros */}
               {temFiltrosAtivos && (
-                <div className="pt-1">
+                <div className="pt-2">
                   <AnimatePresence mode="wait">
                     {showClearConfirm ? (
                       <motion.div
                         key="confirm"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="flex items-center gap-2"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="flex items-center gap-3"
                       >
                         <span className="text-xs text-slate-400 flex items-center gap-1.5">
                           <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
@@ -681,13 +622,13 @@ export function FiltrosBanco({
                         </span>
                         <button
                           onClick={handleLimparFiltros}
-                          className="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/25 text-xs hover:bg-rose-500/25 transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-rose-500/20 to-red-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium hover:from-rose-500/30 transition-all"
                         >
                           Confirmar
                         </button>
                         <button
                           onClick={() => setShowClearConfirm(false)}
-                          className="px-3 py-1.5 rounded-lg bg-slate-700/60 text-slate-300 text-xs hover:bg-slate-700 transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-slate-700/50 text-slate-300 text-xs hover:bg-slate-700 transition-all"
                         >
                           Cancelar
                         </button>
@@ -699,12 +640,11 @@ export function FiltrosBanco({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={handleLimparComConfirmacao}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/60 text-slate-400 border border-slate-700/40 text-xs hover:text-rose-400 hover:border-rose-500/30 transition-all"
-                        aria-label={`Limpar ${filtrosAtivosCount} filtro${filtrosAtivosCount > 1 ? "s" : ""} ativos`}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-400 border border-slate-700 text-xs hover:text-rose-400 hover:border-rose-500/30 transition-all"
                       >
                         <X className="w-3 h-3" />
                         Limpar filtros
-                        <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-400 text-[10px] tabular-nums">
+                        <span className="px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-400 text-[10px]">
                           {filtrosAtivosCount}
                         </span>
                       </motion.button>
@@ -717,7 +657,7 @@ export function FiltrosBanco({
         )}
       </AnimatePresence>
 
-      {/* ── Chips de disciplina ── */}
+      {/* Chips de disciplina */}
       {isLoading ? (
         <SkeletonChips />
       ) : (
@@ -730,36 +670,36 @@ export function FiltrosBanco({
             {disciplinasVisiveis.map(({ disciplina, count, nome }) => {
               const ativo = disciplinaFiltro === disciplina;
               return (
-                <button
+                <motion.button
                   key={disciplina}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleDisciplinaClick(disciplina)}
                   aria-pressed={ativo}
                   className={`
-                    px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all
+                    px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all duration-200
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50
                     ${
                       ativo
-                        ? "bg-blue-500/15 text-blue-300 border-blue-500/30 shadow-sm"
-                        : "bg-slate-800/60 text-slate-400 border-slate-700/50 hover:border-slate-600 hover:text-slate-300"
+                        ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border-blue-500/30 shadow-sm"
+                        : "bg-slate-800/50 text-slate-400 border-slate-700/50 hover:border-slate-600 hover:text-slate-300"
                     }
                   `}
                 >
                   {nome}
                   <span
-                    className={`ml-1.5 tabular-nums ${ativo ? "text-blue-400" : "text-slate-600"}`}
+                    className={`ml-1.5 tabular-nums text-[10px] ${ativo ? "text-blue-400" : "text-slate-600"}`}
                   >
                     {count}
                   </span>
-                </button>
+                </motion.button>
               );
             })}
 
-            {/* FIX: só exibe se realmente há mais — nunca negativo */}
             {disciplinasRestantes > 0 && (
               <button
                 onClick={() => toggleFiltros(true)}
                 className="px-3 py-1.5 rounded-full text-[11px] text-slate-500 border border-slate-700/40 bg-slate-800/30 hover:border-slate-600 hover:text-slate-400 transition-all"
-                aria-label={`Ver mais ${disciplinasRestantes} disciplinas`}
               >
                 +{disciplinasRestantes} mais
               </button>
@@ -768,17 +708,10 @@ export function FiltrosBanco({
         )
       )}
 
-      {/* ── Spinner de loading ── */}
+      {/* Loading indicator */}
       {isLoading && (
-        <div
-          className="flex items-center gap-2 py-2"
-          role="status"
-          aria-label="Carregando questões"
-        >
-          <Loader2
-            className="w-4 h-4 text-blue-500 animate-spin"
-            aria-hidden="true"
-          />
+        <div className="flex items-center gap-2 py-2" role="status">
+          <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
           <span className="text-xs text-slate-400">Filtrando questões…</span>
         </div>
       )}

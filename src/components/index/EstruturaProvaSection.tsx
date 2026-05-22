@@ -1,4 +1,4 @@
-// src/components/como-funciona/EstruturaProvaSection.tsx (VERSÃO OTIMIZADA)
+// src/components/como-funciona/EstruturaProvaSection.tsx
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -6,38 +6,41 @@ import { ESTRUTURA_PROVA } from "@/constants/estruturaProva";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { motion } from "framer-motion";
 import {
+  Award,
   BarChart3,
   BookOpen,
   CheckCircle2,
   Clock,
+  GraduationCap,
   HelpCircle,
   PieChart,
+  Sparkles,
   Target,
+  Timer,
   TrendingUp,
 } from "lucide-react";
 import { memo, useState } from "react";
 import { SectionTitle } from "./SectionTitle";
 
-const scrollReveal = {
-  hidden: { opacity: 0, y: 50 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-};
-
+// Animações
 const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" as const },
   },
 };
 
-// Componente de disciplina memoizado
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+  },
+};
+
+// Componente de disciplina
 const DisciplinaItem = memo(
   ({
     nome,
@@ -60,13 +63,15 @@ const DisciplinaItem = memo(
         bg: "bg-blue-500",
         text: "text-blue-400",
         light: "bg-blue-500/10",
-        border: "border-blue-500/20",
+        border: "border-blue-500/30",
+        gradient: "from-blue-500 to-blue-600",
       },
       purple: {
         bg: "bg-purple-500",
         text: "text-purple-400",
         light: "bg-purple-500/10",
-        border: "border-purple-500/20",
+        border: "border-purple-500/30",
+        gradient: "from-purple-500 to-purple-600",
       },
     };
 
@@ -76,42 +81,48 @@ const DisciplinaItem = memo(
       <motion.li
         variants={fadeInUp}
         custom={index}
-        className="group"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 transition-all duration-300 gap-2 border border-slate-700/50 hover:border-slate-600">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-1.5 h-1.5 rounded-full ${colors.bg} ${isHovered ? "scale-150" : ""} transition-transform`}
-            />
-            <span className="text-slate-300 text-sm font-medium">{nome}</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 min-w-[100px] justify-end">
-              <span className={`font-bold text-sm ${colors.text}`}>
-                {qtd} questões
+        <div className="group relative">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 transition-all duration-300 gap-2 border border-slate-700/50 hover:border-slate-600">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <motion.div
+                animate={{ scale: isHovered ? 1.2 : 1 }}
+                className={`w-1.5 h-1.5 rounded-full ${colors.bg} ${isHovered ? "shadow-lg shadow-blue-500/50" : ""}`}
+              />
+              <span className="text-slate-300 text-sm font-medium truncate">
+                {nome}
               </span>
-              <div className="w-24 bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  transition={{ duration: 0.8, delay: index * 0.1 }}
-                  className={`${colors.bg} h-1.5 rounded-full relative`}
-                >
-                  {isHovered && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="absolute inset-0 bg-white/30 animate-pulse"
-                    />
-                  )}
-                </motion.div>
-              </div>
             </div>
-            <span className="text-xs text-slate-500 min-w-[45px] text-right">
-              {percentage.toFixed(0)}%
-            </span>
+
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <div className="flex items-center gap-3 min-w-[140px] justify-end">
+                <span className={`font-bold text-sm ${colors.text}`}>
+                  {qtd} questões
+                </span>
+                <div className="w-28 bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percentage}%` }}
+                    transition={{ duration: 0.8, delay: index * 0.05 }}
+                    className={`h-full rounded-full bg-gradient-to-r ${colors.gradient} relative`}
+                  >
+                    {isHovered && (
+                      <motion.div
+                        initial={{ opacity: 0, x: "-100%" }}
+                        animate={{ opacity: 1, x: "100%" }}
+                        transition={{ duration: 0.6, repeat: Infinity }}
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                      />
+                    )}
+                  </motion.div>
+                </div>
+              </div>
+              <span className="text-xs text-slate-500 min-w-[48px] text-right font-mono">
+                {percentage.toFixed(0)}%
+              </span>
+            </div>
           </div>
         </div>
       </motion.li>
@@ -121,41 +132,43 @@ const DisciplinaItem = memo(
 
 DisciplinaItem.displayName = "DisciplinaItem";
 
-// Componente de card de estatística
+// Card de estatística
 const StatCard = memo(
   ({
     icon: Icon,
     label,
     value,
     description,
-    color,
+    gradient,
     delay,
   }: {
     icon: React.ElementType;
     label: string;
     value: string | number;
     description?: string;
-    color: string;
+    gradient: string;
     delay: number;
   }) => (
     <motion.div
       variants={fadeInUp}
       custom={delay}
-      whileHover={{ scale: 1.02, y: -2 }}
-      className="p-4 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-800/30 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300"
+      whileHover={{ y: -4 }}
+      className="group"
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={`p-2 rounded-lg ${color} group-hover:scale-110 transition-transform`}
-        >
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-        <div className="flex-1">
-          <p className="text-2xl font-bold text-white">{value}</p>
-          <p className="text-xs text-slate-400 mt-0.5">{label}</p>
-          {description && (
-            <p className="text-[10px] text-slate-500 mt-1">{description}</p>
-          )}
+      <div
+        className={`p-4 rounded-xl bg-gradient-to-br ${gradient} backdrop-blur-sm border border-white/10 transition-all duration-300 hover:shadow-lg`}
+      >
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-white/10 group-hover:scale-110 transition-transform">
+            <Icon className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-2xl font-bold text-white">{value}</p>
+            <p className="text-xs text-slate-300 mt-0.5">{label}</p>
+            {description && (
+              <p className="text-[10px] text-slate-400 mt-1">{description}</p>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
@@ -168,17 +181,17 @@ StatCard.displayName = "StatCard";
 const StudyTip = memo(
   ({ dica, cor }: { dica: string; cor: "blue" | "purple" | "amber" }) => {
     const cores = {
-      blue: "from-blue-500/10 to-blue-600/5 border-blue-500/20 text-blue-400",
+      blue: "from-blue-500/15 to-blue-600/10 border-blue-500/30 text-blue-300",
       purple:
-        "from-purple-500/10 to-purple-600/5 border-purple-500/20 text-purple-400",
+        "from-purple-500/15 to-purple-600/10 border-purple-500/30 text-purple-300",
       amber:
-        "from-amber-500/10 to-amber-600/5 border-amber-500/20 text-amber-400",
+        "from-amber-500/15 to-amber-600/10 border-amber-500/30 text-amber-300",
     };
 
     return (
       <motion.div
         variants={fadeInUp}
-        className={`p-3 rounded-lg bg-gradient-to-r ${cores[cor]} border`}
+        className={`mt-4 p-3 rounded-xl bg-gradient-to-r ${cores[cor]} border backdrop-blur-sm`}
       >
         <div className="flex items-start gap-2">
           <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -205,10 +218,8 @@ export function EstruturaProvaSection() {
   );
 
   const totalQuestoes = 60;
-  const tempoTotal = 4; // horas
-  const tempoPorQuestao = (tempoTotal * 60) / totalQuestoes; // minutos por questão
-
-  // Calcular distribuição percentual
+  const tempoTotal = 4;
+  const tempoPorQuestao = (tempoTotal * 60) / totalQuestoes;
   const percentualBasico =
     (ESTRUTURA_PROVA.conhecimentosBasicos.total / totalQuestoes) * 100;
   const percentualEspecifico =
@@ -217,30 +228,30 @@ export function EstruturaProvaSection() {
   return (
     <motion.section
       ref={ref}
-      variants={scrollReveal}
       initial="hidden"
       animate={isVisible ? "visible" : "hidden"}
-      className="scroll-mt-20"
+      variants={staggerContainer}
+      className="scroll-mt-20 py-8"
     >
-      <SectionTitle
-        icon={BookOpen}
-        title="Estrutura da Prova PRF"
-        subtitle="Distribuição oficial de questões por disciplina"
-      />
+      <div className="mb-10">
+        <SectionTitle
+          icon={BookOpen}
+          title="Estrutura da Prova PRF"
+          subtitle="Distribuição oficial de questões por disciplina"
+        />
+      </div>
 
-      {/* Cards de estatísticas rápidas */}
+      {/* Cards de estatísticas */}
       <motion.div
         variants={staggerContainer}
-        initial="initial"
-        animate={isVisible ? "animate" : "initial"}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
       >
         <StatCard
           icon={Target}
           label="Total de Questões"
           value="60"
-          description="Distribuídas em 2 blocos"
-          color="bg-blue-500"
+          description="24 básicas + 36 específicas"
+          gradient="from-blue-600/90 to-blue-800/90"
           delay={0}
         />
         <StatCard
@@ -248,42 +259,55 @@ export function EstruturaProvaSection() {
           label="Tempo Total"
           value="4h"
           description={`~${tempoPorQuestao.toFixed(0)} min por questão`}
-          color="bg-emerald-500"
+          gradient="from-emerald-600/90 to-emerald-800/90"
           delay={1}
         />
         <StatCard
           icon={BarChart3}
           label="Conhecimentos Básicos"
-          value={`${ESTRUTURA_PROVA.conhecimentosBasicos.total}`}
+          value={ESTRUTURA_PROVA.conhecimentosBasicos.total}
           description={`${percentualBasico.toFixed(0)}% da prova`}
-          color="bg-blue-500"
+          gradient="from-blue-600/90 to-indigo-800/90"
           delay={2}
         />
         <StatCard
           icon={PieChart}
           label="Conhecimentos Específicos"
-          value={`${ESTRUTURA_PROVA.conhecimentosEspecificos.total}`}
+          value={ESTRUTURA_PROVA.conhecimentosEspecificos.total}
           description={`${percentualEspecifico.toFixed(0)}% da prova`}
-          color="bg-purple-500"
+          gradient="from-purple-600/90 to-pink-800/90"
           delay={3}
         />
       </motion.div>
 
-      {/* Gráfico de distribuição visual */}
+      {/* Gráfico de distribuição */}
       <motion.div
         variants={fadeInUp}
-        className="mb-6 p-4 rounded-xl bg-slate-800/30 border border-slate-700/50"
+        className="mb-8 p-5 rounded-xl bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-sm border border-white/10"
       >
-        <p className="text-xs text-slate-400 mb-2 flex items-center gap-2">
-          <PieChart className="w-3 h-3" />
-          Distribuição da prova:
-        </p>
-        <div className="w-full bg-slate-700 rounded-full h-4 overflow-hidden flex">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <PieChart className="w-4 h-4 text-blue-400" />
+            Distribuição da prova
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="text-xs text-slate-400">Básicos</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-purple-500" />
+              <span className="text-xs text-slate-400">Específicos</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full bg-slate-700 rounded-full h-7 overflow-hidden flex">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${percentualBasico}%` }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="bg-gradient-to-r from-blue-500 to-blue-400 h-full flex items-center justify-center text-[10px] font-bold text-white"
+            className="bg-gradient-to-r from-blue-500 to-blue-400 h-full flex items-center justify-center text-xs font-bold text-white"
           >
             {percentualBasico >= 15 && `${percentualBasico.toFixed(0)}%`}
           </motion.div>
@@ -291,162 +315,184 @@ export function EstruturaProvaSection() {
             initial={{ width: 0 }}
             animate={{ width: `${percentualEspecifico}%` }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="bg-gradient-to-r from-purple-500 to-purple-400 h-full flex items-center justify-center text-[10px] font-bold text-white"
+            className="bg-gradient-to-r from-purple-500 to-purple-400 h-full flex items-center justify-center text-xs font-bold text-white"
           >
             {percentualEspecifico >= 15 &&
               `${percentualEspecifico.toFixed(0)}%`}
           </motion.div>
         </div>
-        <div className="flex justify-center gap-4 mt-2 text-xs">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="text-slate-400">Básicos</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-purple-500" />
-            <span className="text-slate-400">Específicos</span>
-          </div>
-        </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Grid principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Conhecimentos Básicos */}
-        <GlassCard className="p-6 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <span className="text-blue-400 font-bold">1</span>
+        <motion.div variants={fadeInUp} className="h-full">
+          <GlassCard className="p-6 h-full flex flex-col hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">
+                    Conhecimentos Básicos
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Fundamentos essenciais
+                  </p>
+                </div>
               </div>
-              Conhecimentos Básicos
-            </h3>
-            <div className="px-2 py-1 rounded-full bg-blue-500/20">
-              <span className="text-xs font-bold text-blue-400">
-                {ESTRUTURA_PROVA.conhecimentosBasicos.total} questões
-              </span>
+              <div className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30">
+                <span className="text-sm font-bold text-blue-400">
+                  {ESTRUTURA_PROVA.conhecimentosBasicos.total} questões
+                </span>
+              </div>
             </div>
-          </div>
 
-          <ul className="space-y-2">
-            {basicas.map(([nome, qtd], index) => (
-              <DisciplinaItem
-                key={nome}
-                nome={nome}
-                qtd={qtd}
-                total={ESTRUTURA_PROVA.conhecimentosBasicos.total}
-                cor="blue"
-                index={index}
-              />
-            ))}
-          </ul>
+            <ul className="space-y-2 flex-1">
+              {basicas.map(([nome, qtd], index) => (
+                <DisciplinaItem
+                  key={nome}
+                  nome={nome}
+                  qtd={qtd}
+                  total={ESTRUTURA_PROVA.conhecimentosBasicos.total}
+                  cor="blue"
+                  index={index}
+                />
+              ))}
+            </ul>
 
-          {/* Dica para conhecimentos básicos */}
-          <StudyTip
-            dica="Português e Raciocínio Lógico são disciplinas eliminatórias. Dedique atenção especial a elas!"
-            cor="blue"
-          />
-        </GlassCard>
+            <StudyTip
+              dica="📖 Português e Raciocínio Lógico são disciplinas eliminatórias. Dedique atenção especial a elas!"
+              cor="blue"
+            />
+          </GlassCard>
+        </motion.div>
 
         {/* Conhecimentos Específicos */}
-        <GlassCard className="p-6 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <span className="text-purple-400 font-bold">2</span>
+        <motion.div variants={fadeInUp} className="h-full">
+          <GlassCard className="p-6 h-full flex flex-col hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <Award className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">
+                    Conhecimentos Específicos
+                  </h3>
+                  <p className="text-xs text-slate-400">Matérias do cargo</p>
+                </div>
               </div>
-              Conhecimentos Específicos
-            </h3>
-            <div className="px-2 py-1 rounded-full bg-purple-500/20">
-              <span className="text-xs font-bold text-purple-400">
-                {ESTRUTURA_PROVA.conhecimentosEspecificos.total} questões
-              </span>
+              <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
+                <span className="text-sm font-bold text-purple-400">
+                  {ESTRUTURA_PROVA.conhecimentosEspecificos.total} questões
+                </span>
+              </div>
             </div>
-          </div>
 
-          <ul className="space-y-2">
-            {especificas.map(([nome, qtd], index) => (
-              <DisciplinaItem
-                key={nome}
-                nome={nome}
-                qtd={qtd}
-                total={ESTRUTURA_PROVA.conhecimentosEspecificos.total}
-                cor="purple"
-                index={index}
-              />
-            ))}
-          </ul>
+            <ul className="space-y-2 flex-1">
+              {especificas.map(([nome, qtd], index) => (
+                <DisciplinaItem
+                  key={nome}
+                  nome={nome}
+                  qtd={qtd}
+                  total={ESTRUTURA_PROVA.conhecimentosEspecificos.total}
+                  cor="purple"
+                  index={index}
+                />
+              ))}
+            </ul>
 
-          {/* Dica para conhecimentos específicos */}
-          <StudyTip
-            dica="Legislação PRF e Direito Constitucional são os maiores pesos. Invista tempo nelas!"
-            cor="purple"
-          />
-        </GlassCard>
+            <StudyTip
+              dica="⚖️ Legislação PRF e Direito Constitucional são os maiores pesos. Invista tempo nelas!"
+              cor="purple"
+            />
+          </GlassCard>
+        </motion.div>
       </div>
 
-      {/* Informações de tempo e estratégia */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/20">
-          <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+      {/* Informações complementares */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <motion.div
+          variants={fadeInUp}
+          className="p-4 rounded-xl bg-gradient-to-r from-amber-500/15 to-amber-600/10 border border-amber-500/30"
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-lg bg-amber-500/20">
+              <Timer className="w-4 h-4 text-amber-400" />
+            </div>
             <div>
-              <p className="text-slate-300 text-sm">
-                <span className="font-semibold text-amber-400">
-                  Tempo total:
-                </span>{" "}
-                4 horas para resolver as 60 questões.
+              <p className="text-sm text-slate-200 font-semibold mb-1">
+                Gestão de Tempo
               </p>
-              <p className="text-xs text-slate-500 mt-1">
-                ⏱️ Você tem cerca de {tempoPorQuestao.toFixed(0)} minutos por
-                questão. Gerencie bem seu tempo!
+              <p className="text-xs text-slate-400">
+                Você tem cerca de{" "}
+                <span className="text-amber-400 font-bold">
+                  {tempoPorQuestao.toFixed(0)} minutos
+                </span>
+                por questão. Não fique travado em uma única questão!
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+        <motion.div
+          variants={fadeInUp}
+          className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/15 to-emerald-600/10 border border-emerald-500/30"
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-lg bg-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            </div>
             <div>
-              <p className="text-slate-300 text-sm">
-                <span className="font-semibold text-emerald-400">
-                  Estratégia recomendada:
-                </span>{" "}
-                Resolva primeiro as questões que você tem mais domínio.
+              <p className="text-sm text-slate-200 font-semibold mb-1">
+                Estratégia Recomendada
               </p>
-              <p className="text-xs text-slate-500 mt-1">
-                🎯 Deixe as questões mais difíceis para o final e não fique
-                travado em uma única questão.
+              <p className="text-xs text-slate-400">
+                Resolva primeiro as questões que você tem mais domínio. Deixe as
+                mais difíceis para o final.
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Tabela de pesos por disciplina */}
+      {/* Pesos por disciplina */}
       <motion.div
         variants={fadeInUp}
-        className="mt-6 p-4 rounded-xl bg-slate-800/30 border border-slate-700/50"
+        className="p-5 rounded-xl bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-sm border border-white/10"
       >
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="w-4 h-4 text-blue-400" />
-          <p className="text-xs font-semibold text-slate-300">
-            Peso das disciplinas na nota final:
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-1 rounded-lg bg-blue-500/20">
+            <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+          </div>
+          <p className="text-sm font-semibold text-slate-300">
+            Peso das disciplinas na nota final
           </p>
+          <Sparkles className="ml-auto w-3.5 h-3.5 text-yellow-500" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-          {[...basicas, ...especificas].map(([nome, qtd]) => (
-            <div
-              key={nome}
-              className="text-center p-2 rounded-lg bg-slate-800/50"
-            >
-              <p className="text-[10px] text-slate-400 truncate" title={nome}>
-                {nome.split(" ")[0]}
-              </p>
-              <p className="text-xs font-bold text-blue-400">
-                {((qtd / totalQuestoes) * 100).toFixed(0)}%
-              </p>
-            </div>
-          ))}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[...basicas, ...especificas].map(([nome, qtd], idx) => {
+            const percentual = (qtd / totalQuestoes) * 100;
+            return (
+              <motion.div
+                key={nome}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.02 }}
+                className="text-center p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300"
+              >
+                <p className="text-[11px] text-slate-400 truncate" title={nome}>
+                  {nome.split(" ")[0]}
+                </p>
+                <p className="text-lg font-bold text-blue-400 mt-1">
+                  {percentual.toFixed(0)}%
+                </p>
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
     </motion.section>

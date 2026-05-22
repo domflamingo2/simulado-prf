@@ -58,6 +58,7 @@ export function useSimuladoState(
   > | null>(null);
   const stateRef = useRef<SimuladoState | null>(null);
   const chaveProgresso = `${CONFIG.CHAVE_PROGRESSO}_${modo}`;
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     stateRef.current = state;
@@ -82,7 +83,23 @@ export function useSimuladoState(
     localStorage.removeItem(chaveProgresso);
   }, [chaveProgresso]);
 
+  // Criar referência estável das funções
+  const limparProgressoRef = useRef(limparProgresso);
+  const onLoadingCompleteRef = useRef(onLoadingComplete);
+
+  useEffect(() => {
+    limparProgressoRef.current = limparProgresso;
+    onLoadingCompleteRef.current = onLoadingComplete;
+  }, [limparProgresso, onLoadingComplete]);
+
+  // Função de inicialização estável com useCallback
   const inicializar = useCallback(async () => {
+    // Previne dupla inicialização
+    if (initializedRef.current) {
+      return;
+    }
+    initializedRef.current = true;
+
     // Tenta retomar progresso salvo
     const salvo = localStorage.getItem(chaveProgresso);
     if (salvo) {
@@ -98,14 +115,14 @@ export function useSimuladoState(
           if (continuar) {
             setState(parsed);
             setLoading(false);
-            onLoadingComplete?.();
+            onLoadingCompleteRef.current?.();
             return;
           }
         }
       } catch {
         // dado corrompido
       }
-      limparProgresso();
+      limparProgressoRef.current();
     }
 
     // Inicia novo simulado
@@ -152,10 +169,11 @@ export function useSimuladoState(
       throw err;
     } finally {
       setLoading(false);
-      onLoadingComplete?.();
+      onLoadingCompleteRef.current?.();
     }
-  }, [modo, questoesData, chaveProgresso, limparProgresso, onLoadingComplete]);
+  }, [modo, questoesData, chaveProgresso]);
 
+  // useEffect com dependência vazia executa apenas uma vez
   useEffect(() => {
     inicializar();
   }, [inicializar]);

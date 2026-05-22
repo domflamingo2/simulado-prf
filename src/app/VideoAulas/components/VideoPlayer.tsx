@@ -4,6 +4,7 @@ import { Video } from "@/data/videoaulas/videoAulasData";
 import { useAnotacoes } from "@/hooks/useAnotacoes";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertTriangle,
   CheckCircle,
   ExternalLink,
   Maximize2,
@@ -19,7 +20,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnotacoesVideo } from "./AnotacoesVideo";
 
-// 🔧 DECLARAÇÃO DE TIPOS PARA A API DO YOUTUBE (evita erros TS)
+// ─── Tipos da API do YouTube ──────────────────────────────────────────────────
+
 declare global {
   interface Window {
     YT: {
@@ -27,8 +29,8 @@ declare global {
         elementId: string,
         config: {
           videoId: string;
-          playerVars?: Record<string, any>;
-          events?: Record<string, any>;
+          playerVars?: Record<string, unknown>;
+          events?: Record<string, unknown>;
         },
       ) => YTPlayer;
       PlayerState: {
@@ -61,6 +63,16 @@ interface YTPlayer {
   getAvailablePlaybackRates: () => number[];
 }
 
+// Códigos de erro do YouTube IFrame API
+// Ref: https://developers.google.com/youtube/iframe_api_reference#onError
+const YT_ERROR_MESSAGES: Record<number, string> = {
+  2:   "Parâmetro inválido na requisição ao player.",
+  5:   "Erro interno no player HTML5.",
+  100: "Vídeo não encontrado ou removido.",
+  101: "Este vídeo não pode ser reproduzido em players incorporados.",
+  150: "Este vídeo não pode ser reproduzido em players incorporados.",
+};
+
 interface VideoPlayerProProps {
   video: Video | null;
   onClose: () => void;
@@ -72,7 +84,7 @@ interface VideoPlayerProProps {
 
 type Velocidade = 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2;
 
-// ─── Utilitários ─────────────────────────────────────────────────────────────
+// ─── Utilitários ──────────────────────────────────────────────────────────────
 
 function extractYouTubeId(url: string): string | null {
   const match = url.match(
@@ -94,7 +106,7 @@ function formatTimer(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
-/** Beep sintético via Web Audio API — sem depender de arquivo externo */
+/** Beep sintético via Web Audio API */
 function playBeep(): void {
   try {
     const ctx = new (
@@ -113,7 +125,7 @@ function playBeep(): void {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.8);
   } catch {
-    // Web Audio indisponível — silencia sem erros
+    // Web Audio indisponível — ignora silenciosamente
   }
 }
 
@@ -126,31 +138,44 @@ export function VideoPlayerPro({
   isAssistido,
   onProgressoChange,
 }: VideoPlayerProProps) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(100);
-  const [isMuted, setIsMuted] = useState(false);
-  const [velocidade, setVelocidade] = useState<Velocidade>(1);
-  const [showSettings, setShowSettings] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [playerReady, setPlayerReady] = useState(false);
-  const [modoFoco, setModoFoco] = useState(false);
-  const [tempoFoco, setTempoFoco] = useState(25 * 60);
-  const [timerAtivo, setTimerAtivo] = useState(false);
+  const [isFullscreen, setIsFullscreen]   = useState(false);
+  const [isPlaying, setIsPlaying]         = useState(false);
+  const [volume, setVolume]               = useState(100);
+  const [isMuted, setIsMuted]             = useState(false);
+  const [velocidade, setVelocidade]       = useState<Velocidade>(1);
+  const [showSettings, setShowSettings]   = useState(false);
+  const [currentTime, setCurrentTime]     = useState(0);
+  const [duration, setDuration]           = useState(0);
+  const [playerReady, setPlayerReady]     = useState(false);
+  const [modoFoco, setModoFoco]           = useState(false);
+  const [tempoFoco, setTempoFoco]         = useState(25 * 60);
+  const [timerAtivo, setTimerAtivo]       = useState(false);
+  // FIX: estado de erro visível ao usuário
+  const [playerError, setPlayerError]     = useState<string | null>(null);
 
-  const playerRef = useRef<YTPlayer | null>(null);
-  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const settingsRef = useRef<HTMLDivElement>(null);
-  // Evita múltiplas chamadas de createPlayer em concurrent renders
-  const creatingRef = useRef(false);
+  const playerRef     = useRef<YTPlayer | null>(null);
+  const progressRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const settingsRef   = useRef<HTMLDivElement>(null);
+  const creatingRef   = useRef(false);
 
-  const { getAnotacoesPorVideo, salvarAnotacao, deletarAnotacao } =
-    useAnotacoes();
+  // FIX: refs estáveis para volume/velocidade/isMuted evitam recriar o player
+  // a cada mudança nesses valores durante a reprodução.
+  const volumeRef     = useRef(volume);
+  const velocidadeRef = useRef(velocidade);
+  const isMutedRef    = useRef(isMuted);
+
+  // Mantém refs sincronizados com state
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
+  useEffect(() => { velocidadeRef.current = velocidade; }, [velocidade]);
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+
+  // FIX: ref estável para onProgressoChange evita loop nas deps de startProgressLoop
+  const onProgressoChangeRef = useRef(onProgressoChange);
+  useEffect(() => { onProgressoChangeRef.current = onProgressoChange; }, [onProgressoChange]);
 
   const videoId = video ? extractYouTubeId(video.url) : null;
 
-  // ─── Progress loop ─────────────────────────────────────────────────────────
+  // ─── Progress loop ──────────────────────────────────────────────────────────
 
   const stopProgressLoop = useCallback(() => {
     if (progressRef.current) {
@@ -159,92 +184,89 @@ export function VideoPlayerPro({
     }
   }, []);
 
-  const startProgressLoop = useCallback(() => {
+  // FIX: video e onProgressoChange saem das deps — usamos refs estáveis
+  const startProgressLoop = useCallback((videoId: string) => {
     stopProgressLoop();
     progressRef.current = setInterval(() => {
       if (!playerRef.current) return;
       try {
-        const ct = playerRef.current.getCurrentTime();
+        const ct  = playerRef.current.getCurrentTime();
         const dur = playerRef.current.getDuration();
         setCurrentTime(ct);
         setDuration(dur);
-        // Propaga progresso para o pai (para a barra no VideoCard)
-        if (dur > 0 && video) {
-          onProgressoChange?.(video.id, ct / dur);
+        if (dur > 0) {
+          onProgressoChangeRef.current?.(videoId, ct / dur);
         }
       } catch {
         // player ainda não pronto — ignora
       }
     }, 500);
-  }, [stopProgressLoop, video, onProgressoChange]);
+  }, [stopProgressLoop]);
 
   // ─── Criação do player ──────────────────────────────────────────────────────
 
-  const createPlayer = useCallback(() => {
-    if (!videoId || creatingRef.current) return;
-    const containerId = `yt-player-${videoId}`;
+  // FIX: volume, velocidade e isMuted saem das deps — usamos refs estáveis.
+  // Isso evita que o player seja destruído e recriado a cada mudança de volume.
+  const createPlayer = useCallback((vid: string) => {
+    if (!vid || creatingRef.current) return;
+    const containerId = `yt-player-${vid}`;
     if (!document.getElementById(containerId)) return;
 
     creatingRef.current = true;
+    setPlayerError(null);
 
-    // Destrói instância anterior de forma segura
-    try {
-      playerRef.current?.destroy();
-    } catch {
-      /* ok */
-    }
+    try { playerRef.current?.destroy(); } catch { /* ok */ }
     playerRef.current = null;
     setPlayerReady(false);
     setCurrentTime(0);
     setDuration(0);
 
-    // 🔧 CORREÇÃO: Usamos as para contornar limitações dos tipos do YouTube API
     playerRef.current = new window.YT.Player(containerId, {
-      videoId,
+      videoId: vid,
       playerVars: {
-        autoplay: 1,
-        controls: 0,
-        rel: 0,
-        modestbranding: 1,
-        fs: 0,
-        playsinline: 1,
-        iv_load_policy: 3, // ✅ Parâmetro válido, mas não tipado — usamos as any abaixo
-      } as Record<string, any>,
+        autoplay:        1,
+        controls:        0,
+        rel:             0,
+        modestbranding:  1,
+        fs:              0,
+        playsinline:     1,
+        iv_load_policy:  3,
+      } as Record<string, unknown>,
       events: {
-        onReady: (event: any) => {
+        onReady: (event: { target: YTPlayer }) => {
           creatingRef.current = false;
           setPlayerReady(true);
-          event.target.setVolume(volume);
-          event.target.setPlaybackRate(velocidade);
-          if (isMuted) event.target.mute();
+          event.target.setVolume(volumeRef.current);
+          event.target.setPlaybackRate(velocidadeRef.current);
+          if (isMutedRef.current) event.target.mute();
           event.target.playVideo();
         },
-        onStateChange: (event: any) => {
+        onStateChange: (event: { data: number }) => {
           const playing = event.data === window.YT.PlayerState.PLAYING;
           setIsPlaying(playing);
           if (playing) {
-            startProgressLoop();
+            startProgressLoop(vid);
           } else {
             stopProgressLoop();
           }
         },
-        onError: (event: any) => {
-          // ✅ Evento válido, mas não tipado — log para debug em desenvolvimento
-          if (process.env.NODE_ENV === "development") {
-            console.error("Erro no player do YouTube:", event);
-          }
+        // FIX: trata todos os códigos de erro do YouTube com mensagem amigável
+        onError: (event: { data: number }) => {
           creatingRef.current = false;
+          const msg =
+            YT_ERROR_MESSAGES[event.data] ??
+            `Erro desconhecido no player (código ${event.data}).`;
+          setPlayerError(msg);
+          setPlayerReady(false);
+          stopProgressLoop();
+
+          if (process.env.NODE_ENV === "development") {
+            console.error("YouTube Player Error:", { code: event.data, message: msg });
+          }
         },
-      } as Record<string, any>,
+      } as Record<string, unknown>,
     });
-  }, [
-    videoId,
-    volume,
-    velocidade,
-    isMuted,
-    startProgressLoop,
-    stopProgressLoop,
-  ]);
+  }, [startProgressLoop, stopProgressLoop]); // volume/velocidade/isMuted via refs
 
   // ─── Carrega a API do YouTube ───────────────────────────────────────────────
 
@@ -257,12 +279,12 @@ export function VideoPlayerPro({
     document.head.appendChild(tag);
   }, []);
 
-  // ─── Inicializa/reinicializa player quando videoId muda ────────────────────
+  // ─── Inicializa / reinicializa player quando videoId muda ──────────────────
 
   useEffect(() => {
     if (!videoId) return;
 
-    const init = () => createPlayer();
+    const init = () => createPlayer(videoId);
 
     if (window.YT?.Player) {
       init();
@@ -277,14 +299,9 @@ export function VideoPlayerPro({
     return () => {
       stopProgressLoop();
       creatingRef.current = false;
-      try {
-        playerRef.current?.destroy();
-      } catch {
-        /* ok */
-      }
+      try { playerRef.current?.destroy(); } catch { /* ok */ }
       playerRef.current = null;
     };
-    // createPlayer incluso nas deps mas estabilizado por useCallback
   }, [videoId, createPlayer, stopProgressLoop]);
 
   // ─── Timer do modo foco ─────────────────────────────────────────────────────
@@ -317,7 +334,7 @@ export function VideoPlayerPro({
     return () => document.removeEventListener("mousedown", handler);
   }, [showSettings]);
 
-  // ─── Hotkeys ────────────────────────────────────────────────────────────────
+  // ─── Handlers de controles ──────────────────────────────────────────────────
 
   const togglePlay = useCallback(() => {
     if (!playerRef.current) return;
@@ -325,10 +342,57 @@ export function VideoPlayerPro({
       isPlaying
         ? playerRef.current.pauseVideo()
         : playerRef.current.playVideo();
-    } catch {
-      /* ok */
-    }
+    } catch { /* ok */ }
   }, [isPlaying]);
+
+  // FIX: toggleMute como useCallback para referência estável no hotkey handler
+  const toggleMute = useCallback(() => {
+    if (!playerRef.current) return;
+    try {
+      if (isMutedRef.current) {
+        playerRef.current.unMute();
+        playerRef.current.setVolume(volumeRef.current);
+      } else {
+        playerRef.current.mute();
+      }
+      setIsMuted((v) => !v);
+    } catch { /* ok */ }
+  }, []); // sem deps — usa apenas refs
+
+  const handleVolume = useCallback((value: number) => {
+    setVolume(value);
+    try {
+      playerRef.current?.setVolume(value);
+      if (value === 0) {
+        playerRef.current?.mute();
+        setIsMuted(true);
+      } else {
+        playerRef.current?.unMute();
+        setIsMuted(false);
+      }
+    } catch { /* ok */ }
+  }, []);
+
+  const handleSeek = useCallback((value: number) => {
+    setCurrentTime(value);
+    try {
+      playerRef.current?.seekTo(value, true);
+    } catch { /* ok */ }
+  }, []);
+
+  const handleVelocidade = useCallback((v: Velocidade) => {
+    setVelocidade(v);
+    try {
+      playerRef.current?.setPlaybackRate(v);
+    } catch { /* ok */ }
+    setShowSettings(false);
+  }, []);
+
+  // ─── Hotkeys ────────────────────────────────────────────────────────────────
+
+  // FIX: currentTime via ref evita recriar o listener a cada frame
+  const currentTimeRef = useRef(currentTime);
+  useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -337,20 +401,13 @@ export function VideoPlayerPro({
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable
-      )
-        return;
+      ) return;
 
       switch (e.key) {
         case "Escape":
           e.preventDefault();
-          if (modoFoco) {
-            setModoFoco(false);
-            return;
-          }
-          if (isFullscreen) {
-            setIsFullscreen(false);
-            return;
-          }
+          if (modoFoco)      { setModoFoco(false);      return; }
+          if (isFullscreen)  { setIsFullscreen(false);  return; }
           onClose();
           break;
         case " ":
@@ -369,85 +426,32 @@ export function VideoPlayerPro({
           break;
         case "ArrowRight":
           e.preventDefault();
-          try {
-            playerRef.current?.seekTo(currentTime + 5, true);
-          } catch {
-            /* ok */
-          }
+          try { playerRef.current?.seekTo(currentTimeRef.current + 5, true); }
+          catch { /* ok */ }
           break;
         case "ArrowLeft":
           e.preventDefault();
-          try {
-            playerRef.current?.seekTo(Math.max(0, currentTime - 5), true);
-          } catch {
-            /* ok */
-          }
+          try { playerRef.current?.seekTo(Math.max(0, currentTimeRef.current - 5), true); }
+          catch { /* ok */ }
           break;
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onClose, togglePlay, isFullscreen, modoFoco, currentTime]);
+  }, [onClose, togglePlay, toggleMute, isFullscreen, modoFoco]);
+  // currentTime fora das deps — lido via ref acima
 
-  // ─── Handlers de controles ──────────────────────────────────────────────────
+  // ─── Anotações (hook deve ser chamado incondicionalmente) ──────────────────
 
-  const toggleMute = () => {
-    if (!playerRef.current) return;
-    try {
-      if (isMuted) {
-        playerRef.current.unMute();
-        playerRef.current.setVolume(volume);
-      } else {
-        playerRef.current.mute();
-      }
-      setIsMuted((v) => !v);
-    } catch {
-      /* ok */
-    }
-  };
-
-  const handleVolume = (value: number) => {
-    setVolume(value);
-    try {
-      playerRef.current?.setVolume(value);
-      if (value === 0) {
-        playerRef.current?.mute();
-        setIsMuted(true);
-      } else {
-        playerRef.current?.unMute();
-        setIsMuted(false);
-      }
-    } catch {
-      /* ok */
-    }
-  };
-
-  const handleSeek = (value: number) => {
-    setCurrentTime(value);
-    try {
-      playerRef.current?.seekTo(value, true);
-    } catch {
-      /* ok */
-    }
-  };
-
-  const handleVelocidade = (v: Velocidade) => {
-    setVelocidade(v);
-    try {
-      playerRef.current?.setPlaybackRate(v);
-    } catch {
-      /* ok */
-    }
-    setShowSettings(false);
-  };
+  const { getAnotacoesPorVideo, salvarAnotacao, deletarAnotacao } =
+    useAnotacoes();
 
   // ─── Render guard ───────────────────────────────────────────────────────────
 
   if (!video || !videoId) return null;
 
   const anotacoesVideo = getAnotacoesPorVideo(video.id);
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const progress       = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <AnimatePresence>
@@ -457,7 +461,6 @@ export function VideoPlayerPro({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center"
-        // Backdrop fecha o modal apenas fora do modo foco
         onClick={modoFoco ? undefined : onClose}
       >
         <motion.div
@@ -478,11 +481,9 @@ export function VideoPlayerPro({
           {/* ── Header ── */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
             <div className="min-w-0 flex-1">
-              {/* CORRIGIDO: usar 'titulo' em vez de 'title' */}
               <h2 className="font-semibold text-white text-sm truncate">
                 {video.titulo}
               </h2>
-              {/* CORRIGIDO: usar 'duracao' em vez de 'duration' */}
               <p className="text-xs text-white/40 mt-0.5">{video.duracao}</p>
             </div>
 
@@ -539,10 +540,7 @@ export function VideoPlayerPro({
                     {timerAtivo ? "Pausar" : "Iniciar"}
                   </button>
                   <button
-                    onClick={() => {
-                      setTempoFoco(25 * 60);
-                      setTimerAtivo(false);
-                    }}
+                    onClick={() => { setTempoFoco(25 * 60); setTimerAtivo(false); }}
                     className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white transition-colors"
                   >
                     Reset
@@ -553,21 +551,54 @@ export function VideoPlayerPro({
           </AnimatePresence>
 
           {/* ── Player ── */}
-          <div className="relative bg-black flex-1 min-h-0">
+          {/* FIX: container com altura fixa via padding-trick para manter aspect-ratio
+               sem conflitar com flex-1 */}
+          <div className="relative bg-black w-full" style={{ aspectRatio: "16/9" }}>
             <div
               id={`yt-player-${videoId}`}
-              className="w-full h-full aspect-video"
+              className="absolute inset-0 w-full h-full"
             />
 
             {/* Spinner de carregamento */}
             <AnimatePresence>
-              {!playerReady && (
+              {!playerReady && !playerError && (
                 <motion.div
                   initial={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className="absolute inset-0 flex items-center justify-center bg-black"
                 >
                   <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* FIX: painel de erro visível ao usuário (erros 101/150 e outros) */}
+            <AnimatePresence>
+              {playerError && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 gap-4 px-6 text-center"
+                >
+                  <AlertTriangle className="w-10 h-10 text-amber-400" />
+                  <div>
+                    <p className="text-white font-semibold text-sm mb-1">
+                      Não foi possível reproduzir o vídeo
+                    </p>
+                    <p className="text-white/50 text-xs max-w-xs">
+                      {playerError}
+                    </p>
+                  </div>
+                  <a
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm text-white transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Abrir no YouTube
+                  </a>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -610,7 +641,7 @@ export function VideoPlayerPro({
             <div className="flex items-center gap-2">
               <button
                 onClick={togglePlay}
-                disabled={!playerReady}
+                disabled={!playerReady || !!playerError}
                 title="Play/Pause (Espaço)"
                 className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
@@ -645,7 +676,6 @@ export function VideoPlayerPro({
                 />
               </div>
 
-              {/* Atalhos de teclado — hint discreto */}
               <span className="hidden md:block text-[10px] text-white/20 select-none">
                 ←→ 5s · Espaço · M · F
               </span>
@@ -655,7 +685,6 @@ export function VideoPlayerPro({
             <div className="flex items-center gap-1.5 flex-wrap">
               <AnotacoesVideo
                 videoId={video.id}
-                // CORRIGIDO: usar 'titulo' em vez de 'title'
                 videoTitle={video.titulo}
                 anotacoes={anotacoesVideo}
                 onSalvar={(texto, timestamp) =>
@@ -682,8 +711,9 @@ export function VideoPlayerPro({
               <div ref={settingsRef} className="relative">
                 <button
                   onClick={() => setShowSettings((v) => !v)}
+                  disabled={!!playerError}
                   title="Velocidade de reprodução"
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`p-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                     showSettings
                       ? "bg-white/15 text-white"
                       : "text-white/50 hover:text-white hover:bg-white/10"
@@ -704,21 +734,19 @@ export function VideoPlayerPro({
                       <p className="text-[10px] uppercase tracking-wider text-slate-500 px-3 py-1.5">
                         Velocidade
                       </p>
-                      {([0.5, 0.75, 1, 1.25, 1.5, 2] as Velocidade[]).map(
-                        (v) => (
-                          <button
-                            key={v}
-                            onClick={() => handleVelocidade(v)}
-                            className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
-                              velocidade === v
-                                ? "bg-blue-500/20 text-blue-300 font-medium"
-                                : "text-slate-300 hover:bg-white/10"
-                            }`}
-                          >
-                            {v === 1 ? "1× Normal" : `${v}×`}
-                          </button>
-                        ),
-                      )}
+                      {([0.5, 0.75, 1, 1.25, 1.5, 2] as Velocidade[]).map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => handleVelocidade(v)}
+                          className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
+                            velocidade === v
+                              ? "bg-blue-500/20 text-blue-300 font-medium"
+                              : "text-slate-300 hover:bg-white/10"
+                          }`}
+                        >
+                          {v === 1 ? "1× Normal" : `${v}×`}
+                        </button>
+                      ))}
                     </motion.div>
                   )}
                 </AnimatePresence>

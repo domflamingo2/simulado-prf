@@ -44,16 +44,22 @@ const LoadingOverlay = ({ message }: { message: string }) => (
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     transition={{ duration: 0.2 }}
-    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+    className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center"
   >
     <motion.div
-      initial={{ scale: 0.92, opacity: 0 }}
+      initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.92, opacity: 0 }}
-      className="bg-slate-900/95 border border-white/[0.08] rounded-2xl px-8 py-6 flex flex-col items-center gap-4 shadow-2xl"
+      exit={{ scale: 0.9, opacity: 0 }}
+      transition={{ type: "spring", damping: 20 }}
+      className="bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 rounded-2xl px-8 py-6 flex flex-col items-center gap-4 shadow-2xl"
     >
-      <div className="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-      <p className="text-sm text-slate-300">{message}</p>
+      <div className="relative">
+        <div className="w-12 h-12 rounded-full border-3 border-blue-500/20 border-t-blue-500 border-r-purple-500/50 animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse" />
+        </div>
+      </div>
+      <p className="text-sm text-slate-300 font-medium">{message}</p>
     </motion.div>
   </motion.div>
 );
@@ -72,46 +78,74 @@ const PageFooter = ({
   virtualizado: boolean;
 }) => (
   <motion.footer
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
     transition={{ delay: 0.3 }}
-    className="flex flex-col items-center gap-2 pt-6 pb-2 text-center"
+    className="flex flex-col items-center gap-3 pt-8 pb-4 text-center border-t border-white/10 mt-6"
   >
-    <p className="text-xs text-slate-500">
-      Mostrando{" "}
-      <span className="text-slate-400 font-medium tabular-nums">
-        {total.toLocaleString("pt-BR")}
-      </span>{" "}
-      de{" "}
-      <span className="text-slate-400 font-medium tabular-nums">
-        {totalBanco.toLocaleString("pt-BR")}
-      </span>{" "}
-      questões
-      {favoritas > 0 && (
-        <span className="ml-2 text-amber-400/80">
-          · {favoritas.toLocaleString("pt-BR")} favorita
-          {favoritas !== 1 ? "s" : ""}
+    <div className="flex items-center gap-3 flex-wrap justify-center">
+      <div className="px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30">
+        <span className="text-xs text-slate-300">
+          Mostrando{" "}
+          <span className="font-bold text-blue-400 tabular-nums">
+            {total.toLocaleString("pt-BR")}
+          </span>{" "}
+          de{" "}
+          <span className="font-bold text-slate-300 tabular-nums">
+            {totalBanco.toLocaleString("pt-BR")}
+          </span>{" "}
+          questões
         </span>
+      </div>
+
+      {favoritas > 0 && (
+        <div className="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+          <span className="text-xs text-amber-400">
+            ⭐ {favoritas.toLocaleString("pt-BR")} favorita
+            {favoritas !== 1 ? "s" : ""}
+          </span>
+        </div>
       )}
-    </p>
 
-    {virtualizado && (
-      <p className="text-[10px] text-slate-600">
-        ⚡ Modo performance ativo · {total.toLocaleString("pt-BR")} questões
-        renderizadas com virtualização
-      </p>
-    )}
+      {virtualizado && (
+        <div className="px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30">
+          <span className="text-xs text-purple-400">
+            ⚡ Modo performance • {total.toLocaleString("pt-BR")} questões
+          </span>
+        </div>
+      )}
+    </div>
 
-    <p className="text-[10px] text-slate-700">
-      <kbd className="px-1.5 py-px rounded bg-white/[0.04] border border-white/[0.06] font-mono text-slate-600">
-        Ctrl K
-      </kbd>{" "}
-      busca rápida &nbsp;·&nbsp;{" "}
-      <kbd className="px-1.5 py-px rounded bg-white/[0.04] border border-white/[0.06] font-mono text-slate-600">
-        Esc
-      </kbd>{" "}
-      limpar filtros
-    </p>
+    <div className="flex items-center gap-4 text-[10px] text-slate-600">
+      <div className="flex items-center gap-1.5">
+        <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-white/10 font-mono text-[9px]">
+          Ctrl
+        </kbd>
+        <span>+</span>
+        <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-white/10 font-mono text-[9px]">
+          K
+        </kbd>
+        <span>busca rápida</span>
+      </div>
+      <div className="w-1 h-1 rounded-full bg-slate-700" />
+      <div className="flex items-center gap-1.5">
+        <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-white/10 font-mono text-[9px]">
+          Esc
+        </kbd>
+        <span>limpar filtros</span>
+      </div>
+      <div className="w-1 h-1 rounded-full bg-slate-700" />
+      <div className="flex items-center gap-1.5">
+        <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-white/10 font-mono text-[9px]">
+          Ctrl
+        </kbd>
+        <span>+</span>
+        <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-white/10 font-mono text-[9px]">
+          T
+        </kbd>
+        <span>treinar</span>
+      </div>
+    </div>
   </motion.footer>
 );
 
@@ -121,25 +155,25 @@ export default function BancoQuestoesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // ── UI state ───────────────────────────────────────────────────────────────
+  // UI state
   const [carregando, setCarregando] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [isTraining, setIsTraining] = useState(false);
 
-  // ── Filter state ───────────────────────────────────────────────────────────
+  // Filter state
   const [filters, setFilters] = useState<Filters>({
     busca: "",
     disciplina: "todas",
     dificuldade: "todas",
   });
 
-  // ── Favorites ──────────────────────────────────────────────────────────────
+  // Favorites
   const [favoritas, setFavoritas] = useState<Set<string>>(new Set());
 
-  // ── Scroll restoration ref ─────────────────────────────────────────────────
+  // Scroll restoration ref
   const didRestoreScroll = useRef(false);
 
-  // ── Sync URL → state + localStorage → favorites on mount ──────────────────
+  // Sync URL → state + localStorage + favorites on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("prf_questoes_favoritas");
@@ -164,10 +198,9 @@ export default function BancoQuestoesPage() {
     } finally {
       setCarregando(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentional: run once on mount
+  }, []);
 
-  // ── Scroll restoration ─────────────────────────────────────────────────────
+  // Scroll restoration
   useEffect(() => {
     if (carregando || didRestoreScroll.current) return;
     didRestoreScroll.current = true;
@@ -182,7 +215,7 @@ export default function BancoQuestoesPage() {
     };
   }, [carregando]);
 
-  // ── URL sync helper ────────────────────────────────────────────────────────
+  // URL sync helper
   const pushFiltersToURL = useCallback(
     (f: Filters) => {
       const params = new URLSearchParams();
@@ -196,7 +229,7 @@ export default function BancoQuestoesPage() {
     [router],
   );
 
-  // ── Debounced busca ────────────────────────────────────────────────────────
+  // Debounced busca
   const debouncedSyncURL = useDebouncedCallback(
     (f: Filters) => pushFiltersToURL(f),
     DEBOUNCE_BUSCA_MS,
@@ -204,15 +237,12 @@ export default function BancoQuestoesPage() {
 
   const setFilter = useCallback(
     <K extends keyof Filters>(key: K, value: Filters[K]) => {
-      setFilters((prev) => {
-        const next = { ...prev, [key]: value };
-        // Sync imediato para filtros não-busca; debounced para busca
-        if (key === "busca") debouncedSyncURL(next);
-        else pushFiltersToURL(next);
-        return next;
-      });
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value,
+      }));
     },
-    [debouncedSyncURL, pushFiltersToURL],
+    [],
   );
 
   const limparFiltros = useCallback(() => {
@@ -223,14 +253,14 @@ export default function BancoQuestoesPage() {
     };
     setFilters(reset);
     pushFiltersToURL(reset);
-    toast.info("Filtros limpos");
+    toast.success("Filtros limpos com sucesso!");
   }, [pushFiltersToURL]);
 
-  // ── Static data (memoized once) ────────────────────────────────────────────
+  // Static data
   const estatisticasBanco = useMemo(() => getEstatisticasBanco(), []);
   const statsPorDisciplina = useMemo(() => getStatsPorDisciplina(), []);
 
-  // ── Filtered questions ─────────────────────────────────────────────────────
+  // Filtered questions
   const questoesFiltradas = useMemo(() => {
     let result = questoes as typeof questoes;
 
@@ -259,30 +289,28 @@ export default function BancoQuestoesPage() {
 
   const shouldVirtualize = questoesFiltradas.length > VIRTUALIZE_THRESHOLD;
 
-  // ── Favorites ──────────────────────────────────────────────────────────────
+  // Toggle favorite
   const toggleFavorita = useCallback((id: string) => {
     setFavoritas((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
-        toast.info("Removida dos favoritos");
+        toast.info("⭐ Removida dos favoritos");
       } else {
         next.add(id);
-        toast.success("Adicionada aos favoritos ⭐");
+        toast.success("⭐ Adicionada aos favoritos!");
       }
       try {
         localStorage.setItem(
           "prf_questoes_favoritas",
           JSON.stringify([...next]),
         );
-      } catch {
-        // storage full or blocked — silently ignore
-      }
+      } catch {}
       return next;
     });
   }, []);
 
-  // ── Export ─────────────────────────────────────────────────────────────────
+  // Export questions
   const exportarQuestoes = useCallback(async () => {
     if (questoesFiltradas.length === 0) {
       toast.error("Nenhuma questão para exportar");
@@ -292,10 +320,10 @@ export default function BancoQuestoesPage() {
     setIsExporting(true);
 
     try {
-      if (questoesFiltradas.length > 5_000) {
-        toast.warning("Grande volume — pode demorar alguns segundos…", {
-          duration: 5000,
-        });
+      if (questoesFiltradas.length > 5000) {
+        toast.warning(
+          "Grande volume de questões — pode demorar alguns segundos...",
+        );
       }
 
       const payload = {
@@ -350,7 +378,7 @@ export default function BancoQuestoesPage() {
     }
   }, [questoesFiltradas, filters]);
 
-  // ── Start training ─────────────────────────────────────────────────────────
+  // Start training
   const iniciarTreino = useCallback(async () => {
     if (questoesFiltradas.length === 0) {
       toast.error("Nenhuma questão selecionada para treino");
@@ -376,19 +404,18 @@ export default function BancoQuestoesPage() {
         }),
       );
 
-      toast.success(`Iniciando treino com ${selecionadas.length} questões!`);
+      toast.success(`🎯 Iniciando treino com ${selecionadas.length} questões!`);
 
-      await new Promise((r) => setTimeout(r, 400)); // let toast render
+      await new Promise((r) => setTimeout(r, 400));
       router.push("/treino/simulado");
     } catch (err) {
       console.error("[iniciarTreino]", err);
       toast.error("Erro ao preparar treino. Tente novamente.");
       setIsTraining(false);
     }
-    // Note: setIsTraining(false) NOT called on success — page navigates away
   }, [questoesFiltradas, router]);
 
-  // ── Active filter labels ────────────────────────────────────────────────────
+  // Active filter labels
   const filtrosAtivos = useMemo(() => {
     const labels: string[] = [];
     if (filters.busca) labels.push(`"${filters.busca}"`);
@@ -410,44 +437,41 @@ export default function BancoQuestoesPage() {
     return labels;
   }, [filters]);
 
-  // ── Early return ───────────────────────────────────────────────────────────
+  // Early return
   if (carregando) return <LoadingBanco variant="initial" />;
 
   return (
     <>
       <Toaster
         position="top-right"
+        richColors
+        closeButton
         toastOptions={{
           style: {
-            background: "rgba(15,17,23,0.95)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "#1e293b",
+            border: "1px solid #334155",
             color: "#f1f5f9",
-            fontSize: "13px",
-            backdropFilter: "blur(12px)",
           },
-          duration: 3000,
         }}
       />
 
-      {/* ── Action overlays ── */}
       <AnimatePresence>
         {isExporting && (
-          <LoadingOverlay key="exp" message="Exportando questões…" />
+          <LoadingOverlay key="exp" message="Exportando questões..." />
         )}
         {isTraining && (
-          <LoadingOverlay key="trn" message="Preparando treino…" />
+          <LoadingOverlay key="trn" message="Preparando treino..." />
         )}
       </AnimatePresence>
 
-      {/* ── Page shell ── */}
-      <div className="min-h-screen bg-slate-950 text-white">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
         <HeaderBanco total={estatisticasBanco.total} isLoading={false} />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
-          {/* Stats */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          {/* Estatísticas */}
           <EstatisticasBanco stats={estatisticasBanco} isLoading={false} />
 
-          {/* Filters */}
+          {/* Filtros */}
           <FiltrosBanco
             busca={filters.busca}
             setBusca={(v) => {
@@ -467,7 +491,7 @@ export default function BancoQuestoesPage() {
             totalQuestoesEncontradas={questoesFiltradas.length}
           />
 
-          {/* Actions */}
+          {/* Ações */}
           <AcoesBancoWithErrorBoundary
             totalQuestoes={questoesFiltradas.length}
             questoesSelecionadas={estatisticasBanco.total}
@@ -476,8 +500,8 @@ export default function BancoQuestoesPage() {
             onResetarFiltros={limparFiltros}
           />
 
-          {/* Question list */}
-          <section aria-label="Lista de questões">
+          {/* Lista de questões */}
+          <section aria-label="Lista de questões" className="space-y-4">
             <AnimatePresence mode="wait">
               {questoesFiltradas.length === 0 ? (
                 <EmptyStateBanco
@@ -489,9 +513,10 @@ export default function BancoQuestoesPage() {
               ) : shouldVirtualize ? (
                 <motion.div
                   key="virtual"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-3"
                 >
                   <QuestaoListVirtualizada
                     questoes={questoesFiltradas}
