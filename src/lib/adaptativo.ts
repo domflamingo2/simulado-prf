@@ -12,34 +12,28 @@ import { embaralhar } from "./simulado-logic";
 // ═══════════════════════════════════════════════════════════
 
 const CONFIG = {
-  // Pesos base
   PESO_NEUTRO: 1.0,
   PESO_INCERTEZA: 0.4,
   PESO_ERRO: 2.5,
 
-  // Limiares
   MIN_QUESTOES_PARA_CONFIANCA: 4,
   MAX_TAXA_ERRO_PARA_DOMINIO: 0.15,
   MIN_TAXA_ERRO_PARA_FOCO: 0.45,
 
-  // Distribuição
   PROPORCAO_NOVAS: 0.7,
   PROPORCAO_REVISAO: 0.3,
   MIN_QUESTOES_POR_DISCIPLINA: 2,
 
-  // Decaimento temporal
   MEIA_VIDA_DIAS: 30,
-  PESO_MINIMO_DECAIMENTO: 0.05, // ✅ MELHORIA: evita peso zero para datas muito antigas
+  PESO_MINIMO_DECAIMENTO: 0.05,
 
-  // Cache
-  CACHE_TTL_MS: 5 * 60 * 1000, // 5 minutos
+  CACHE_TTL_MS: 5 * 60 * 1000,
 } as const;
 
 // ═══════════════════════════════════════════════════════════
-// NOMES LEGÍVEIS DAS DISCIPLINAS (COM TIPAGEM FORTE)
+// NOMES LEGÍVEIS DAS DISCIPLINAS
 // ═══════════════════════════════════════════════════════════
 
-// ✅ CORREÇÃO: tipagem forte com satisfies
 const DISCIPLINAS_NOME = {
   PORTUGUES: "Língua Portuguesa",
   ETICA: "Ética e Conduta",
@@ -64,12 +58,25 @@ const ORDEM_DISCIPLINAS: Disciplina[] = [
   "LEGISLACAO_PRF",
 ];
 
+// Dificuldade percebida base por disciplina — usada quando não há histórico
+const DIFICULDADE_BASE: Record<Disciplina, number> = {
+  PORTUGUES: 1.0,
+  ETICA: 0.9,
+  RACIOCINIO_LOGICO: 1.2,
+  DIREITO_CONSTITUCIONAL: 1.1,
+  DIREITO_ADMINISTRATIVO: 1.1,
+  ADMINISTRACAO: 1.0,
+  ARQUIVOLOGIA: 1.3,
+  INFORMATICA: 0.8,
+  LEGISLACAO_PRF: 1.2,
+};
+
 function nomeDisciplina(disc: Disciplina): string {
   return DISCIPLINAS_NOME[disc];
 }
 
 // ═══════════════════════════════════════════════════════════
-// TIPOS EXPANDIDOS
+// TIPOS
 // ═══════════════════════════════════════════════════════════
 
 export interface PesoDisciplina {
@@ -84,34 +91,31 @@ export interface PesoDisciplina {
   ultimaRevisao?: Date;
 }
 
-// ✅ MELHORIA: Feedback explícito do usuário
 export interface FeedbackUsuarioQuestao {
   questaoId: string;
-  dificuldadePercebida: 1 | 2 | 3 | 4 | 5; // 1=muito fácil, 5=muito difícil
+  dificuldadePercebida: 1 | 2 | 3 | 4 | 5;
   tempoGastoSegundos?: number;
   marcadaParaRevisao?: boolean;
   comentario?: string;
 }
 
-// ✅ SISTEMA: Revisão Espaçada
 export interface RevisaoAgendada {
   questaoId: string;
   disciplina: Disciplina;
   proximaRevisao: Date;
   ultimaRevisao: Date;
-  intervalo: number; // dias
-  nivelDificuldade: 1 | 2 | 3; // 1=fácil, 2=médio, 3=difícil
+  intervalo: number;
+  nivelDificuldade: 1 | 2 | 3;
   acertosConsecutivos: number;
 }
 
-// ✅ MÉTRICAS: Dashboard
 export interface MetricasAdaptativas {
   evolucaoTaxaAcerto: {
     data: string;
     global: number;
     porDisciplina: Record<Disciplina, number>;
   }[];
-  tempoEstimadoParaDominio: Record<Disciplina, number | null>; // dias
+  tempoEstimadoParaDominio: Record<Disciplina, number | null>;
   recomendacaoProximoSimulado: {
     disciplinas: Disciplina[];
     justificativa: string;
@@ -128,7 +132,6 @@ export interface MetricasAdaptativas {
   >;
 }
 
-// ✅ DIAGNÓSTICO: Telemetria
 export interface DiagnosticoAdaptativo {
   viabilidade: {
     bancoSuficiente: boolean;
@@ -152,7 +155,7 @@ export interface SelecaoAdaptativaResult {
     disciplinasPriorizadas: Disciplina[];
     nivelAdaptacao: number;
   };
-  revisoesAgendadas?: RevisaoAgendada[]; // ✅ SISTEMA: revisões espaçadas
+  revisoesAgendadas?: RevisaoAgendada[];
 }
 
 export interface AnaliseAdaptativa {
@@ -172,11 +175,11 @@ export interface AnaliseAdaptativa {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PERSISTÊNCIA DE ESTADO (CACHE)
+// CACHE
 // ═══════════════════════════════════════════════════════════
 
 interface CachePesos {
-  timestamp: Date;
+  timestamp: number; // FIX: number (Date.now()) em vez de Date — evita comparação .getTime() desnecessária
   pesos: PesoDisciplina[];
   historicoHash: string;
 }
@@ -184,19 +187,19 @@ interface CachePesos {
 let cachePesos: CachePesos | null = null;
 
 function calcularHashHistorico(historico: HistoricoSimulado[]): string {
-  // Hash simples baseado na última data e quantidade de simulados
-  const ultimaData = historico[historico.length - 1]?.data || "";
-  return `${historico.length}:${ultimaData}`;
+  // FIX: inclui a soma de questões no hash para detectar mudanças
+  // dentro de um mesmo número de simulados (ex: simulado editado).
+  const ultimaData = historico[historico.length - 1]?.data ?? "";
+  const totalQst = historico.reduce((acc, h) => acc + h.questoes.length, 0);
+  return `${historico.length}:${ultimaData}:${totalQst}`;
 }
 
 function getCachedPesos(
   historico: HistoricoSimulado[],
 ): PesoDisciplina[] | null {
   if (!cachePesos) return null;
-
   const hash = calcularHashHistorico(historico);
-  const idade = Date.now() - cachePesos.timestamp.getTime();
-
+  const idade = Date.now() - cachePesos.timestamp;
   if (cachePesos.historicoHash === hash && idade < CONFIG.CACHE_TTL_MS) {
     return cachePesos.pesos;
   }
@@ -206,47 +209,50 @@ function getCachedPesos(
 function setCachedPesos(
   historico: HistoricoSimulado[],
   pesos: PesoDisciplina[],
-) {
+): void {
   cachePesos = {
-    timestamp: new Date(),
+    timestamp: Date.now(),
     pesos,
     historicoHash: calcularHashHistorico(historico),
   };
+}
+
+// ─── Invalida o cache manualmente (útil após salvar novo simulado) ────────────
+export function invalidarCachePesos(): void {
+  cachePesos = null;
 }
 
 // ═══════════════════════════════════════════════════════════
 // FUNÇÕES AUXILIARES
 // ═══════════════════════════════════════════════════════════
 
-// ✅ CORREÇÃO: decaimento com peso mínimo
 function calcularDecaimentoTemporal(dataSimuladoISO: string): number {
-  const dias =
-    (Date.now() - new Date(dataSimuladoISO).getTime()) / (1000 * 60 * 60 * 24);
-  const diasPositivos = Math.max(0, dias);
-  const peso = Math.exp(-diasPositivos / CONFIG.MEIA_VIDA_DIAS);
-  return Math.max(CONFIG.PESO_MINIMO_DECAIMENTO, peso);
+  // FIX: datas inválidas retornam o peso mínimo em vez de NaN
+  const ts = Date.parse(dataSimuladoISO);
+  if (Number.isNaN(ts)) return CONFIG.PESO_MINIMO_DECAIMENTO;
+  const dias = Math.max(0, (Date.now() - ts) / (1000 * 60 * 60 * 24));
+  return Math.max(
+    CONFIG.PESO_MINIMO_DECAIMENTO,
+    Math.exp(-dias / CONFIG.MEIA_VIDA_DIAS),
+  );
 }
 
 function calcularTendencia(
   questoes: QuestaoRespondida[],
 ): PesoDisciplina["tendencia"] {
   if (questoes.length < 4) return "insuficiente";
-
   const meio = Math.floor(questoes.length / 2);
-  const primeiraMetade = questoes.slice(0, meio);
-  const segundaMetade = questoes.slice(meio);
-
+  const primeira = questoes.slice(0, meio);
+  const segunda = questoes.slice(meio);
   const taxaPrimeira =
-    primeiraMetade.filter((q) => q.respostaUsuario === q.resposta).length /
-    primeiraMetade.length;
+    primeira.filter((q) => q.respostaUsuario === q.resposta).length /
+    primeira.length;
   const taxaSegunda =
-    segundaMetade.filter((q) => q.respostaUsuario === q.resposta).length /
-    segundaMetade.length;
-
-  const diferenca = taxaSegunda - taxaPrimeira;
-
-  if (diferenca > 0.15) return "melhorando";
-  if (diferenca < -0.15) return "piorando";
+    segunda.filter((q) => q.respostaUsuario === q.resposta).length /
+    segunda.length;
+  const delta = taxaSegunda - taxaPrimeira;
+  if (delta > 0.15) return "melhorando";
+  if (delta < -0.15) return "piorando";
   return "estavel";
 }
 
@@ -254,7 +260,8 @@ function calcularConfianca(n: number): number {
   return Math.min(n / CONFIG.MIN_QUESTOES_PARA_CONFIANCA, 1);
 }
 
-// ✅ MELHORIA: lógica de distribuição exportada
+// ─── Distribuição com ajuste de resto ────────────────────────────────────────
+
 export function ajustarQuantidadesPorResto(
   quantidades: number[],
   pesos: number[],
@@ -262,19 +269,18 @@ export function ajustarQuantidadesPorResto(
   minPorDisciplina: number,
 ): number[] {
   const result = [...quantidades];
-  const totalCalculado = result.reduce((a, b) => a + b, 0);
-  let diferenca = totalAlvo - totalCalculado;
-
+  const totalCalc = result.reduce((a, b) => a + b, 0);
+  let diferenca = totalAlvo - totalCalc;
   if (diferenca === 0) return result;
 
-  const restos = pesos.map((p, i) => {
-    const bruto = p * (totalAlvo / pesos.length);
-    return {
-      index: i,
-      resto: bruto - Math.floor(bruto),
-      quantidade: result[i],
-    };
-  });
+  // FIX: `totalAlvo / pesos.length` pode ser 0 se pesos for vazio — guard
+  const basePorItem = pesos.length > 0 ? totalAlvo / pesos.length : 0;
+
+  const restos = pesos.map((p, i) => ({
+    index: i,
+    resto: basePorItem > 0 ? p * basePorItem - Math.floor(p * basePorItem) : 0,
+    quantidade: result[i],
+  }));
 
   if (diferenca > 0) {
     restos
@@ -282,19 +288,19 @@ export function ajustarQuantidadesPorResto(
       .slice(0, diferenca)
       .forEach(({ index }) => result[index]++);
   } else {
-    const diferencaAbs = Math.abs(diferenca);
+    const abs = Math.abs(diferenca);
     const candidatos = restos.filter((r) => r.quantidade > minPorDisciplina);
 
-    if (candidatos.length >= diferencaAbs) {
+    if (candidatos.length >= abs) {
       candidatos
         .sort((a, b) => a.resto - b.resto)
-        .slice(0, diferencaAbs)
+        .slice(0, abs)
         .forEach(({ index }) => result[index]--);
     } else {
-      // ✅ CORREÇÃO: fallback emergencial
+      // Fallback: reduz os menores restos, nunca abaixo de 0
       restos
         .sort((a, b) => a.resto - b.resto)
-        .slice(0, diferencaAbs)
+        .slice(0, abs)
         .forEach(({ index }) => {
           if (result[index] > 0) result[index]--;
         });
@@ -305,7 +311,7 @@ export function ajustarQuantidadesPorResto(
 }
 
 // ═══════════════════════════════════════════════════════════
-// REVISÃO ESPAÇADA (SISTEMA)
+// REVISÃO ESPAÇADA
 // ═══════════════════════════════════════════════════════════
 
 export function atualizarIntervaloRevisao(
@@ -313,16 +319,17 @@ export function atualizarIntervaloRevisao(
   intervaloAtual: number,
   dificuldade: 1 | 2 | 3,
 ): number {
-  const fatorDificuldade =
-    dificuldade === 3 ? 0.5 : dificuldade === 2 ? 0.8 : 1.2;
+  // FIX: intervaloAtual deve ser ≥ 1 — guard contra valores inválidos
+  const intervaloSeguro = Math.max(
+    1,
+    Number.isFinite(intervaloAtual) ? intervaloAtual : 1,
+  );
+  const fator = dificuldade === 3 ? 0.5 : dificuldade === 2 ? 0.8 : 1.2;
 
   if (acertou) {
-    const novoIntervalo = Math.floor(intervaloAtual * 1.5 * fatorDificuldade);
-    return Math.min(novoIntervalo, 180); // max 6 meses
-  } else {
-    const novoIntervalo = Math.max(Math.floor(intervaloAtual / 2), 1);
-    return novoIntervalo;
+    return Math.min(Math.floor(intervaloSeguro * 1.5 * fator), 180);
   }
+  return Math.max(Math.floor(intervaloSeguro / 2), 1);
 }
 
 export function gerarRevisoesAgendadas(
@@ -332,7 +339,11 @@ export function gerarRevisoesAgendadas(
 ): RevisaoAgendada[] {
   const revisoes: RevisaoAgendada[] = [];
   const hoje = new Date();
+  // FIX: deduplicação — cada questão deve aparecer no máximo uma vez,
+  // usando o simulado mais recente onde ela foi respondida.
+  const vistas = new Map<string, RevisaoAgendada>();
 
+  // Percorre do mais antigo para o mais recente; o último sobrescreve
   for (const simulado of historico) {
     for (const questao of simulado.questoes) {
       const feedback = feedbacks.get(questao.id);
@@ -349,24 +360,31 @@ export function gerarRevisoesAgendadas(
         feedback?.marcadaParaRevisao === true ||
         (feedback?.dificuldadePercebida ?? 0) >= 4;
 
-      if (precisaRevisar) {
-        const intervaloBase = questoesErradas.has(questao.id) ? 3 : 7;
-        const proximaRevisao = new Date(hoje);
-        proximaRevisao.setDate(hoje.getDate() + intervaloBase);
+      if (!precisaRevisar) continue;
 
-        revisoes.push({
-          questaoId: questao.id,
-          disciplina: questao.disciplina,
-          proximaRevisao,
-          ultimaRevisao: new Date(simulado.data),
-          intervalo: intervaloBase,
-          nivelDificuldade: dificuldade,
-          acertosConsecutivos: 0,
-        });
-      }
+      const intervaloBase = questoesErradas.has(questao.id) ? 3 : 7;
+      const proximaRevisao = new Date(hoje);
+      proximaRevisao.setDate(hoje.getDate() + intervaloBase);
+
+      // FIX: data inválida no histórico → usa hoje como ultimaRevisao
+      const ultimaRevisaoTs = Date.parse(simulado.data);
+      const ultimaRevisao = Number.isNaN(ultimaRevisaoTs)
+        ? new Date()
+        : new Date(ultimaRevisaoTs);
+
+      vistas.set(questao.id, {
+        questaoId: questao.id,
+        disciplina: questao.disciplina,
+        proximaRevisao,
+        ultimaRevisao,
+        intervalo: intervaloBase,
+        nivelDificuldade: dificuldade,
+        acertosConsecutivos: 0,
+      });
     }
   }
 
+  revisoes.push(...vistas.values());
   return revisoes;
 }
 
@@ -378,36 +396,29 @@ export function gerarMetricasDashboard(
   historico: HistoricoSimulado[],
   pesos: PesoDisciplina[],
 ): MetricasAdaptativas {
-  // Evolução da taxa de acerto ao longo do tempo (últimos 10 simulados)
-  const ultimosSimulados = [...historico].slice(-10);
-  const evolucaoTaxaAcerto = ultimosSimulados.map((simulado, idx) => {
-    const questoesSimulado = simulado.questoes;
+  const ultimosSimulados = historico.slice(-10);
+
+  const evolucaoTaxaAcerto = ultimosSimulados.map((simulado) => {
+    const qs = simulado.questoes;
+    // FIX: guard contra simulado sem questões — evita divisão por zero
     const global =
-      questoesSimulado.filter((q) => q.respostaUsuario === q.resposta).length /
-      questoesSimulado.length;
+      qs.length > 0
+        ? qs.filter((q) => q.respostaUsuario === q.resposta).length / qs.length
+        : 0;
 
     const porDisciplina = {} as Record<Disciplina, number>;
     for (const disc of ORDEM_DISCIPLINAS) {
-      const questoesDisc = questoesSimulado.filter(
-        (q) => q.disciplina === disc,
-      );
-      if (questoesDisc.length > 0) {
-        porDisciplina[disc] =
-          questoesDisc.filter((q) => q.respostaUsuario === q.resposta).length /
-          questoesDisc.length;
-      } else {
-        porDisciplina[disc] = 0;
-      }
+      const qd = qs.filter((q) => q.disciplina === disc);
+      porDisciplina[disc] =
+        qd.length > 0
+          ? qd.filter((q) => q.respostaUsuario === q.resposta).length /
+            qd.length
+          : 0;
     }
 
-    return {
-      data: simulado.data,
-      global,
-      porDisciplina,
-    };
+    return { data: simulado.data, global, porDisciplina };
   });
 
-  // Tempo estimado para domínio (>85% de acerto)
   const tempoEstimadoParaDominio = {} as Record<Disciplina, number | null>;
   for (const p of pesos) {
     if (p.taxaAcerto >= 0.85) {
@@ -417,28 +428,27 @@ export function gerarMetricasDashboard(
     } else {
       const deficit = 0.85 - p.taxaAcerto;
       const melhoriasPorSimulado = p.tendencia === "melhorando" ? 0.05 : 0.02;
-      const simuladosNecessarios = Math.ceil(deficit / melhoriasPorSimulado);
-      tempoEstimadoParaDominio[p.disciplina] = simuladosNecessarios * 7; // dias aproximados
+      // FIX: melhoriasPorSimulado nunca é 0 (constante), mas guard defensivo
+      const simuladosNecessarios =
+        melhoriasPorSimulado > 0
+          ? Math.ceil(deficit / melhoriasPorSimulado)
+          : null;
+      tempoEstimadoParaDominio[p.disciplina] =
+        simuladosNecessarios !== null ? simuladosNecessarios * 7 : null;
     }
   }
 
-  // Recomendação para próximo simulado
   const disciplinasPrioritarias = pesos
     .filter((p) => p.pesoNormalizado > 1.2)
     .sort((a, b) => b.pesoNormalizado - a.pesoNormalizado)
     .slice(0, 3)
     .map((p) => p.disciplina);
 
-  let justificativa = "";
-  if (disciplinasPrioritarias.length > 0) {
-    justificativa = `Foco em ${disciplinasPrioritarias
-      .map(nomeDisciplina)
-      .join(", ")} - áreas com maior necessidade de prática.`;
-  } else {
-    justificativa = "Distribuição equilibrada, mantenha revisão regular.";
-  }
+  const justificativa =
+    disciplinasPrioritarias.length > 0
+      ? `Foco em ${disciplinasPrioritarias.map(nomeDisciplina).join(", ")} — áreas com maior necessidade de prática.`
+      : "Distribuição equilibrada, mantenha revisão regular.";
 
-  // Estatísticas por disciplina
   const estatisticasPorDisciplina =
     {} as MetricasAdaptativas["estatisticasPorDisciplina"];
   for (const p of pesos) {
@@ -448,7 +458,6 @@ export function gerarMetricasDashboard(
     } else if (p.taxaErro > 0.2 || p.tendencia === "estavel") {
       necessidadeRevisao = "media";
     }
-
     estatisticasPorDisciplina[p.disciplina] = {
       tendencia: p.tendencia,
       confianca: p.confianca,
@@ -479,7 +488,6 @@ export function gerarDiagnosticoAdaptativo(
 ): DiagnosticoAdaptativo {
   const avisos: string[] = [];
 
-  // Contagem de questões por disciplina
   const questoesPorDisciplina = {} as Record<Disciplina, number>;
   for (const disc of ORDEM_DISCIPLINAS) {
     questoesPorDisciplina[disc] = todasQuestoes.filter(
@@ -487,24 +495,20 @@ export function gerarDiagnosticoAdaptativo(
     ).length;
   }
 
-  // Banco suficiente?
   const bancoSuficiente = ORDEM_DISCIPLINAS.every(
     (disc) => questoesPorDisciplina[disc] >= CONFIG.MIN_QUESTOES_POR_DISCIPLINA,
   );
-
   if (!bancoSuficiente) {
+    const carentes = ORDEM_DISCIPLINAS.filter(
+      (d) => questoesPorDisciplina[d] < CONFIG.MIN_QUESTOES_POR_DISCIPLINA,
+    )
+      .map(nomeDisciplina)
+      .join(", ");
     avisos.push(
-      `Banco de questões pequeno: ${ORDEM_DISCIPLINAS.filter(
-        (d) => questoesPorDisciplina[d] < CONFIG.MIN_QUESTOES_POR_DISCIPLINA,
-      )
-        .map(nomeDisciplina)
-        .join(
-          ", ",
-        )} têm menos de ${CONFIG.MIN_QUESTOES_POR_DISCIPLINA} questões.`,
+      `Banco de questões pequeno: ${carentes} têm menos de ${CONFIG.MIN_QUESTOES_POR_DISCIPLINA} questões.`,
     );
   }
 
-  // Histórico confiável?
   const historicoConfiável = historico.length >= 3;
   if (!historicoConfiável) {
     avisos.push(
@@ -512,34 +516,29 @@ export function gerarDiagnosticoAdaptativo(
     );
   }
 
-  // Verificar disciplinas sem histórico
   const disciplinasComHistorico = new Set<Disciplina>();
   for (const h of historico) {
-    for (const q of h.questoes) {
-      disciplinasComHistorico.add(q.disciplina);
-    }
+    for (const q of h.questoes) disciplinasComHistorico.add(q.disciplina);
   }
-  const disciplinasSemHistorico = ORDEM_DISCIPLINAS.filter(
+  const semHistorico = ORDEM_DISCIPLINAS.filter(
     (d) => !disciplinasComHistorico.has(d),
   );
-  if (disciplinasSemHistorico.length > 0) {
+  if (semHistorico.length > 0) {
     avisos.push(
-      `Disciplinas sem histórico: ${disciplinasSemHistorico
-        .map(nomeDisciplina)
-        .join(", ")}. Faça questões para calibragem.`,
+      `Disciplinas sem histórico: ${semHistorico.map(nomeDisciplina).join(", ")}. Faça questões para calibragem.`,
     );
   }
 
-  // Datas
-  const datas = historico.map((h) => h.data).filter(Boolean);
-  const dataMaisAntiga = datas.length > 0 ? datas.sort()[0] : null;
-  const dataMaisRecente = datas.length > 0 ? datas.sort().reverse()[0] : null;
+  // FIX: datas calculadas sem criar arrays temporários duplos com .sort().reverse()
+  const datas = historico
+    .map((h) => h.data)
+    .filter(Boolean)
+    .sort();
+  const dataMaisAntiga = datas.length > 0 ? datas[0] : null;
+  const dataMaisRecente = datas.length > 0 ? datas[datas.length - 1] : null;
 
   return {
-    viabilidade: {
-      bancoSuficiente,
-      historicoConfiável,
-    },
+    viabilidade: { bancoSuficiente, historicoConfiável },
     estatisticas: {
       questoesPorDisciplina,
       simuladosAnalisados: historico.length,
@@ -551,19 +550,18 @@ export function gerarDiagnosticoAdaptativo(
 }
 
 // ═══════════════════════════════════════════════════════════
-// CÁLCULO DE PESOS ADAPTATIVOS (COM CACHE)
+// CÁLCULO DE PESOS ADAPTATIVOS
 // ═══════════════════════════════════════════════════════════
 
 export function calcularPesosAdaptativos(
   historico: HistoricoSimulado[],
   _todasQuestoes: Questao[],
 ): PesoDisciplina[] {
-  // ✅ MELHORIA: verificar cache
   const cached = getCachedPesos(historico);
   if (cached) return cached;
 
   const historicoOrdenado = [...historico].sort(
-    (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
+    (a, b) => Date.parse(a.data) - Date.parse(b.data),
   );
 
   const estatisticas = ORDEM_DISCIPLINAS.map((disciplina): PesoDisciplina => {
@@ -573,14 +571,11 @@ export function calcularPesosAdaptativos(
 
     for (const h of historicoOrdenado) {
       const peso = calcularDecaimentoTemporal(h.data);
-      const questoesDisciplina = h.questoes.filter(
-        (q) => q.disciplina === disciplina,
-      );
-
-      for (const q of questoesDisciplina) {
+      for (const q of h.questoes) {
+        if (q.disciplina !== disciplina) continue;
         questoesComPeso.push({ ...q, pesoTemporal: peso });
-        const ts = new Date(h.data).getTime();
-        if (ts > ultimaDataRevisaoTimestamp) {
+        const ts = Date.parse(h.data);
+        if (!Number.isNaN(ts) && ts > ultimaDataRevisaoTimestamp) {
           ultimaDataRevisaoTimestamp = ts;
         }
       }
@@ -589,22 +584,11 @@ export function calcularPesosAdaptativos(
     const questoesRespondidas = questoesComPeso.length;
 
     if (questoesRespondidas === 0) {
-      const dificuldadePercebida: Record<Disciplina, number> = {
-        PORTUGUES: 1.0,
-        ETICA: 0.9,
-        RACIOCINIO_LOGICO: 1.2,
-        DIREITO_CONSTITUCIONAL: 1.1,
-        DIREITO_ADMINISTRATIVO: 1.1,
-        ADMINISTRACAO: 1.0,
-        ARQUIVOLOGIA: 1.3,
-        INFORMATICA: 0.8,
-        LEGISLACAO_PRF: 1.2,
-      };
-
+      // FIX: DIFICULDADE_BASE extraída como constante — sem objeto inline duplicado
       return {
         disciplina,
         peso:
-          CONFIG.PESO_NEUTRO * (dificuldadePercebida[disciplina] ?? 1.0) +
+          CONFIG.PESO_NEUTRO * (DIFICULDADE_BASE[disciplina] ?? 1.0) +
           CONFIG.PESO_INCERTEZA,
         pesoNormalizado: 0,
         taxaErro: 0.5,
@@ -628,6 +612,8 @@ export function calcularPesosAdaptativos(
       }
     }
 
+    // FIX: pesoTotal pode ser 0 se todos os pesos forem 0 (datas muito antigas
+    // + PESO_MINIMO_DECAIMENTO = 0 numa config customizada) — guard explícito
     const taxaAcerto = pesoTotal > 0 ? acertosPonderados / pesoTotal : 0;
     const taxaErro = pesoTotal > 0 ? errosPonderados / pesoTotal : 0;
 
@@ -638,7 +624,6 @@ export function calcularPesosAdaptativos(
           (1 - questoesRespondidas / CONFIG.MIN_QUESTOES_PARA_CONFIANCA)
         : 0;
     const fatorDominio = taxaAcerto > 0.85 ? -0.3 : 0;
-
     const pesoBruto =
       CONFIG.PESO_NEUTRO + fatorErro + fatorIncerteza + fatorDominio;
 
@@ -659,23 +644,21 @@ export function calcularPesosAdaptativos(
   });
 
   const somaPesos = estatisticas.reduce((acc, e) => acc + e.peso, 0);
+  // FIX: somaPesos pode ser 0 se todo o histórico tiver questoes.length === 0
   const fatorNormalizacao =
     somaPesos > 0 ? ORDEM_DISCIPLINAS.length / somaPesos : 0;
 
   const resultado = estatisticas.map((e) => ({
     ...e,
-    // ✅ CORREÇÃO: clamp no pesoNormalizado
     pesoNormalizado: Math.min(2.0, e.peso * fatorNormalizacao),
   }));
 
-  // ✅ MELHORIA: salvar no cache
   setCachedPesos(historico, resultado);
-
   return resultado;
 }
 
 // ═══════════════════════════════════════════════════════════
-// SELEÇÃO DE QUESTÕES ADAPTATIVA
+// SELEÇÃO ADAPTATIVA
 // ═══════════════════════════════════════════════════════════
 
 export function selecionarQuestoesAdaptativas(
@@ -684,9 +667,8 @@ export function selecionarQuestoesAdaptativas(
   totalQuestoes = 60,
   feedbacks?: Map<string, FeedbackUsuarioQuestao>,
 ): SelecaoAdaptativaResult {
-  // ✅ CORREÇÃO: validação de entrada
   if (totalQuestoes <= 0) {
-    throw new Error("totalQuestoes deve ser positivo");
+    throw new Error("[ADAPTATIVO] totalQuestoes deve ser positivo");
   }
 
   if (todasQuestoes.length === 0) {
@@ -703,12 +685,13 @@ export function selecionarQuestoesAdaptativas(
     };
   }
 
-  let totalAjustado = totalQuestoes;
-  if (totalQuestoes > todasQuestoes.length) {
-    console.warn(
-      `[ADAPTATIVO] Apenas ${todasQuestoes.length} questões disponíveis. Ajustando total de ${totalQuestoes} para ${todasQuestoes.length}.`,
-    );
-    totalAjustado = todasQuestoes.length;
+  const totalAjustado = Math.min(totalQuestoes, todasQuestoes.length);
+  if (totalAjustado < totalQuestoes) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        `[ADAPTATIVO] Apenas ${todasQuestoes.length} questões disponíveis. Ajustando de ${totalQuestoes} para ${totalAjustado}.`,
+      );
+    }
   }
 
   const pesos = calcularPesosAdaptativos(historico, todasQuestoes);
@@ -717,16 +700,15 @@ export function selecionarQuestoesAdaptativas(
     historico.flatMap((h) => h.questoes.map((q) => q.id)),
   );
 
-  const questoesErradasAnteriormente = new Set<string>();
+  const questoesErradas = new Set<string>();
   for (const h of historico) {
     for (const q of h.questoes) {
       if (q.respostaUsuario && q.respostaUsuario !== q.resposta) {
-        questoesErradasAnteriormente.add(q.id);
+        questoesErradas.add(q.id);
       }
     }
   }
 
-  // Distribuição proporcional usando função exportada
   const quantidadesBase = pesos.map((p) =>
     Math.max(
       CONFIG.MIN_QUESTOES_POR_DISCIPLINA,
@@ -741,9 +723,8 @@ export function selecionarQuestoesAdaptativas(
     CONFIG.MIN_QUESTOES_POR_DISCIPLINA,
   );
 
-  // Seleção por disciplina
   const selecionadas: Questao[] = [];
-  const idsSelecionados = new Set<string>(); // ✅ CORREÇÃO: evita repetição
+  const idsSelecionados = new Set<string>();
   let novasCount = 0;
   let revisaoCount = 0;
 
@@ -752,21 +733,20 @@ export function selecionarQuestoesAdaptativas(
     const quantidade = quantidades[i];
     if (quantidade === 0) continue;
 
-    const questoesDisciplina = todasQuestoes.filter(
+    const disciplinaQs = todasQuestoes.filter(
       (q) => q.disciplina === p.disciplina,
     );
 
-    const naoVistas = questoesDisciplina.filter(
+    const naoVistas = disciplinaQs.filter(
       (q) => !historicoIds.has(q.id) && !idsSelecionados.has(q.id),
     );
-    const vistasErradas = questoesDisciplina.filter(
-      (q) =>
-        questoesErradasAnteriormente.has(q.id) && !idsSelecionados.has(q.id),
+    const vistasErradas = disciplinaQs.filter(
+      (q) => questoesErradas.has(q.id) && !idsSelecionados.has(q.id),
     );
-    const vistasCertas = questoesDisciplina.filter(
+    const vistasCertas = disciplinaQs.filter(
       (q) =>
         historicoIds.has(q.id) &&
-        !questoesErradasAnteriormente.has(q.id) &&
+        !questoesErradas.has(q.id) &&
         !idsSelecionados.has(q.id),
     );
 
@@ -782,34 +762,34 @@ export function selecionarQuestoesAdaptativas(
     const qtdReforco = Math.min(restante, vistasCertas.length);
     restante -= qtdReforco;
 
-    const qtdFallback = restante > 0 ? restante : 0;
+    const selNovas = embaralhar(naoVistas).slice(0, qtdNovas);
+    const selRevisao = embaralhar(vistasErradas).slice(0, qtdRevisao);
+    const selReforco = embaralhar(vistasCertas).slice(0, qtdReforco);
 
-    const selecionadasNovas = embaralhar(naoVistas).slice(0, qtdNovas);
-    const selecionadasRevisao = embaralhar(vistasErradas).slice(0, qtdRevisao);
-    const selecionadasReforco = embaralhar(vistasCertas).slice(0, qtdReforco);
-
-    // Fallback evitando IDs já selecionados
-    const selecionadasFallback =
-      qtdFallback > 0
-        ? embaralhar(questoesDisciplina)
+    // Fallback: questões de qualquer tipo não selecionadas ainda
+    const selFallback =
+      restante > 0
+        ? embaralhar(disciplinaQs)
             .filter((q) => !idsSelecionados.has(q.id))
-            .slice(0, qtdFallback)
+            .slice(0, restante)
         : [];
 
-    // ✅ CORREÇÃO: log de advertência para banco pequeno
     const totalDisponivel =
       naoVistas.length + vistasErradas.length + vistasCertas.length;
-    if (totalDisponivel < quantidade) {
+    if (
+      process.env.NODE_ENV === "development" &&
+      totalDisponivel < quantidade
+    ) {
       console.warn(
-        `[ADAPTATIVO] Disciplina ${p.disciplina}: apenas ${totalDisponivel} questões disponíveis, solicitado ${quantidade}. Usando fallback com repetição.`,
+        `[ADAPTATIVO] ${p.disciplina}: ${totalDisponivel} disponíveis, ${quantidade} solicitadas. Usando fallback.`,
       );
     }
 
     for (const q of [
-      ...selecionadasNovas,
-      ...selecionadasRevisao,
-      ...selecionadasReforco,
-      ...selecionadasFallback,
+      ...selNovas,
+      ...selRevisao,
+      ...selReforco,
+      ...selFallback,
     ]) {
       idsSelecionados.add(q.id);
       selecionadas.push(q);
@@ -826,36 +806,35 @@ export function selecionarQuestoesAdaptativas(
   const percentualRevisao =
     totalFinal > 0 ? (revisaoCount / totalFinal) * 100 : 0;
 
-  const somaDiferencasQuadradas = pesos.reduce(
+  // Nível de adaptação: 0 = distribuição uniforme, 1 = altamente concentrada
+  const somaDiffSq = pesos.reduce(
     (acc, p) => acc + (p.pesoNormalizado - 1) ** 2,
     0,
   );
-  const nivelAdaptacao = Math.min(
-    Math.sqrt(somaDiferencasQuadradas / pesos.length) * 2,
-    1,
-  );
+  // FIX: guard contra pesos.length === 0
+  const nivelAdaptacao =
+    pesos.length > 0
+      ? Math.min(Math.sqrt(somaDiffSq / pesos.length) * 2, 1)
+      : 0;
 
-  // ✅ SISTEMA: gerar revisões agendadas
   const revisoesAgendadas = feedbacks
-    ? gerarRevisoesAgendadas(historico, questoesErradasAnteriormente, feedbacks)
+    ? gerarRevisoesAgendadas(historico, questoesErradas, feedbacks)
     : [];
-
-  const metadados = {
-    distribuicaoPorDisciplina: Object.fromEntries(
-      pesos.map((p, i) => [p.disciplina, quantidades[i]]),
-    ),
-    percentualNovas,
-    percentualRevisao,
-    disciplinasPriorizadas: pesos
-      .filter((p) => p.pesoNormalizado > 1.3)
-      .sort((a, b) => b.pesoNormalizado - a.pesoNormalizado)
-      .map((p) => p.disciplina),
-    nivelAdaptacao,
-  };
 
   return {
     questoes: questoesFinais,
-    metadados,
+    metadados: {
+      distribuicaoPorDisciplina: Object.fromEntries(
+        pesos.map((p, i) => [p.disciplina, quantidades[i]]),
+      ),
+      percentualNovas,
+      percentualRevisao,
+      disciplinasPriorizadas: pesos
+        .filter((p) => p.pesoNormalizado > 1.3)
+        .sort((a, b) => b.pesoNormalizado - a.pesoNormalizado)
+        .map((p) => p.disciplina),
+      nivelAdaptacao,
+    },
     revisoesAgendadas:
       revisoesAgendadas.length > 0 ? revisoesAgendadas : undefined,
   };
@@ -871,7 +850,7 @@ export function gerarAnaliseAdaptativa(
 ): AnaliseAdaptativa {
   const pesos = calcularPesosAdaptativos(historico, todasQuestoes);
 
-  const criticas = [...pesos]
+  const criticas = pesos
     .filter(
       (p) =>
         p.taxaErro > CONFIG.MIN_TAXA_ERRO_PARA_FOCO ||
@@ -879,34 +858,36 @@ export function gerarAnaliseAdaptativa(
     )
     .sort((a, b) => b.pesoNormalizado - a.pesoNormalizado);
 
-  const dominadas = [...pesos]
+  const dominadas = pesos
     .filter(
       (p) =>
         p.taxaAcerto > 0.8 && p.tendencia !== "piorando" && p.confianca > 0.5,
     )
     .sort((a, b) => a.pesoNormalizado - b.pesoNormalizado);
 
-  const emAlta = [...pesos]
+  const emAlta = pesos
     .filter((p) => p.tendencia === "melhorando" && p.confianca > 0.3)
     .sort((a, b) => b.taxaAcerto - a.taxaAcerto);
 
-  const emBaixa = [...pesos]
+  const emBaixa = pesos
     .filter((p) => p.tendencia === "piorando" && p.confianca > 0.3)
     .sort((a, b) => a.taxaAcerto - b.taxaAcerto);
 
   const recomendacoes: string[] = [];
 
   if (criticas.length > 0) {
-    const nomes = criticas.slice(0, 2).map((p) => nomeDisciplina(p.disciplina));
-    recomendacoes.push(`🎯 Foco prioritário: ${nomes.join(" e ")}`);
+    recomendacoes.push(
+      `🎯 Foco prioritário: ${criticas
+        .slice(0, 2)
+        .map((p) => nomeDisciplina(p.disciplina))
+        .join(" e ")}`,
+    );
   }
-
   if (emAlta.length > 0) {
     recomendacoes.push(
       `📈 Continue assim em: ${nomeDisciplina(emAlta[0].disciplina)}`,
     );
   }
-
   if (emBaixa.length > 0) {
     recomendacoes.push(
       `⚠️ Atenção: ${nomeDisciplina(emBaixa[0].disciplina)} está em queda`,
@@ -921,7 +902,7 @@ export function gerarAnaliseAdaptativa(
   }
 
   const proximoMilestoneItem =
-    [...pesos]
+    pesos
       .filter((p) => p.taxaAcerto < 0.9 && p.confianca > 0.3)
       .sort((a, b) => b.taxaAcerto - a.taxaAcerto)[0] ?? null;
 
@@ -944,8 +925,11 @@ export function gerarAnaliseAdaptativa(
       "Desempenho equilibrado. O sistema vai otimizar sua rotina de estudos.";
   }
 
+  // FIX: guard contra pesos vazio — confiancaGlobal seria NaN
   const confiancaGlobal =
-    pesos.reduce((acc, p) => acc + p.confianca, 0) / pesos.length;
+    pesos.length > 0
+      ? pesos.reduce((acc, p) => acc + p.confianca, 0) / pesos.length
+      : 0;
 
   return {
     resumo,
@@ -968,6 +952,10 @@ export function gerarAnaliseAdaptativa(
       : null,
   };
 }
+
+// ═══════════════════════════════════════════════════════════
+// LEGACY
+// ═══════════════════════════════════════════════════════════
 
 /**
  * @deprecated Use `selecionarQuestoesAdaptativas` diretamente.

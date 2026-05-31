@@ -1,3 +1,4 @@
+// src/hooks/useResultadoData.ts
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";

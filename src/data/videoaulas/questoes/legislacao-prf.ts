@@ -2,8 +2,7 @@
 
 import { DisciplinaVideo, Video } from "../tipos";
 
-import { duracaoSegundos } from "@/utils/videoDuration";
-import { getYouTubeThumbnail } from "@/utils/youtubeUtils";
+import { duracaoSegundos, getYouTubeThumbnail } from "@/utils/youtubeUtils";
 
 const disciplina: DisciplinaVideo = "LEGISLACAO_PRF";
 

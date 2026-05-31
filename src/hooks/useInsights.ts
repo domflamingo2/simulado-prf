@@ -1,3 +1,4 @@
+// src/hooks/useInsights.ts
 import { useMemo } from "react";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";

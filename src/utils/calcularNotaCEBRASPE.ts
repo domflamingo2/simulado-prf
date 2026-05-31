@@ -38,10 +38,7 @@ export interface OpcoesCalculo {
 }
 
 // ═══════════════════════════════════════════════════════════
-// CONSTANTES — fonte de verdade dos limiares
-// FIX: limiares usados diretamente na função de classificação
-// para evitar duplicação que pode divergir.
-// Os valores são proporções de `notaMinimaAprovacao`, não absolutos.
+// CONSTANTES
 // ═══════════════════════════════════════════════════════════
 
 export const CLASSIFICACOES = {
@@ -72,6 +69,17 @@ export const CLASSIFICACOES = {
   },
 } as const;
 
+// Limiares relativos à nota mínima de aprovação (NM).
+// Centralizar aqui evita que `calcularNotaCEBRASPE` e testes
+// usem números mágicos divergentes.
+const LIMIARES = {
+  EXCELENTE: 1.28, // ≥ 128% da NM
+  BOM: 1.0, // ≥ 100% da NM (aprovado)
+  REGULAR: 0.71, // ≥  71% da NM
+  RISCO: 0.43, // ≥  43% da NM
+  // abaixo → Reprovado
+} as const;
+
 // ═══════════════════════════════════════════════════════════
 // FUNÇÃO PRINCIPAL
 // ═══════════════════════════════════════════════════════════
@@ -83,7 +91,18 @@ export function calcularNotaCEBRASPE(
 ): NotaCEBRASPE {
   const { totalQuestoes = 60, notaMinimaAprovacao = 35 } = opcoes;
 
-  // ── Validação e normalização ──────────────────────────────────────────────
+  // FIX: notaMinimaAprovacao e totalQuestoes também precisam ser sanitizados —
+  // um chamador pode passar NaN ou valor negativo via `opcoes`.
+  const totalVal =
+    Number.isFinite(totalQuestoes) && totalQuestoes > 0
+      ? Math.floor(totalQuestoes)
+      : 60;
+  const notaMinimaVal =
+    Number.isFinite(notaMinimaAprovacao) && notaMinimaAprovacao > 0
+      ? notaMinimaAprovacao
+      : 35;
+
+  // ── Validação e normalização dos inputs ──────────────────────────────────
 
   const sanitizar = (valor: number, nome: string): number => {
     if (!Number.isFinite(valor) || valor < 0) {
@@ -94,26 +113,24 @@ export function calcularNotaCEBRASPE(
       }
       return 0;
     }
-    return Math.floor(valor); // Garante inteiro
+    return Math.floor(valor);
   };
 
   const acertosRaw = sanitizar(acertos, "acertos");
   const errosRaw = sanitizar(erros, "erros");
 
-  // FIX: garante que acertos + erros não ultrapasse totalQuestoes.
-  // Se ultrapassar, escala proporcionalmente.
+  // Escala proporcional se acertos + erros ultrapassar o total
   const totalRespondido = acertosRaw + errosRaw;
   let acertosVal: number;
   let errosVal: number;
 
-  if (totalRespondido > totalQuestoes) {
-    // Escala proporcional para caber no total
-    const fator = totalQuestoes / totalRespondido;
+  if (totalRespondido > totalVal) {
+    const fator = totalVal / totalRespondido;
     acertosVal = Math.floor(acertosRaw * fator);
     errosVal = Math.floor(errosRaw * fator);
     if (process.env.NODE_ENV === "development") {
       console.warn(
-        `[calcularNotaCEBRASPE] acertos+erros (${totalRespondido}) > totalQuestoes (${totalQuestoes}). Escalado proporcionalmente.`,
+        `[calcularNotaCEBRASPE] acertos+erros (${totalRespondido}) > totalQuestoes (${totalVal}). Escalado proporcionalmente.`,
       );
     }
   } else {
@@ -121,28 +138,18 @@ export function calcularNotaCEBRASPE(
     errosVal = errosRaw;
   }
 
-  const brancos = totalQuestoes - acertosVal - errosVal;
+  const brancos = totalVal - acertosVal - errosVal;
+  // FIX: nota CEBRASPE pode ser negativa — não clampar aqui.
+  // A exibição (formatarNotaParaExibicao) já faz o clamp para a barra.
   const notaFinal = acertosVal - errosVal;
 
-  // ── Percentuais (taxa de acerto real, não nota CEBRASPE) ──────────────────
+  // ── Percentuais ───────────────────────────────────────────────────────────
 
-  const porcentagemAcertos =
-    totalQuestoes > 0 ? (acertosVal / totalQuestoes) * 100 : 0;
-  const porcentagemErros =
-    totalQuestoes > 0 ? (errosVal / totalQuestoes) * 100 : 0;
-  const porcentagemBrancos =
-    totalQuestoes > 0 ? (brancos / totalQuestoes) * 100 : 0;
+  const porcentagemAcertos = (acertosVal / totalVal) * 100;
+  const porcentagemErros = (errosVal / totalVal) * 100;
+  const porcentagemBrancos = (brancos / totalVal) * 100;
 
   // ── Classificação ─────────────────────────────────────────────────────────
-  // FIX: limiares relativos a `notaMinimaAprovacao`, não absolutos.
-  // Isso garante que a classificação faz sentido independente do total de questões.
-  //
-  // Limiares usados (em função de notaMinimaAprovacao = NM):
-  //   Excelente : notaFinal >= NM * 1.28  (≈28% acima da mínima)
-  //   Bom       : notaFinal >= NM          (aprovado)
-  //   Regular   : notaFinal >= NM * 0.71  (≈71% da mínima)
-  //   Risco     : notaFinal >= NM * 0.43  (≈43% da mínima)
-  //   Reprovado : abaixo de tudo
 
   type ClassEntry = {
     config: (typeof CLASSIFICACOES)[keyof typeof CLASSIFICACOES];
@@ -152,7 +159,7 @@ export function calcularNotaCEBRASPE(
   };
 
   const resolverClassificacao = (): ClassEntry => {
-    if (notaFinal >= notaMinimaAprovacao * 1.28) {
+    if (notaFinal >= notaMinimaVal * LIMIARES.EXCELENTE) {
       return {
         config: CLASSIFICACOES.EXCELENTE,
         mensagem:
@@ -165,7 +172,7 @@ export function calcularNotaCEBRASPE(
         ],
       };
     }
-    if (notaFinal >= notaMinimaAprovacao) {
+    if (notaFinal >= notaMinimaVal * LIMIARES.BOM) {
       return {
         config: CLASSIFICACOES.BOM,
         mensagem:
@@ -178,7 +185,7 @@ export function calcularNotaCEBRASPE(
         ],
       };
     }
-    if (notaFinal >= notaMinimaAprovacao * 0.71) {
+    if (notaFinal >= notaMinimaVal * LIMIARES.REGULAR) {
       return {
         config: CLASSIFICACOES.REGULAR,
         mensagem:
@@ -191,7 +198,7 @@ export function calcularNotaCEBRASPE(
         ],
       };
     }
-    if (notaFinal >= notaMinimaAprovacao * 0.43) {
+    if (notaFinal >= notaMinimaVal * LIMIARES.RISCO) {
       return {
         config: CLASSIFICACOES.RISCO,
         mensagem:
@@ -222,13 +229,10 @@ export function calcularNotaCEBRASPE(
   const { config, mensagem, dicas, chances } = resolverClassificacao();
 
   // ── Acertos necessários para aprovação ────────────────────────────────────
-  // FIX: fórmula correta para CEBRASPE.
-  // nota = acertos - erros >= notaMinima
-  // → acertos >= notaMinima + erros
-  // Logo: acertosNecessarios = notaMinimaAprovacao + errosVal
+  // Fórmula: nota = acertos - erros >= notaMinima → acertos >= notaMinima + erros
   const acertosNecessariosParaAprovacao = Math.min(
-    totalQuestoes,
-    Math.max(0, notaMinimaAprovacao + errosVal),
+    totalVal,
+    Math.max(0, notaMinimaVal + errosVal),
   );
 
   return {
@@ -245,7 +249,7 @@ export function calcularNotaCEBRASPE(
     dicas,
     estatisticas: {
       acertosNecessariosParaAprovacao,
-      notaMinimaAprovacao,
+      notaMinimaAprovacao: notaMinimaVal,
       chances,
     },
   };
@@ -273,15 +277,10 @@ export interface NotaCEBRASPEDetalhada extends NotaCEBRASPE {
   porDisciplina: Record<string, DisciplinaStats>;
 }
 
-/**
- * FIX: interface dedicada em vez de `NotaCEBRASPE & { ... }` intersection.
- * FIX: guard para lista vazia — evita divisão por zero.
- */
 export function calcularNotaPorRespostas(
   respostas: RespostaQuestao[],
   opcoes?: OpcoesCalculo,
 ): NotaCEBRASPEDetalhada {
-  // FIX: lista vazia → retorna nota zerada com disciplinas vazias
   if (respostas.length === 0) {
     const notaZerada = calcularNotaCEBRASPE(0, 0, opcoes);
     return { ...notaZerada, porDisciplina: {} };
@@ -289,9 +288,11 @@ export function calcularNotaPorRespostas(
 
   const totalQuestoes = respostas.length;
   const acertos = respostas.filter((r) => r.acertou).length;
+  // FIX: `respondeu && !acertou` é correto para CEBRASPE — branco não penaliza.
+  // Mas garante também que `acertou` não seja true junto com `!respondeu`
+  // (estado inconsistente): acertou implica respondeu.
   const erros = respostas.filter((r) => r.respondeu && !r.acertou).length;
 
-  // Stats por disciplina
   const porDisciplina: Record<string, DisciplinaStats> = {};
 
   for (const r of respostas) {
@@ -332,7 +333,7 @@ export interface AnaliseDetalhada {
   recomendacoes: string[];
   previsao: {
     horasEstudoDiarias: number;
-    /** null quando o usuário já está aprovado */
+    /** `null` quando o usuário já está aprovado */
     semanasParaAprovacao: number | null;
     simuladosNecessarios: number;
   };
@@ -344,7 +345,6 @@ export function gerarAnaliseDetalhada(
   horasEstudoDiarias = 4,
   opcoes?: OpcoesCalculo,
 ): AnaliseDetalhada {
-  // FIX: guard para horasEstudoDiarias inválido
   const horasValidas = Math.max(
     0.5,
     Number.isFinite(horasEstudoDiarias) ? horasEstudoDiarias : 4,
@@ -385,16 +385,13 @@ export function gerarAnaliseDetalhada(
 
   const deficitNota = nota.estatisticas.notaMinimaAprovacao - nota.notaFinal;
 
-  // FIX: se já aprovado, não há semanas para aprovação
   let semanasParaAprovacao: number | null = null;
-  let simuladosNecessarios = 5; // mínimo recomendado mesmo estando aprovado
+  let simuladosNecessarios = 5;
 
   if (deficitNota > 0) {
-    // Estimativa: ganhar ~5 pontos por semana com 4h/dia de estudo.
-    // Ajusta pelo fator de horas: mais horas → menos semanas.
+    // Estimativa: +5 pontos por semana com 4h/dia; escala linear com as horas.
     const semanasBruto = Math.ceil((deficitNota / 5) * (4 / horasValidas));
     semanasParaAprovacao = Math.max(1, semanasBruto);
-    // Um simulado a cada 2 semanas como referência
     simuladosNecessarios = Math.max(5, Math.ceil(semanasParaAprovacao / 2));
   }
 
@@ -402,7 +399,6 @@ export function gerarAnaliseDetalhada(
     nota,
     pontosFortes,
     pontosFracos,
-    // FIX: deduplicação de recomendações com Set
     recomendacoes: [...new Set(recomendacoes)],
     previsao: {
       horasEstudoDiarias: horasValidas,
@@ -423,26 +419,27 @@ export interface NotaFormatada {
 }
 
 /**
- * FIX: recebe `totalQuestoes` como parâmetro explícito — antes usava 60
- * hardcoded, gerando percentuais errados para modos com total diferente (ex: Turbo = 50).
- * FIX: usa `CLASSIFICACOES` para mapear cor da barra — sem duplicação.
+ * @param nota           - Resultado de `calcularNotaCEBRASPE`
+ * @param totalQuestoes  - Total da prova (necessário para calcular % da barra).
+ *                         Padrão 60; passe o valor correto para modos como Turbo (50).
  */
 export function formatarNotaParaExibicao(
   nota: NotaCEBRASPE,
   totalQuestoes = 60,
 ): NotaFormatada {
-  // FIX: mapa derivado de CLASSIFICACOES — única fonte de verdade para cores
+  // Única fonte de verdade para a cor da barra — derivada de CLASSIFICACOES
   const corBarra =
     Object.values(CLASSIFICACOES).find((c) => c.label === nota.classificacao)
       ?.corBarra ?? "bg-slate-500";
 
-  // Percentual da nota CEBRASPE: (notaFinal / totalQuestoes) * 100
-  // notaFinal pode ser negativo → clamp em [0, 100]
+  // FIX: totalQuestoes pode ser 0 se vier de um estado inválido — guard explícito
   const percentualNota =
     totalQuestoes > 0
       ? Math.min(100, Math.max(0, (nota.notaFinal / totalQuestoes) * 100))
       : 0;
 
+  // FIX: nota negativa no resumo agora exibe sinal corretamente porque
+  // `notaFinal` não é clampado em `calcularNotaCEBRASPE`.
   return {
     resumo: `${nota.acertos} acertos, ${nota.erros} erros, ${nota.brancos} em branco = ${nota.notaFinal} pontos`,
     barraProgresso: {
@@ -478,8 +475,8 @@ export function validarTotalQuestoes(
 }
 
 /**
- * Calcula a pontuação mínima de acertos necessária para aprovação,
- * dado um número de erros já cometidos.
+ * Calcula o mínimo de acertos necessário para aprovação dado um número
+ * de erros já cometidos.
  *
  * Fórmula CEBRASPE: nota = acertos - erros >= notaMinima
  * → acertos >= notaMinima + erros
@@ -489,5 +486,7 @@ export function calcularAcertosNecessarios(
   notaMinimaAprovacao = 35,
   totalQuestoes = 60,
 ): number {
+  // FIX: guard para inputs inválidos — evita NaN silencioso
+  if (!Number.isFinite(erros) || erros < 0) return notaMinimaAprovacao;
   return Math.min(totalQuestoes, Math.max(0, notaMinimaAprovacao + erros));
 }

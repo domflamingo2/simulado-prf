@@ -19,18 +19,27 @@ const FALLBACK_IMAGE = "/images/video-placeholder.svg";
 
 /**
  * Extrai o ID do vídeo (11 chars) a partir de diferentes formatos de URL do YouTube.
+ * Suporta:
+ * - https://youtu.be/VIDEO_ID
+ * - https://www.youtube.com/watch?v=VIDEO_ID
+ * - https://www.youtube.com/watch?t=30&v=VIDEO_ID
+ * - https://www.youtube.com/embed/VIDEO_ID
+ * - https://www.youtube.com/v/VIDEO_ID
+ * - https://www.youtube.com/shorts/VIDEO_ID
+ * - https://www.youtube.com/live/VIDEO_ID
+ *
  * Retorna `null` se a URL for inválida ou não reconhecida.
  */
 export function extractYouTubeId(url: string): string | null {
   if (!url || typeof url !== "string") return null;
 
   const patterns = [
-    /(?:youtube\.com\/watch\?(?:.*&)?v=)([^#&?]{11})/, // FIX: suporta v= no meio de query string
-    /youtu\.be\/([^#&?]{11})/,
-    /youtube\.com\/embed\/([^#&?]{11})/,
-    /youtube\.com\/v\/([^#&?]{11})/,
-    /youtube\.com\/shorts\/([^#&?]{11})/,
-    /youtube\.com\/live\/([^#&?]{11})/,
+    /(?:youtube\.com\/watch\?(?:.*&)?v=)([^#&?]{11})/, // watch?v= (com ou sem params antes)
+    /youtu\.be\/([^#&?]{11})/, // youtu.be/ID
+    /youtube\.com\/embed\/([^#&?]{11})/, // embed/ID
+    /youtube\.com\/v\/([^#&?]{11})/, // v/ID
+    /youtube\.com\/shorts\/([^#&?]{11})/, // shorts/ID
+    /youtube\.com\/live\/([^#&?]{11})/, // live/ID
   ];
 
   for (const pattern of patterns) {
@@ -39,6 +48,13 @@ export function extractYouTubeId(url: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Verifica se uma URL pertence ao YouTube e tem um ID válido.
+ */
+export function isYouTubeUrl(url: string): boolean {
+  return extractYouTubeId(url) !== null;
 }
 
 // ─── Thumbnails síncronas ─────────────────────────────────────────────────────
@@ -57,15 +73,20 @@ export function getThumbnailById(
 /**
  * Gera a URL de thumbnail a partir de uma URL do YouTube.
  * Retorna `null` se a URL for inválida (em vez de gerar `…/vi/null/…`).
- *
- * FIX: versão anterior retornava URL quebrada quando extractYouTubeId === null.
  */
 export function getYouTubeThumbnail(
   url: string,
   quality: YouTubeThumbnailQuality = "mq",
 ): string | null {
   const videoId = extractYouTubeId(url);
-  if (!videoId) return null;
+  if (!videoId) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        `[YouTubeThumbnail] URL inválida ou não reconhecida: ${url}`,
+      );
+    }
+    return null;
+  }
   return getThumbnailById(videoId, quality);
 }
 
@@ -91,12 +112,10 @@ export function getAllYouTubeThumbnails(
 // ─── Thumbnails assíncronas ───────────────────────────────────────────────────
 
 /**
- * Verifica se uma thumbnail existe via requisição HEAD.
- *
- * FIX: a versão anterior falha com CORS em ambientes de browser porque
- * img.youtube.com não retorna cabeçalhos CORS para requisições HEAD.
- * A estratégia correta é tentar carregar como <img> (modo "no-cors").
- * Em ambientes Node/SSR, usa fetch com HEAD normalmente.
+ * Verifica se uma thumbnail existe via requisição HEAD ou HTMLImageElement.
+ * No browser, usa HTMLImageElement (imune a CORS) e detecta a imagem cinza de 120×90
+ * que o YouTube serve para thumbnails inexistentes.
+ * Em ambiente servidor (Next.js SSR / Node), usa fetch com HEAD.
  */
 export async function checkThumbnailExists(url: string): Promise<boolean> {
   // Ambiente browser: usa HTMLImageElement (imune a CORS)
@@ -111,9 +130,9 @@ export async function checkThumbnailExists(url: string): Promise<boolean> {
       img.onload = () => {
         clearTimeout(timeout);
         // YouTube serve uma imagem 120×90 cinza para thumbnails inexistentes
-        // Detectamos pelo tamanho natural (só disponível após onload)
-        const missing = img.naturalWidth === 120 && img.naturalHeight === 90;
-        resolve(!missing);
+        const isMissingPlaceholder =
+          img.naturalWidth === 120 && img.naturalHeight === 90;
+        resolve(!isMissingPlaceholder);
       };
       img.onerror = () => {
         clearTimeout(timeout);
@@ -163,11 +182,105 @@ export async function getBestYouTubeThumbnail(url: string): Promise<string> {
   return thumbnails.mq;
 }
 
-// ─── Validação ────────────────────────────────────────────────────────────────
+// ─── Duração de vídeos ─────────────────────────────────────────────────────────
 
 /**
- * Verifica se uma URL pertence ao YouTube e tem um ID válido.
+ * Converte string de duração para segundos
+ * Suporta formatos:
+ * - "52:30" -> 3150 segundos
+ * - "1h30min" -> 5400 segundos
+ * - "1:30:00" -> 5400 segundos
+ * - "90min" -> 5400 segundos
  */
-export function isYouTubeUrl(url: string): boolean {
-  return extractYouTubeId(url) !== null;
+export function durationToSeconds(duration: string): number {
+  if (!duration) return 0;
+
+  // Formato: "1h30min" ou "1h 30min"
+  const hMatch = duration.match(/(\d+)h\s*(?:(\d+)(?:min)?)?/);
+  if (hMatch) {
+    const hours = parseInt(hMatch[1]);
+    const minutes = parseInt(hMatch[2] || "0");
+    return hours * 3600 + minutes * 60;
+  }
+
+  // Formato: "90min"
+  const minMatch = duration.match(/^(\d+)min$/);
+  if (minMatch) return parseInt(minMatch[1]) * 60;
+
+  // Formato: "MM:SS" ou "HH:MM:SS"
+  const parts = duration.split(":").map(Number);
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+
+  // Fallback: tenta converter diretamente
+  const num = parseInt(duration);
+  return isNaN(num) ? 0 : num;
+}
+
+// ALIAS para compatibilidade com código existente
+export const duracaoSegundos = durationToSeconds;
+
+/**
+ * Converte segundos para string de duração formatada
+ * @param seconds - Total de segundos
+ * @param format - Formato de saída: 'full' (1h 30min), 'short' (1:30:00), 'compact' (1h30)
+ */
+export function secondsToDuration(
+  seconds: number,
+  format: "full" | "short" | "compact" = "full",
+): string {
+  if (seconds <= 0) return format === "short" ? "00:00" : "0min";
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (format === "short") {
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+    return `${minutes.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  if (format === "compact") {
+    if (hours > 0) return `${hours}h${minutes > 0 ? minutes : ""}`;
+    return `${minutes}min`;
+  }
+
+  // Formato full (padrão)
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, "0")}min`;
+  }
+  return `${minutes}min${secs > 0 ? ` ${secs}s` : ""}`;
+}
+
+/**
+ * Soma durações de múltiplos vídeos
+ */
+export function sumDurations(
+  videos: { duracaoSegundos?: number; duracao?: string }[],
+): number {
+  return videos.reduce((total, video) => {
+    if (video.duracaoSegundos) return total + video.duracaoSegundos;
+    if (video.duracao) return total + durationToSeconds(video.duracao);
+    return total;
+  }, 0);
+}
+
+/**
+ * Formata duração total a partir de uma lista de vídeos
+ */
+export function formatTotalDuration(
+  videos: { duracaoSegundos?: number; duracao?: string }[],
+): string {
+  const total = sumDurations(videos);
+  return secondsToDuration(total);
 }

@@ -3,7 +3,8 @@ import {
   durationToSeconds,
   secondsToDuration,
   sumDurations,
-} from "../../utils/videoDuration";
+  YouTubeThumbnailQuality,
+} from "../../utils/youtubeUtils";
 import { CategoriaVideo, DisciplinaVideo, NivelVideo, Video } from "./tipos";
 
 // ============================================================
@@ -369,15 +370,17 @@ export const METADADOS_BANCO_VIDEO = {
 // RE-EXPORT PARA COMPATIBILIDADE
 // ============================================================
 
-export {
-  durationToSeconds,
-  secondsToDuration,
-} from "../../utils/videoDuration";
-export {
-  extractYouTubeId,
-  getYouTubeThumbnail,
-  isYouTubeUrl,
-} from "../../utils/youtubeUtils";
+import { getYouTubeThumbnail as originalGetYouTubeThumbnail } from "../../utils/youtubeUtils";
+
+// Versão adaptada que retorna undefined em vez de null
+export function getYouTubeThumbnail(
+  url: string,
+  quality?: YouTubeThumbnailQuality,
+): string | undefined {
+  const result = originalGetYouTubeThumbnail(url, quality);
+  return result ?? undefined; // Converte null para undefined
+}
+
 export * from "./tipos";
 
 // ============================================================

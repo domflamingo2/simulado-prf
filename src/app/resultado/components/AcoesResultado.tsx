@@ -1,3 +1,5 @@
+// src/app/resultado/components/AcoesResultado.tsx
+
 "use client";
 
 import { motion } from "framer-motion";

@@ -76,10 +76,10 @@ export interface Video {
   disciplina: DisciplinaVideo;
   titulo: string;
   descricao: string;
-  duracao: string; // Formato: "52:30" ou "1h30min"
-  duracaoSegundos?: number; // Opcional, pode ser calculado
+  duracao: string;
+  duracaoSegundos?: number;
   url: string;
-  thumbnail?: string;
+  thumbnail?: string | null; // Permite null também
   origem?: OrigemVideo;
   nivel?: NivelVideo;
   tags?: string[];

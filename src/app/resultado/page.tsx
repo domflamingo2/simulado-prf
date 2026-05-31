@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
+import FeedbackCompartilhar from "@/components/FeedbackCompartilhar";
 import Footer from "@/components/layout/Footer";
 import { useCompartilharResultado } from "@/hooks/useCompartilharResultado";
 import { useInsights } from "@/hooks/useInsights";
@@ -25,8 +26,16 @@ export default function ResultadoPage() {
   const { simulado, historico, comparacao, classificacao, erroCarregamento } =
     useResultadoData();
   const insights = useInsights(simulado, historico);
-  const { resultadoRef, gerandoImagem, compartilharResultado, salvarImagem } =
-    useCompartilharResultado();
+  const {
+    resultadoRef,
+    gerandoImagem,
+    progresso,
+    erro,
+    cancelarGeracao,
+    compartilharResultado,
+    salvarImagem,
+    compartilharViaWebShare,
+  } = useCompartilharResultado();
 
   const refazerSimulado = useCallback(() => {
     if (!simulado) return;
@@ -270,8 +279,16 @@ export default function ResultadoPage() {
             Página Inicial
           </Link>
         </motion.div>
+        <FeedbackCompartilhar
+          gerandoImagem={gerandoImagem}
+          progresso={progresso}
+          erro={erro}
+          onCompartilhar={compartilharResultado}
+          onSalvar={salvarImagem}
+          onCompartilharWeb={compartilharViaWebShare}
+          onCancelar={cancelarGeracao}
+        />
       </div>
-
       <Footer />
     </div>
   );
