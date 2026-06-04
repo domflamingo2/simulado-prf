@@ -1,4 +1,4 @@
-// types/compartilhar.types.ts
+// src/types/compartilhar.types.ts
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS DE COMPARTILHAMENTO

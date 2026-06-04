@@ -1,3 +1,5 @@
+// src/lib/error-handling.ts
+
 /**
  * Classe de erro customizada para Simulado
  * Fornece código de erro e mensagem padronizados

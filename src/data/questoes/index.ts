@@ -1150,15 +1150,15 @@ export const MODOS_CONFIG: Record<string, ModoConfig> = {
 // Importações mantidas do projeto original — cada módulo de questões
 // continua separado por disciplina para facilitar manutenção do conteúdo.
 
-import { questoesAdministracao } from "./questoes/administracao";
-import { questoesArquivologia } from "./questoes/arquivologia";
-import { questoesDireitoAdministrativo } from "./questoes/direito-administrativo";
-import { questoesDireitoConstitucional } from "./questoes/direito-constitucional";
-import { questoesEtica } from "./questoes/etica";
-import { questoesInformatica } from "./questoes/informatica";
-import { questoesLegislacaoPRF } from "./questoes/legislacao-prf";
-import { questoesPortugues } from "./questoes/portugues";
-import { questoesRaciocinioLogico } from "./questoes/raciocinio-logico";
+import { questoesAdministracao } from "./bancodequestao/administracao";
+import { questoesArquivologia } from "./bancodequestao/arquivologia";
+import { questoesDireitoAdministrativo } from "./bancodequestao/direito-administrativo";
+import { questoesDireitoConstitucional } from "./bancodequestao/direito-constitucional";
+import { questoesEtica } from "./bancodequestao/etica";
+import { questoesInformatica } from "./bancodequestao/informatica";
+import { questoesLegislacaoPRF } from "./bancodequestao/legislacao-prf";
+import { questoesPortugues } from "./bancodequestao/portugues";
+import { questoesRaciocinioLogico } from "./bancodequestao/raciocinio-logico";
 
 export const questoes: Questao[] = [
   ...questoesPortugues,

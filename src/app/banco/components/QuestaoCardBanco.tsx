@@ -19,7 +19,7 @@ import {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { Questao } from "@/data/index";
+import { Questao } from "@/data/questoes/index";
 
 // ═══════════════════════════════════════════════════════════
 // CONSTANTES E TIPOS

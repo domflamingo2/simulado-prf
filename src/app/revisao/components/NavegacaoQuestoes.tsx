@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Grid3x3, Minus, XCircle } from "lucide-react";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { QuestaoRespondida } from "@/data/index";
+import { QuestaoRespondida } from "@/data/questoes/index";
 
 import { MiniQuestaoDot } from "./MiniQuestaoDot";
 

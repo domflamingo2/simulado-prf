@@ -1,10 +1,12 @@
+// src/hooks/useTreinoConfig.ts
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 
-import { DISCIPLINAS_LABELS, questoes } from "@/data";
+import { DISCIPLINAS_LABELS, questoes } from "@/data/questoes";
 
-import { Disciplina } from "@/data/index";
+import { Disciplina } from "@/data/questoes/index";
 
 type PerformanceLevel = "bom" | "medio" | "baixo";
 

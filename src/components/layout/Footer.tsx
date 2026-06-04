@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { getTotalQuestoes } from "./../../data/index"; // Função para obter o total de questões
+import { getTotalQuestoes } from "../../data/questoes/index"; // Função para obter o total de questões
 
 const Footer = () => {
   const anoAtual = new Date().getFullYear();

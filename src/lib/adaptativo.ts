@@ -1,10 +1,11 @@
-// lib/adaptativo.ts
+// src/lib/adaptativo.ts
+
 import {
   Disciplina,
   HistoricoSimulado,
   Questao,
   QuestaoRespondida,
-} from "@/data/index";
+} from "@/data/questoes/index";
 import { embaralhar } from "./simulado-logic";
 
 // ═══════════════════════════════════════════════════════════

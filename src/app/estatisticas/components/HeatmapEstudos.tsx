@@ -3,7 +3,7 @@
 import { Calendar, Flame, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { HistoricoSimulado } from "@/data/index";
+import { HistoricoSimulado } from "@/data/questoes/index";
 
 // Corrigido: usa T12:00:00 para evitar deslocamento de fuso horário UTC
 function getDiaLocal(dataISO: string): string {

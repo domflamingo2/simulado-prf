@@ -1,6 +1,7 @@
-// src/types/youtube.d.ts (mantido, mas removendo duplicatas)
-// Declaração de tipos para API do YouTube IFrame Player
+// src/types/youtube.d.ts
 
+// Declaração de tipos para API do YouTube IFrame Player
+// Baseado na documentação oficial: https://developers.google.com/youtube/iframe_api_reference
 declare global {
   interface Window {
     onYouTubeIframeAPIReady?: () => void;

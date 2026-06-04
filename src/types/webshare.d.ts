@@ -1,4 +1,4 @@
-// types/webshare.d.ts
+// src/types/webshare.d.ts
 
 interface ShareData {
   title?: string;

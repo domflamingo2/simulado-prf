@@ -5,7 +5,7 @@ import { BarChart3, Calendar, ChevronDown, Clock, Trophy } from "lucide-react";
 import { useState } from "react";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { HistoricoSimulado } from "@/data/index";
+import { HistoricoSimulado } from "@/data/questoes/index";
 
 interface SeletorSimuladoProps {
   simulados: HistoricoSimulado[];

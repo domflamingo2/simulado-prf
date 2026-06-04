@@ -1,3 +1,5 @@
+// src/hooks/useSimulado.ts
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -11,7 +13,7 @@ import {
   Questao,
   QuestaoRespondida,
   RespostaCebraspe,
-} from "@/data/index";
+} from "@/data/questoes/index";
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS DO HOOK

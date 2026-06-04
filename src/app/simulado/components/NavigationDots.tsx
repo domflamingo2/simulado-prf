@@ -1,6 +1,6 @@
 "use client";
 
-import { QuestaoRespondida } from "@/data/index";
+import { QuestaoRespondida } from "@/data/questoes/index";
 
 interface NavigationDotsProps {
   total: number;

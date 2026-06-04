@@ -1,4 +1,4 @@
-// lib/compartilhar-metricas.ts
+// src/lib/compartilhar-metricas.ts
 
 import type {
   MetricaCompartilhamento,

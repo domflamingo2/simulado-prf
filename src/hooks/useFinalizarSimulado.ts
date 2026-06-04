@@ -1,9 +1,11 @@
+// src/hooks/useFinalizarSimulado.ts
+
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { HistoricoSimulado, QuestaoRespondida } from "@/data/index";
+import { HistoricoSimulado, QuestaoRespondida } from "@/data/questoes/index";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { calcularEstatisticas } from "@/lib/simulado-logic";
 

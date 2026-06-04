@@ -1,10 +1,11 @@
 // src/hooks/useResultadoData.ts
+
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { HistoricoSimulado } from "@/data/index";
+import { HistoricoSimulado } from "@/data/questoes/index";
 import { classificarDesempenho } from "@/lib/simulado-logic";
 
 const STORAGE_KEYS = {

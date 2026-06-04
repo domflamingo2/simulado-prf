@@ -1,6 +1,8 @@
+// src/hooks/useQuestoesFiltradas.ts
+
 import { useMemo } from "react";
 
-import { QuestaoRespondida } from "@/data/index";
+import { QuestaoRespondida } from "@/data/questoes/index";
 
 type FiltroRevisao = "todas" | "erros" | "acertos" | "brancos" | "marcadas";
 type OrdenacaoRevisao = "numero" | "disciplina" | "dificuldade";

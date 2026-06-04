@@ -9,7 +9,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { Disciplina } from "@/data/index";
+import { Disciplina } from "@/data/questoes/index";
 
 interface DisciplinaCardProps {
   disciplina: {

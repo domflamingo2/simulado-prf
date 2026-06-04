@@ -13,7 +13,7 @@ import {
 
 import Footer from "@/components/layout/Footer";
 import { NewBadgeNotification } from "@/components/ui/Badge";
-import { NIVEIS } from "@/data/index";
+import { NIVEIS } from "@/data/questoes/index";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { classificarDesempenho } from "@/lib/simulado-logic";

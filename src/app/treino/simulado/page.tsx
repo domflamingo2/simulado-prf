@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 
-import { QuestaoRespondida } from "@/data/index";
+import { QuestaoRespondida } from "@/data/questoes/index";
 import { BackgroundGlow } from "../components/BackgroundGlow";
 
 const QuestaoCard = lazy(() => import("@/components/QuestaoCard"));

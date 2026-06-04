@@ -13,7 +13,7 @@ import {
 import { toast, Toaster } from "sonner";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { questoes } from "@/data";
+import { questoes } from "@/data/questoes";
 import { useFinalizarSimulado } from "@/hooks/useFinalizarSimulado";
 import { useSimuladoState } from "@/hooks/useSimuladoState";
 

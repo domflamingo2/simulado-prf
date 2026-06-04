@@ -1,8 +1,9 @@
 // src/hooks/useInsights.ts
+
 import { useMemo } from "react";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
-import { HistoricoSimulado } from "@/data/index";
+import { HistoricoSimulado } from "@/data/questoes/index";
 
 interface Insight {
   id: string;

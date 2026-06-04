@@ -3,7 +3,7 @@
 "use client";
 
 import Footer from "@/components/layout/Footer";
-import { NIVEIS } from "@/data/index";
+import { NIVEIS } from "@/data/questoes/index";
 import { categoriasVideo, Video } from "@/data/videoaulas/videoAulasData";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { useVideoProgress } from "@/hooks/useVideoProgress";

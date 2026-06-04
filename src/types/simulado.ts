@@ -1,4 +1,4 @@
-// types/simulado.ts
+// src/types/simulado.ts
 
 export type NavegacaoDirecao = "anterior" | "proxima" | "finalizar";
 

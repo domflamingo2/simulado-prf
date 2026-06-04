@@ -1,4 +1,9 @@
-import { Disciplina, Questao } from "@/data/index";
+// src/types/erros.ts
+
+// ═══════════════════════════════════════════════════════════
+// TIPOS DE DOMÍNIO — Banco de Erros
+// ═══════════════════════════════════════════════════════════
+import { Disciplina, Questao } from "@/data/questoes/index";
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS DE DOMÍNIO — Banco de Erros

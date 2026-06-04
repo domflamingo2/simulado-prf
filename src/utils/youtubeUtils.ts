@@ -1,5 +1,4 @@
 // src/utils/youtubeUtils.ts
-// Utilitários centralizados para YouTube
 
 export type YouTubeThumbnailQuality = "default" | "mq" | "hq" | "sd" | "maxres";
 

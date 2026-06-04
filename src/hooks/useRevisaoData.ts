@@ -1,9 +1,11 @@
+// src/hooks/useRevisaoData.ts
+
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { HistoricoSimulado } from "@/data/index";
+import { HistoricoSimulado } from "@/data/questoes/index";
 import { classificarDesempenho } from "@/lib/simulado-logic";
 
 type FiltroRevisao = "todas" | "erros" | "acertos" | "brancos" | "marcadas";

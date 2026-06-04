@@ -1,5 +1,7 @@
-import { questoes } from "@/data";
-import { Disciplina } from "@/data/index";
+// src/lib/treino.ts
+
+import { questoes } from "@/data/questoes";
+import { Disciplina } from "@/data/questoes/index";
 import { embaralhar } from "./simulado-logic";
 
 export interface TreinoConfig {

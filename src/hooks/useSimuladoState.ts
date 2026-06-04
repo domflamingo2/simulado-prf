@@ -1,8 +1,10 @@
+// src/hooks/useSimuladoState.ts
+
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Questao, QuestaoRespondida } from "@/data/index";
+import { Questao, QuestaoRespondida } from "@/data/questoes/index";
 import {
   gerarAnaliseAdaptativa,
   selecionarQuestoesAdaptativas,

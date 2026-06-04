@@ -7,7 +7,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast, Toaster } from "sonner";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
-import { getEstatisticasBanco, getStatsPorDisciplina, questoes } from "@/data";
+import {
+  getEstatisticasBanco,
+  getStatsPorDisciplina,
+  questoes,
+} from "@/data/questoes";
 import { AcoesBancoWithErrorBoundary } from "./components/AcoesBanco";
 import { EmptyStateBanco } from "./components/EmptyStateBanco";
 import { EstatisticasBanco } from "./components/EstatisticasBanco";

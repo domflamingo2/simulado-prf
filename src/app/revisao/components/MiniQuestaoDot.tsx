@@ -1,6 +1,6 @@
 "use client";
 
-import { QuestaoRespondida } from "@/data/index";
+import { QuestaoRespondida } from "@/data/questoes/index";
 import { motion } from "framer-motion";
 import { CheckCircle2, Flag, Minus, XCircle } from "lucide-react";
 

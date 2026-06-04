@@ -2,7 +2,7 @@
 
 import { CheckCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
-import { QuestaoRespondida } from "@/data/index";
+import { QuestaoRespondida } from "@/data/questoes/index";
 import { NavigationDots } from "./NavigationDots";
 
 interface FooterSimuladoProps {

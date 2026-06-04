@@ -1,6 +1,6 @@
 "use client";
 
-import { QuestaoRespondida } from "@/data/index";
+import { QuestaoRespondida } from "@/data/questoes/index";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,

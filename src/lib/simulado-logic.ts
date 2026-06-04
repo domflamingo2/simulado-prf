@@ -1,4 +1,5 @@
-// lib/simulado-logic.ts
+// src/lib/simulado-logic.ts
+
 import {
   ClassificacaoDesempenho,
   Disciplina,
@@ -7,9 +8,9 @@ import {
   ModoSimulado,
   Questao,
   QuestaoRespondida,
-} from "@/data/index";
+} from "@/data/questoes/index";
 
-import { ESTRUTURA_PROVA } from "@/data";
+import { ESTRUTURA_PROVA } from "@/data/questoes";
 
 // ═══════════════════════════════════════════════════════════
 // CONSTANTES

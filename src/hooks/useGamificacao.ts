@@ -1,3 +1,5 @@
+// src/hooks/useGamificacao.ts
+
 "use client";
 
 import {
@@ -9,7 +11,7 @@ import {
   calcularNivel,
   criarProgressoInicial,
   verificarNovasConquistas,
-} from "@/data/index";
+} from "@/data/questoes/index";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 

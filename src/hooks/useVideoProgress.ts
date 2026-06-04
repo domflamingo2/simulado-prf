@@ -1,4 +1,5 @@
-// src/app/video-aulas/hooks/useVideoProgress.ts
+// src/hooks/useVideoProgress.ts
+
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

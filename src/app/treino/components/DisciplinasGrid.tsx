@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import { Layers, Sparkles, Target } from "lucide-react";
 
-import { questoes } from "@/data";
-import { Disciplina } from "@/data/index";
+import { questoes } from "@/data/questoes";
+import { Disciplina } from "@/data/questoes/index";
 
 import { DisciplinaCard } from "./DisciplinaCard";
 
