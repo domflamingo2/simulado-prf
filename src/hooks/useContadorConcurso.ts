@@ -28,8 +28,7 @@ interface UseContadorConcursoOptions {
 
 const parseDate = (date: Date | string) => {
   if (date instanceof Date) return date;
-
-  // ⚠️ Correção de timezone: evita bug com string ISO sem timezone
+  // Corrige timezone: strings sem 'T' são tratadas como data local
   return new Date(date.includes("T") ? date : `${date}T00:00:00`);
 };
 
@@ -59,11 +58,11 @@ export function useContadorConcurso({
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const expiradoChamadoRef = useRef(false);
-
   const dataRef = useRef(parseDate(dataConcurso));
   const onExpiradoRef = useRef(onExpirado);
   const onTickRef = useRef(onTick);
 
+  // Atualiza refs quando os valores mudam
   useEffect(() => {
     dataRef.current = parseDate(dataConcurso);
     expiradoChamadoRef.current = false;
@@ -75,7 +74,6 @@ export function useContadorConcurso({
   }, [onExpirado, onTick]);
 
   /* ================= CORE ================= */
-
   const calcular = useCallback(() => {
     const agora = Date.now();
     const diff = dataRef.current.getTime() - agora;
@@ -90,7 +88,6 @@ export function useContadorConcurso({
         expirado: true,
         formatado: "00:00:00",
       };
-
       setTempo(finalState);
 
       if (!expiradoChamadoRef.current) {
@@ -98,7 +95,11 @@ export function useContadorConcurso({
         onExpiradoRef.current?.();
       }
 
-      stop();
+      // Para o intervalo diretamente (evita chamar stop antes da definição)
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       return;
     }
 
@@ -118,7 +119,7 @@ export function useContadorConcurso({
     };
 
     setTempo((prev) => {
-      // evita re-render inútil
+      // Evita re-render desnecessário se os valores não mudaram
       if (
         prev.segundos === novoEstado.segundos &&
         prev.minutos === novoEstado.minutos &&
@@ -134,12 +135,9 @@ export function useContadorConcurso({
   }, []);
 
   /* ================= CONTROLES ================= */
-
   const start = useCallback(() => {
-    if (intervalRef.current) return;
-
-    calcular();
-
+    if (intervalRef.current) return; // já rodando
+    calcular(); // executa imediatamente
     intervalRef.current = setInterval(calcular, intervalo);
   }, [calcular, intervalo]);
 
@@ -157,14 +155,12 @@ export function useContadorConcurso({
   }, [calcular, stop]);
 
   /* ================= EFFECT ================= */
-
   useEffect(() => {
     if (autoStart) start();
     return stop;
   }, [autoStart, start, stop]);
 
   /* ================= RETURN ================= */
-
   return {
     ...tempo,
     start,

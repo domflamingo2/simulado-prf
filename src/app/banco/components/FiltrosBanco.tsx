@@ -55,18 +55,6 @@ export interface FiltrosBancoProps {
   onFiltroRapido?: (tipo: "recentes" | "dificeis" | "sem_tags") => void;
 }
 
-const DIFICULDADE_LABELS: Record<string, string> = {
-  "1": "Fácil",
-  "2": "Médio",
-  "3": "Difícil",
-};
-
-const DIFICULDADE_CORES: Record<string, string> = {
-  "1": "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
-  "2": "text-amber-400 bg-amber-500/10 border-amber-500/30",
-  "3": "text-rose-400 bg-rose-500/10 border-rose-500/30",
-};
-
 const MAX_CHIPS = 6;
 
 // ═══════════════════════════════════════════════════════════
@@ -207,7 +195,20 @@ export function FiltrosBanco({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  // Inicialização lazy do localStorage
+  const [filtrosAbertos, setFiltrosAbertos] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const saved = localStorage.getItem("filtros_abertos");
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // ignore parse error
+      }
+    }
+    return false;
+  });
+
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [autocompleteAberto, setAutocompleteAberto] = useState(false);
 
@@ -238,16 +239,6 @@ export function FiltrosBanco({
   }, [busca, disciplinaFiltro, dificuldadeFiltro]);
 
   const temFiltrosAtivos = filtrosAtivosCount > 0;
-
-  // Persistência da abertura dos filtros
-  useEffect(() => {
-    const saved = localStorage.getItem("filtros_abertos");
-    if (saved !== null) {
-      try {
-        setFiltrosAbertos(JSON.parse(saved));
-      } catch {}
-    }
-  }, []);
 
   const salvarFiltrosAbertos = useDebouncedCallback(
     useCallback((aberto: boolean) => {
@@ -302,17 +293,25 @@ export function FiltrosBanco({
     const urlDisciplina = searchParams.get("disciplina");
     const urlDificuldade = searchParams.get("dificuldade");
 
-    if (urlBusca) setBuscaRef.current(urlBusca);
-    if (urlDisciplina) setDisciplinaRef.current(urlDisciplina);
-    if (urlDificuldade && ["1", "2", "3"].includes(urlDificuldade)) {
+    if (urlBusca && urlBusca !== busca) setBuscaRef.current(urlBusca);
+    if (urlDisciplina && urlDisciplina !== disciplinaFiltro)
+      setDisciplinaRef.current(urlDisciplina);
+    if (
+      urlDificuldade &&
+      ["1", "2", "3"].includes(urlDificuldade) &&
+      urlDificuldade !== dificuldadeFiltro
+    ) {
       setDificuldadeRef.current(urlDificuldade as DificuldadeLevel);
     }
-  }, []);
+  }, [searchParams, busca, disciplinaFiltro, dificuldadeFiltro]);
 
   // Input controlado
   const [inputLocal, setInputLocal] = useState(busca);
 
   useEffect(() => {
+    // Sincroniza o estado local com a prop `busca` quando esta muda.
+    // Necessário porque o input usa debounce e precisa de um estado controlado.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInputLocal(busca);
   }, [busca]);
 

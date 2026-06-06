@@ -11,7 +11,14 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast, Toaster } from "sonner";
 
 import { QuestaoRespondida } from "@/data/questoes/index";
@@ -37,7 +44,9 @@ export default function TreinoSimuladoPage() {
   const [loading, setLoading] = useState(true);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
-  const [tempoInicio] = useState(Date.now());
+
+  // Usar ref para tempo de início (não causa re-render e é impuro apenas uma vez)
+  const tempoInicioRef = useRef(Date.now());
 
   useEffect(() => {
     const saved = localStorage.getItem("prf_treino_atual");
@@ -48,6 +57,7 @@ export default function TreinoSimuladoPage() {
 
     try {
       const parsed: TreinoState = JSON.parse(saved);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTreino(parsed);
       toast.success(
         `Treino de ${parsed.disciplina.replace(/_/g, " ")} carregado!`,
@@ -60,6 +70,70 @@ export default function TreinoSimuladoPage() {
       setLoading(false);
     }
   }, [router]);
+
+  // Funções auxiliares (declaradas antes de serem usadas)
+  const confirmarFinalizacao = useCallback(() => {
+    setIsFinalizing(true);
+
+    const acertos = Object.entries(respostas).filter(
+      ([idx, resp]) =>
+        resp && treino?.questoes[parseInt(idx)].resposta === resp,
+    ).length;
+
+    const total = treino?.questoes.length || 0;
+    const percentual = total > 0 ? (acertos / total) * 100 : 0;
+    const tempoTotal = Math.floor((Date.now() - tempoInicioRef.current) / 1000);
+    // minutos e segundos não usados – removidos
+    // const minutos = Math.floor(tempoTotal / 60);
+    // const segundos = tempoTotal % 60;
+
+    // Salvar resultado no localStorage
+    const resultado = {
+      data: new Date().toISOString(),
+      disciplina: treino?.disciplina,
+      acertos,
+      total,
+      percentual,
+      tempo: tempoTotal,
+      questoes: treino?.questoes.map((q, idx) => ({
+        id: q.id,
+        respostaUsuario: respostas[idx] || null,
+        respostaCorreta: q.resposta,
+      })),
+    };
+
+    const historicoTreinos = localStorage.getItem("prf_historico_treinos");
+    const historico = historicoTreinos ? JSON.parse(historicoTreinos) : [];
+    historico.unshift(resultado);
+    localStorage.setItem("prf_historico_treinos", JSON.stringify(historico));
+
+    toast.success(
+      `Treino finalizado! ${acertos}/${total} acertos (${percentual.toFixed(1)}%)`,
+    );
+
+    localStorage.removeItem("prf_treino_atual");
+
+    setTimeout(() => {
+      router.push("/treino");
+    }, 1500);
+  }, [respostas, treino, router]);
+
+  const handleFinalizar = useCallback(() => {
+    if (isFinalizing) return;
+
+    const respondidas = Object.keys(respostas).length;
+    const total = treino?.questoes.length || 0;
+
+    if (respondidas < total) {
+      toast.warning(
+        `Você respondeu apenas ${respondidas} de ${total} questões. Deseja finalizar mesmo assim?`,
+      );
+      setShowExitConfirm(true);
+      return;
+    }
+
+    confirmarFinalizacao();
+  }, [respostas, treino, isFinalizing, confirmarFinalizacao]);
 
   const handleResposta = useCallback(
     (resposta: "CERTO" | "ERRADO" | null) => {
@@ -98,68 +172,6 @@ export default function TreinoSimuladoPage() {
       setQuestaoAtual((prev) => prev - 1);
     }
   }, [questaoAtual]);
-
-  const handleFinalizar = useCallback(() => {
-    if (isFinalizing) return;
-
-    const respondidas = Object.keys(respostas).length;
-    const total = treino?.questoes.length || 0;
-
-    if (respondidas < total) {
-      toast.warning(
-        `Você respondeu apenas ${respondidas} de ${total} questões. Deseja finalizar mesmo assim?`,
-      );
-      setShowExitConfirm(true);
-      return;
-    }
-
-    confirmarFinalizacao();
-  }, [respostas, treino, isFinalizing]);
-
-  const confirmarFinalizacao = useCallback(() => {
-    setIsFinalizing(true);
-
-    const acertos = Object.entries(respostas).filter(
-      ([idx, resp]) =>
-        resp && treino?.questoes[parseInt(idx)].resposta === resp,
-    ).length;
-
-    const total = treino?.questoes.length || 0;
-    const percentual = total > 0 ? (acertos / total) * 100 : 0;
-    const tempoTotal = Math.floor((Date.now() - tempoInicio) / 1000);
-    const minutos = Math.floor(tempoTotal / 60);
-    const segundos = tempoTotal % 60;
-
-    // Salvar resultado no localStorage
-    const resultado = {
-      data: new Date().toISOString(),
-      disciplina: treino?.disciplina,
-      acertos,
-      total,
-      percentual,
-      tempo: tempoTotal,
-      questoes: treino?.questoes.map((q, idx) => ({
-        id: q.id,
-        respostaUsuario: respostas[idx] || null,
-        respostaCorreta: q.resposta,
-      })),
-    };
-
-    const historicoTreinos = localStorage.getItem("prf_historico_treinos");
-    const historico = historicoTreinos ? JSON.parse(historicoTreinos) : [];
-    historico.unshift(resultado);
-    localStorage.setItem("prf_historico_treinos", JSON.stringify(historico));
-
-    toast.success(
-      `Treino finalizado! ${acertos}/${total} acertos (${percentual.toFixed(1)}%)`,
-    );
-
-    localStorage.removeItem("prf_treino_atual");
-
-    setTimeout(() => {
-      router.push("/treino");
-    }, 1500);
-  }, [respostas, treino, tempoInicio, router]);
 
   const handleSair = useCallback(() => {
     localStorage.removeItem("prf_treino_atual");

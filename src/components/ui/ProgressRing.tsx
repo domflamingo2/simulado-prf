@@ -2,7 +2,7 @@
 
 import { motion, useAnimation } from "framer-motion";
 import { Check, Target, TrendingUp, Trophy } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 
 type ProgressRingVariant =
   | "default"
@@ -98,11 +98,9 @@ export default function ProgressRing({
   // Resolve tamanho
   const resolvedSize = typeof size === "string" ? SIZE_MAP[size] : size;
 
-  // Resolve cores
+  // Resolve cores (removeu primaryColor e glowColor que não eram usadas)
   const variantConfig = VARIANT_COLORS[variant];
-  const primaryColor = customColor || variantConfig.primary;
   const gradientColors = customGradient || variantConfig.gradient;
-  const glowColor = variantConfig.glow;
 
   // Calcula dimensões
   const strokeWidth = customStrokeWidth || Math.max(4, resolvedSize / 15);
@@ -121,6 +119,7 @@ export default function ProgressRing({
   // Detecta completo
   useEffect(() => {
     if (progress >= 100 && !isComplete) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsComplete(true);
       onComplete?.();
       controls.start({
@@ -152,8 +151,8 @@ export default function ProgressRing({
     }
   }, [isComplete, showIcon, variant]);
 
-  // ID único para gradiente
-  const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
+  // ID único estável para gradiente – usando useId do React 18+
+  const gradientId = `gradient-${useId()}`;
 
   return (
     <motion.div

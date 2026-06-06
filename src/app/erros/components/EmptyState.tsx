@@ -12,7 +12,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 
@@ -21,7 +20,6 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ tipo }: EmptyStateProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const isSemSimulados = tipo === "sem-simulados";
 
   const configs = {
@@ -145,8 +143,6 @@ export function EmptyState({ tipo }: EmptyStateProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
           >
             <Link
               href={config.acao.href}

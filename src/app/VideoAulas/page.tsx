@@ -42,7 +42,6 @@ export default function VideoAulasPage() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [progressoMap, setProgressoMap] = useState<Record<string, number>>({});
 
   const { progress } = useGamificacao();
   const {
@@ -68,11 +67,11 @@ export default function VideoAulasPage() {
       }),
     );
     return set;
-  }, [isAssistido, totalAssistidos]);
+  }, [isAssistido]);
 
   const ultimosAssistidosIds = useMemo(
     () => getUltimosAssistidos(5),
-    [getUltimosAssistidos, totalAssistidos],
+    [getUltimosAssistidos],
   );
 
   const ultimosVideos = useMemo(
@@ -111,23 +110,13 @@ export default function VideoAulasPage() {
   const handleMarcarAssistido = useCallback(
     (videoId: string) => {
       marcarAssistido(videoId);
-      setProgressoMap((prev) => ({ ...prev, [videoId]: 1 }));
     },
     [marcarAssistido],
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCompleteCategoria = useCallback(
     (_categoriaNome: string) => {},
-    [],
-  );
-
-  const handleProgressoChange = useCallback(
-    (videoId: string, progresso: number) => {
-      setProgressoMap((prev) => {
-        if (Math.abs((prev[videoId] ?? 0) - progresso) < 0.02) return prev;
-        return { ...prev, [videoId]: progresso };
-      });
-    },
     [],
   );
 
@@ -378,6 +367,8 @@ export default function VideoAulasPage() {
                   ordenacaoGlobal={ordenacaoGlobal}
                   searchTermGlobal={searchTermGlobal}
                   viewMode={viewMode}
+                  onOrdenacaoGlobalChange={setOrdenacaoGlobal}
+                  onSearchGlobalChange={setSearchTermGlobal}
                 />
               ))}
             </motion.div>
@@ -435,7 +426,6 @@ export default function VideoAulasPage() {
         onClose={() => setSelectedVideo(null)}
         onMarcarAssistido={handleMarcarAssistido}
         isAssistido={selectedVideo ? isAssistido(selectedVideo.id) : false}
-        onProgressoChange={handleProgressoChange}
       />
 
       <Footer />

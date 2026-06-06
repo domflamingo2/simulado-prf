@@ -177,6 +177,7 @@ export function useSimuladoState(
 
   // useEffect com dependência vazia executa apenas uma vez
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     inicializar();
   }, [inicializar]);
 

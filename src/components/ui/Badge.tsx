@@ -14,7 +14,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type BadgeType =
   | "primeiro"
@@ -249,17 +249,25 @@ const BADGE_DATABASE: Record<BadgeType, BadgeConfig> = {
 
 // Componente de partículas para badges lendários
 function BadgeParticles({ count, color }: { count: number; color: string }) {
+  // Gera posições fixas para cada partícula uma única vez
+  const particles = useMemo(() => {
+    return Array.from({ length: count }).map(() => ({
+      x: (Math.random() - 0.5) * 60,
+      y: (Math.random() - 0.5) * 60,
+    }));
+  }, [count]);
+
   return (
     <AnimatePresence>
-      {Array.from({ length: count }).map((_, i) => (
+      {particles.map((particle, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
           animate={{
             opacity: [0, 1, 0],
             scale: [0, 1, 0],
-            x: (Math.random() - 0.5) * 60,
-            y: (Math.random() - 0.5) * 60,
+            x: particle.x,
+            y: particle.y,
           }}
           transition={{
             duration: 2,

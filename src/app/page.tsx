@@ -3,7 +3,8 @@
 
 import Footer from "@/components/layout/Footer";
 import { Loader2 } from "lucide-react";
-import { Suspense, lazy, useEffect } from "react";
+import Link from "next/link";
+import { Suspense, lazy, useEffect, useState } from "react";
 
 // Componente de loading reutilizável
 const SectionLoader = ({ height = "h-64" }: { height?: string }) => (
@@ -110,7 +111,9 @@ const PageHeader = () => (
   <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       <div className="flex items-center justify-between">
-        <a href="/" className="flex items-center gap-3 group">
+        <Link href="/" className="flex items-center gap-3 group">
+          {" "}
+          {/* ✅ alterado para Link */}
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-all">
             <svg
               className="w-6 h-6 text-white"
@@ -132,7 +135,7 @@ const PageHeader = () => (
             </h1>
             <p className="text-xs text-slate-400">Banca CEBRASPE</p>
           </div>
-        </a>
+        </Link>
       </div>
     </div>
   </header>
@@ -211,6 +214,3 @@ export default function ComoFuncionaPage() {
     </>
   );
 }
-
-// Import necessário
-import { useState } from "react";

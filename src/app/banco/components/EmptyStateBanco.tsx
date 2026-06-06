@@ -221,40 +221,40 @@ const getContextualSuggestions = (
 // ============================================================
 // Dicas Rápidas Rotativas
 // ============================================================
-const QuickTips = () => {
-  const tips = [
-    {
-      icon: Clock,
-      text: "86% dos usuários encontram mais questões removendo filtros",
-      color: "text-blue-400",
-    },
-    {
-      icon: ThumbsUp,
-      text: "Questões recentes têm maior taxa de acerto",
-      color: "text-emerald-400",
-    },
-    {
-      icon: BookOpen,
-      text: "Tente filtrar por diferentes níveis de dificuldade",
-      color: "text-purple-400",
-    },
-    {
-      icon: Sparkles,
-      text: "Use palavras-chave relacionadas ao tema",
-      color: "text-amber-400",
-    },
-  ];
+const QUICK_TIPS = [
+  {
+    icon: Clock,
+    text: "86% dos usuários encontram mais questões removendo filtros",
+    color: "text-blue-400",
+  },
+  {
+    icon: ThumbsUp,
+    text: "Questões recentes têm maior taxa de acerto",
+    color: "text-emerald-400",
+  },
+  {
+    icon: BookOpen,
+    text: "Tente filtrar por diferentes níveis de dificuldade",
+    color: "text-purple-400",
+  },
+  {
+    icon: Sparkles,
+    text: "Use palavras-chave relacionadas ao tema",
+    color: "text-amber-400",
+  },
+];
 
+const QuickTips = () => {
   const [currentTip, setCurrentTip] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTip((prev) => (prev + 1) % tips.length);
+      setCurrentTip((prev) => (prev + 1) % QUICK_TIPS.length);
     }, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const TipIcon = tips[currentTip].icon;
+  const TipIcon = QUICK_TIPS[currentTip].icon;
 
   return (
     <motion.div
@@ -279,8 +279,10 @@ const QuickTips = () => {
               exit={{ opacity: 0, y: -10 }}
               className="text-xs text-slate-300 flex items-center gap-2"
             >
-              <TipIcon className={`w-3.5 h-3.5 ${tips[currentTip].color}`} />
-              {tips[currentTip].text}
+              <TipIcon
+                className={`w-3.5 h-3.5 ${QUICK_TIPS[currentTip].color}`}
+              />
+              {QUICK_TIPS[currentTip].text}
             </motion.p>
           </AnimatePresence>
         </div>
@@ -292,10 +294,23 @@ const QuickTips = () => {
 // ============================================================
 // Analytics Tracking
 // ============================================================
-const trackAnalytics = (event: string, properties?: any) => {
+interface GtagEvent {
+  (command: "event", action: string, params: Record<string, unknown>): void;
+}
+
+declare global {
+  interface Window {
+    gtag?: GtagEvent;
+  }
+}
+
+const trackAnalytics = (
+  event: string,
+  properties?: Record<string, unknown>,
+) => {
   console.log("[Analytics]", event, properties);
-  if (typeof window !== "undefined" && (window as any).gtag) {
-    (window as any).gtag("event", event, {
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", event, {
       ...properties,
       timestamp: new Date().toISOString(),
       component: "EmptyStateBanco",
@@ -322,19 +337,6 @@ export function EmptyStateBanco({
   );
   const Icon = suggestions.icon;
 
-  // Keyboard Shortcut
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        handleLimparFiltros();
-      }
-    };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
-
-  // Handle Limpar Filtros
   const handleLimparFiltros = useCallback(async () => {
     if (isCleaning) return;
     setIsCleaning(true);
@@ -351,6 +353,18 @@ export function EmptyStateBanco({
       setIsCleaning(false);
     }
   }, [isCleaning, onLimparFiltros, variant, filtrosAtivos]);
+
+  // Keyboard Shortcut
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleLimparFiltros();
+      }
+    };
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [handleLimparFiltros]);
 
   const handleSecondaryAction = () => {
     if (variant === "no-discipline" && onVerTodasDisciplinas) {

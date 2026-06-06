@@ -17,7 +17,6 @@ export function ConfirmExitModal({
   respondidas,
   total,
 }: ConfirmExitModalProps) {
-  const [isHoveredConfirm, setIsHoveredConfirm] = useState(false);
   const [isHoveredCancel, setIsHoveredCancel] = useState(false);
 
   const percentual = (respondidas / total) * 100;
@@ -113,8 +112,6 @@ export function ConfirmExitModal({
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onMouseEnter={() => setIsHoveredConfirm(true)}
-              onMouseLeave={() => setIsHoveredConfirm(false)}
               onClick={onConfirm}
               className="flex-1 relative overflow-hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-500/20 to-red-500/20 hover:from-rose-500/30 hover:to-red-500/30 text-rose-400 border border-rose-500/30 transition-all duration-200 group"
             >

@@ -15,7 +15,6 @@ import {
 import { useState } from "react";
 
 interface InsightCardProps {
-  id: string;
   tipo: "positivo" | "alerta" | "dica" | "info";
   mensagem: string;
   acao?: string;
@@ -24,7 +23,6 @@ interface InsightCardProps {
 }
 
 export function InsightCard({
-  id,
   tipo,
   mensagem,
   acao,

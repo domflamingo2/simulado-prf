@@ -102,15 +102,30 @@ const ETAPAS = [
   },
 ];
 
-const CarreiraEtapa = ({ etapa, isOpen, onClick }: any) => {
+interface EtapaProps {
+  etapa: {
+    numero: number;
+    titulo: string;
+    icon: React.ElementType;
+    descricao: string;
+    tempo: string;
+    salario: string;
+    beneficios: string[];
+    cor: string;
+  };
+  isOpen: boolean;
+  onClick: () => void;
+}
+
+const CarreiraEtapa = ({ etapa, isOpen, onClick }: EtapaProps) => {
   const Icon = etapa.icon;
-  const cores = {
+  const cores: Record<string, string> = {
     emerald: "from-emerald-500 to-teal-500",
     blue: "from-blue-500 to-cyan-500",
     purple: "from-purple-500 to-pink-500",
     rose: "from-rose-500 to-red-500",
   };
-  const gradiente = cores[etapa.cor as keyof typeof cores] || cores.emerald;
+  const gradiente = cores[etapa.cor] || cores.emerald;
 
   return (
     <motion.div variants={fadeIn} className="relative group">

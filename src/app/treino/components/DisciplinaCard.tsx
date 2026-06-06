@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   CheckCircle2,
   Grid3x3,
+  LucideIcon,
   Sparkles,
   Star,
   TrendingUp,
@@ -15,7 +16,7 @@ interface DisciplinaCardProps {
   disciplina: {
     value: Disciplina;
     label: string;
-    icon: any;
+    icon: LucideIcon;
     color: string;
     bgGradient: string;
     iconBg: string;

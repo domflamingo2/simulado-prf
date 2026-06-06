@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import {
   CheckCircle2,
   Clock,
+  LucideIcon,
   PlayCircle,
   Sparkles,
   Target,
@@ -61,7 +62,7 @@ function progressColor(pct: number): string {
   return "from-rose-500 to-pink-400";
 }
 
-function getInsightMessage(percentual: number, restante: number): string {
+function getInsightMessage(percentual: number, _restante: number): string {
   if (percentual === 100) return "🎉 Parabéns! Você completou todos os vídeos!";
   if (percentual >= 75) return "🚀 Quase lá! Continue com esse ritmo!";
   if (percentual >= 50) return "💪 Bom progresso! Continue assim!";
@@ -333,7 +334,7 @@ function MetricCard({
   color,
   highlight = false,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string;
   color: string;

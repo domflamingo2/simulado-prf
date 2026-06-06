@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Save, CheckCircle2, Clock, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, CheckCircle2, Clock, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface AutoSaveIndicatorProps {
   isSaving?: boolean;
@@ -10,25 +10,42 @@ interface AutoSaveIndicatorProps {
   error?: string | null;
 }
 
-export function AutoSaveIndicator({ 
-  isSaving = false, 
-  lastSaved = null, 
-  error = null 
+export function AutoSaveIndicator({
+  isSaving = false,
+  lastSaved = null,
+  error = null,
 }: AutoSaveIndicatorProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Efeito para tornar visível quando salvar começar e esconder após 3s
   useEffect(() => {
+    // Cancelar timeout anterior
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
     if (isSaving) {
       setIsVisible(true);
-      const timer = setTimeout(() => {
-        if (!isSaving) {
-          setIsVisible(false);
-        }
+    } else {
+      // Quando terminar de salvar, esperar 3s para esconder
+      timeoutRef.current = setTimeout(() => {
+        setIsVisible(false);
       }, 3000);
+    }
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [isSaving]);
+
+  // Garantir que o indicador fique visível se houver erro
+  useEffect(() => {
+    if (error) {
+      setIsVisible(true);
+      const timer = setTimeout(() => setIsVisible(false), 5000);
       return () => clearTimeout(timer);
     }
-  }, [isSaving]);
+  }, [error]);
 
   const getStatusConfig = () => {
     if (error) {
@@ -107,7 +124,11 @@ export function AutoSaveIndicator({
             {/* Ícone animado */}
             <motion.div
               animate={isSaving ? { rotate: 360 } : {}}
-              transition={{ duration: 1, repeat: isSaving ? Infinity : 0, ease: "linear" }}
+              transition={{
+                duration: 1,
+                repeat: isSaving ? Infinity : 0,
+                ease: "linear",
+              }}
             >
               <StatusIcon className={`w-3.5 h-3.5 ${config.color}`} />
             </motion.div>

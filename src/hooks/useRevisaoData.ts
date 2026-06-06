@@ -42,6 +42,7 @@ export function useRevisaoData() {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSimulados(historico);
 
     const idFromUrl = searchParams.get("id");

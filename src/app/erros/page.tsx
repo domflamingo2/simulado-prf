@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Filter, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Toaster, toast } from "sonner";
 
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
@@ -34,11 +34,6 @@ export default function ErrosPage() {
   const [busca, setBusca] = useState("");
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
   const [ordenacao, setOrdenacao] = useState<OrdenacaoType>("vezes");
-  const [isPageLoaded, setIsPageLoaded] = useState(false);
-
-  useEffect(() => {
-    setIsPageLoaded(true);
-  }, []);
 
   // Estatísticas por disciplina
   const statsPorDisciplina = useMemo(() => {

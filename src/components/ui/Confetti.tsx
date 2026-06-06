@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useAnimation } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type ConfettiShape = "square" | "circle" | "rectangle" | "triangle";
@@ -23,6 +23,7 @@ interface ConfettiPiece {
   velocityY: number;
   rotationSpeed: number;
   delay: number;
+  durationMultiplier: number; // novo campo para evitar Math.random durante render
 }
 
 interface ConfettiProps {
@@ -79,7 +80,6 @@ export default function Confetti({
   const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const controls = useAnimation();
 
   // Detecta mobile
   useEffect(() => {
@@ -117,9 +117,11 @@ export default function Confetti({
       const angle =
         (Math.random() * spread * 180 - spread * 90) * (Math.PI / 180);
       const velocity = 15 + Math.random() * 20;
-      const size =
+      const baseSize =
         particleSize.min +
         Math.random() * (particleSize.max - particleSize.min);
+      // Escala relativa ao tamanho base
+      const scale = baseSize / 8;
 
       return {
         id: i,
@@ -127,12 +129,13 @@ export default function Confetti({
         x: originPos.x + (Math.random() - 0.5) * 10,
         y: originPos.y,
         rotation: Math.random() * 360,
-        scale: 0.8 + Math.random() * 0.4,
+        scale,
         shape: shapes[Math.floor(Math.random() * shapes.length)],
         velocityX: Math.sin(angle) * velocity * (1 + wind),
         velocityY: -Math.cos(angle) * velocity * 0.8,
         rotationSpeed: (Math.random() - 0.5) * 20,
         delay: Math.random() * 0.3,
+        durationMultiplier: 0.8 + Math.random() * 0.4,
       };
     });
   }, [count, colors, spread, wind, shapes, particleSize, getOriginPosition]);
@@ -143,6 +146,7 @@ export default function Confetti({
     if (disableOnMobile && isMobile) return;
 
     const newPieces = generatePieces();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPieces(newPieces);
 
     // Limpa após duração
@@ -198,7 +202,7 @@ export default function Confetti({
     }
   };
 
-  // Física de animação
+  // Física de animação – agora sem Math.random durante render
   const getAnimationVariants = (piece: ConfettiPiece) => {
     const endX = piece.x + piece.velocityX * (gravity * 10);
     const endY = piece.y + 100 + Math.abs(piece.velocityY) * gravity * 5;
@@ -220,9 +224,9 @@ export default function Confetti({
         scale: [0, piece.scale, piece.scale, piece.scale * 0.8],
       },
       transition: {
-        duration: (duration / 1000) * (0.8 + Math.random() * 0.4),
+        duration: (duration / 1000) * piece.durationMultiplier,
         delay: piece.delay,
-        ease: [0.25, 0.46, 0.45, 0.94] as const, // easeOutQuad custom
+        ease: [0.25, 0.46, 0.45, 0.94] as const,
         opacity: {
           times: [0, 0.6, 0.8, 1],
         },
@@ -355,7 +359,7 @@ export function AchievementConfetti(
       {...props}
       count={60}
       colors={["#8b5cf6", "#a78bfa", "#fbbf24", "#f59e0b", "#ffffff"]}
-      shapes={["circle", "star" as ConfettiShape]}
+      shapes={["circle", "square" as ConfettiShape]}
       origin="center"
       spread={0.5}
     />

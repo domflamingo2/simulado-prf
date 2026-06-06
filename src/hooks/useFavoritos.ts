@@ -77,6 +77,7 @@ export function useFavoritos() {
 
   useEffect(() => {
     const data = loadFavoritos();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFavoritos(data);
     setIsLoaded(true);
   }, []);

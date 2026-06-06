@@ -24,75 +24,108 @@ const INTENSITY_MAP = {
   high: 200,
 };
 
+interface Particle {
+  id: number;
+  color: string;
+  size: number;
+  startX: number;
+  duration: number;
+  delay: number;
+  rotation: number;
+  driftX: number;
+  scale: number;
+}
+
 export function ConfettiEffect({
   isActive,
   intensity = "medium",
 }: ConfettiEffectProps) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [particles, setParticles] = useState<Particle[]>([]);
 
+  // Atualiza dimensões da janela (apenas uma vez e em resize)
   useEffect(() => {
-    if (isActive) {
+    const updateDimensions = () => {
       setDimensions({
         width: window.innerWidth,
         height: window.innerHeight,
       });
+    };
 
-      // Limpar após 4 segundos
-      const timer = setTimeout(() => {
-        setDimensions({ width: 0, height: 0 });
-      }, 4000);
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
 
-      return () => clearTimeout(timer);
+  // Gera partículas quando o efeito é ativado
+  useEffect(() => {
+    if (!isActive || dimensions.width === 0) {
+      setParticles([]);
+      return;
     }
-  }, [isActive]);
 
-  if (!isActive || dimensions.width === 0) return null;
+    const count = INTENSITY_MAP[intensity];
+    const newParticles: Particle[] = [];
 
-  const count = INTENSITY_MAP[intensity];
+    for (let i = 0; i < count; i++) {
+      newParticles.push({
+        id: i,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        size: 4 + Math.random() * 8,
+        startX: Math.random() * dimensions.width,
+        duration: 1.5 + Math.random() * 2,
+        delay: Math.random() * 1.5,
+        rotation: Math.random() * 720,
+        driftX: (Math.random() - 0.5) * 150,
+        scale: 0.5 + Math.random() * 0.8,
+      });
+    }
+
+    setParticles(newParticles);
+
+    // Limpa as partículas após 4 segundos
+    const timer = setTimeout(() => {
+      setParticles([]);
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [isActive, dimensions.width, dimensions.height, intensity]);
+
+  if (!isActive || particles.length === 0) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {Array.from({ length: count }).map((_, i) => {
-        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-        const size = 4 + Math.random() * 8;
-        const startX = Math.random() * dimensions.width;
-        const duration = 1.5 + Math.random() * 2;
-        const delay = Math.random() * 1.5;
-        const rotation = Math.random() * 720;
-        const driftX = (Math.random() - 0.5) * 150;
-
-        return (
-          <motion.div
-            key={i}
-            initial={{
-              y: -20,
-              x: startX,
-              opacity: 1,
-              scale: 0,
-              rotate: 0,
-            }}
-            animate={{
-              y: dimensions.height + 100,
-              x: startX + driftX,
-              opacity: [1, 1, 0],
-              scale: 0.5 + Math.random() * 0.8,
-              rotate: rotation,
-            }}
-            transition={{
-              duration,
-              delay,
-              ease: [0.25, 0.46, 0.45, 0.94],
-            }}
-            className="absolute rounded-sm shadow-lg"
-            style={{
-              width: size,
-              height: size,
-              backgroundColor: color,
-              boxShadow: `0 0 6px ${color}80`,
-            }}
-          />
-        );
-      })}
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{
+            y: -20,
+            x: p.startX,
+            opacity: 1,
+            scale: 0,
+            rotate: 0,
+          }}
+          animate={{
+            y: dimensions.height + 100,
+            x: p.startX + p.driftX,
+            opacity: [1, 1, 0],
+            scale: p.scale,
+            rotate: p.rotation,
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            ease: [0.25, 0.46, 0.45, 0.94],
+          }}
+          className="absolute rounded-sm shadow-lg"
+          style={{
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            boxShadow: `0 0 6px ${p.color}80`,
+          }}
+        />
+      ))}
 
       {/* Efeito de explosão */}
       <motion.div

@@ -1,6 +1,5 @@
 "use client";
 
-import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -177,32 +176,35 @@ export default function BancoQuestoesPage() {
   // Scroll restoration ref
   const didRestoreScroll = useRef(false);
 
-  // Sync URL → state + localStorage + favorites on mount
+  // 1. Carrega favoritos do localStorage apenas uma vez
   useEffect(() => {
     try {
       const saved = localStorage.getItem("prf_questoes_favoritas");
       if (saved) setFavoritas(new Set(JSON.parse(saved) as string[]));
-
-      const urlBusca = searchParams.get("busca") ?? "";
-      const urlDisciplina = searchParams.get("disciplina") ?? "todas";
-      const urlDificuldade = searchParams.get("dificuldade") ?? "todas";
-
-      setFilters({
-        busca: urlBusca,
-        disciplina: urlDisciplina,
-        dificuldade: VALID_DIFICULDADES.includes(
-          urlDificuldade as DificuldadeLevel,
-        )
-          ? (urlDificuldade as DificuldadeLevel)
-          : "todas",
-      });
     } catch (err) {
-      console.error("[BancoQuestoesPage] init error:", err);
-      toast.error("Erro ao carregar preferências");
+      console.error("Erro ao ler favoritos", err);
     } finally {
       setCarregando(false);
     }
   }, []);
+
+  // 2. Sincroniza filtros com a URL (inclusive navegação back/forward)
+  useEffect(() => {
+    const urlBusca = searchParams.get("busca") ?? "";
+    const urlDisciplina = searchParams.get("disciplina") ?? "todas";
+    const urlDificuldade = searchParams.get("dificuldade") ?? "todas";
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFilters({
+      busca: urlBusca,
+      disciplina: urlDisciplina,
+      dificuldade: VALID_DIFICULDADES.includes(
+        urlDificuldade as DificuldadeLevel,
+      )
+        ? (urlDificuldade as DificuldadeLevel)
+        : "todas",
+    });
+  }, [searchParams]);
 
   // Scroll restoration
   useEffect(() => {
@@ -232,12 +234,6 @@ export default function BancoQuestoesPage() {
     },
     [router],
   );
-
-  // Debounced busca
-  const debouncedSyncURL = useDebouncedCallback(
-    (f: Filters) => pushFiltersToURL(f),
-    DEBOUNCE_BUSCA_MS,
-  ) as (f: Filters) => void;
 
   const setFilter = useCallback(
     <K extends keyof Filters>(key: K, value: Filters[K]) => {
@@ -309,7 +305,10 @@ export default function BancoQuestoesPage() {
           "prf_questoes_favoritas",
           JSON.stringify([...next]),
         );
-      } catch {}
+      } catch {
+        // Falha silenciosa – localStorage pode estar cheio ou desativado
+        console.warn("Não foi possível salvar favoritos no localStorage");
+      }
       return next;
     });
   }, []);

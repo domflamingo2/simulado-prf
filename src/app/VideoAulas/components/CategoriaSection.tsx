@@ -35,6 +35,8 @@ interface CategoriaSectionProps {
   ordenacaoGlobal: OrdenacaoType;
   searchTermGlobal: string;
   viewMode: "grid" | "list";
+  onOrdenacaoGlobalChange: (novaOrdenacao: OrdenacaoType) => void;
+  onSearchGlobalChange: (novoSearch: string) => void;
 }
 
 // ============================================================
@@ -176,10 +178,12 @@ export function CategoriaSection({
   ordenacaoGlobal,
   searchTermGlobal,
   viewMode,
+  onOrdenacaoGlobalChange,
+  onSearchGlobalChange,
 }: CategoriaSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [ordenacao, setOrdenacao] = useState<OrdenacaoType>(ordenacaoGlobal);
-  const [searchTerm, setSearchTerm] = useState(searchTermGlobal);
+  // const [ordenacao, setOrdenacao] = useState<OrdenacaoType>(ordenacaoGlobal);
+  // const [searchTerm, setSearchTerm] = useState(searchTermGlobal);
   const [iconeIndex, setIconeIndex] = useState(0);
   const [showChainEffect, setShowChainEffect] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -194,8 +198,8 @@ export function CategoriaSection({
 
   const corBorda = coresBorda[categoria.nome] ?? "blue-500";
 
-  useEffect(() => setOrdenacao(ordenacaoGlobal), [ordenacaoGlobal]);
-  useEffect(() => setSearchTerm(searchTermGlobal), [searchTermGlobal]);
+  // useEffect(() => setOrdenacao(ordenacaoGlobal), [ordenacaoGlobal]);
+  // useEffect(() => setSearchTerm(searchTermGlobal), [searchTermGlobal]);
 
   const totalVideos = categoria.videos.length;
   const assistidosCount = useMemo(
@@ -242,15 +246,15 @@ export function CategoriaSection({
 
   const videosOrdenados = useMemo(() => {
     let videos = [...categoria.videos];
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
+    if (searchTermGlobal.trim()) {
+      const term = searchTermGlobal.toLowerCase();
       videos = videos.filter(
         (v: Video) =>
           v.titulo.toLowerCase().includes(term) ||
           v.descricao?.toLowerCase().includes(term),
       );
     }
-    switch (ordenacao) {
+    switch (ordenacaoGlobal) {
       case "nao-assistidos":
         videos.sort(
           (a, b) =>
@@ -284,14 +288,20 @@ export function CategoriaSection({
         break;
     }
     return videos;
-  }, [categoria.videos, ordenacao, searchTerm, videosAssistidos, isFavorito]);
+  }, [
+    categoria.videos,
+    ordenacaoGlobal,
+    searchTermGlobal,
+    videosAssistidos,
+    isFavorito,
+  ]);
 
   const gradiente =
     gradientesPorMateria[categoria.nome] ?? "from-slate-800/50 to-slate-900/30";
   const iconeAnimado =
     iconesAnimados[categoria.nome]?.[iconeIndex] ?? categoria.icone;
   const semResultados =
-    searchTerm.trim() !== "" && videosOrdenados.length === 0;
+    searchTermGlobal.trim() !== "" && videosOrdenados.length === 0;
 
   return (
     <motion.div
@@ -463,10 +473,10 @@ export function CategoriaSection({
                 />
 
                 <OrdenacaoFiltros
-                  ordenacao={ordenacao}
-                  onOrdenacaoChange={setOrdenacao}
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
+                  ordenacao={ordenacaoGlobal}
+                  onOrdenacaoChange={onOrdenacaoGlobalChange}
+                  searchTerm={searchTermGlobal}
+                  onSearchChange={onSearchGlobalChange}
                 />
 
                 {semResultados ? (
@@ -477,7 +487,8 @@ export function CategoriaSection({
                   >
                     <div className="text-5xl mb-3">🔍</div>
                     <p className="text-slate-400">
-                      Nenhum vídeo encontrado para &quot;{searchTerm}&quot;
+                      Nenhum vídeo encontrado para &quot;{searchTermGlobal}
+                      &quot;
                     </p>
                   </motion.div>
                 ) : (

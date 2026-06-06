@@ -271,7 +271,7 @@ export function ajustarQuantidadesPorResto(
 ): number[] {
   const result = [...quantidades];
   const totalCalc = result.reduce((a, b) => a + b, 0);
-  let diferenca = totalAlvo - totalCalc;
+  const diferenca = totalAlvo - totalCalc;
   if (diferenca === 0) return result;
 
   // FIX: `totalAlvo / pesos.length` pode ser 0 se pesos for vazio — guard
@@ -556,7 +556,6 @@ export function gerarDiagnosticoAdaptativo(
 
 export function calcularPesosAdaptativos(
   historico: HistoricoSimulado[],
-  _todasQuestoes: Questao[],
 ): PesoDisciplina[] {
   const cached = getCachedPesos(historico);
   if (cached) return cached;
@@ -695,7 +694,7 @@ export function selecionarQuestoesAdaptativas(
     }
   }
 
-  const pesos = calcularPesosAdaptativos(historico, todasQuestoes);
+  const pesos = calcularPesosAdaptativos(historico);
 
   const historicoIds = new Set(
     historico.flatMap((h) => h.questoes.map((q) => q.id)),
@@ -849,7 +848,7 @@ export function gerarAnaliseAdaptativa(
   historico: HistoricoSimulado[],
   todasQuestoes: Questao[],
 ): AnaliseAdaptativa {
-  const pesos = calcularPesosAdaptativos(historico, todasQuestoes);
+  const pesos = calcularPesosAdaptativos(historico);
 
   const criticas = pesos
     .filter(

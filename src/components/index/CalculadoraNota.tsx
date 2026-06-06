@@ -1,4 +1,4 @@
-// src/components/como-funciona/CalculadoraNota.tsx (VERSÃO OTIMIZADA)
+// src/components/como-funciona/CalculadoraNota.tsx
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -19,9 +19,8 @@ import {
   RefreshCw,
   Target,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { SectionTitle } from "./SectionTitle";
-1;
 
 // Componente de input range memoizado
 const RangeInput = memo(
@@ -229,42 +228,37 @@ ResultadoCard.displayName = "ResultadoCard";
 
 // Componente principal
 export function CalculadoraNota() {
-  const { ref, isVisible } = useScrollReveal<HTMLDivElement>({
+  const { ref } = useScrollReveal<HTMLDivElement>({
     threshold: 0.1,
     once: true,
   });
 
   const [acertos, setAcertos] = useState(30);
   const [erros, setErros] = useState(15);
-  const [resultado, setResultado] = useState<NotaCEBRASPE | null>(null);
-  const [isCalculating, setIsCalculating] = useState(false);
   const [autoCalculate, setAutoCalculate] = useState(false);
 
-  const emBranco = useMemo(() => 60 - acertos - erros, [acertos, erros]);
+  const emBranco = 60 - acertos - erros;
 
-  const calcular = useCallback(() => {
-    setIsCalculating(true);
-    setTimeout(() => {
-      const resultadoCalculado = calcularNotaCEBRASPE(acertos, erros);
-      setResultado(resultadoCalculado);
-      setIsCalculating(false);
-    }, 100);
-  }, [acertos, erros]);
+  const resultado = useMemo(() => {
+    if (!autoCalculate) return null;
+    return calcularNotaCEBRASPE(acertos, erros);
+  }, [acertos, erros, autoCalculate]);
 
   const handleAcertosChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = Math.min(60, Math.max(0, parseInt(e.target.value) || 0));
+      let value = Math.min(60, Math.max(0, parseInt(e.target.value) || 0));
+      // Garantir que acertos + erros não ultrapasse 60
+      if (value + erros > 60) value = 60 - erros;
       setAcertos(value);
-      if (value + erros > 60) setErros(60 - value);
     },
     [erros],
   );
 
   const handleErrosChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = Math.min(60, Math.max(0, parseInt(e.target.value) || 0));
+      let value = Math.min(60, Math.max(0, parseInt(e.target.value) || 0));
+      if (acertos + value > 60) value = 60 - acertos;
       setErros(value);
-      if (acertos + value > 60) setAcertos(60 - value);
     },
     [acertos],
   );
@@ -272,30 +266,12 @@ export function CalculadoraNota() {
   const handleReset = useCallback(() => {
     setAcertos(30);
     setErros(15);
-    setResultado(null);
     setAutoCalculate(false);
   }, []);
 
   const toggleAutoCalculate = useCallback(() => {
     setAutoCalculate((prev) => !prev);
-    if (!autoCalculate) {
-      const resultadoCalculado = calcularNotaCEBRASPE(acertos, erros);
-      setResultado(resultadoCalculado);
-    }
-  }, [autoCalculate, acertos, erros]);
-
-  // Cálculo automático
-  const handleAutoCalculate = useCallback(() => {
-    const resultadoCalculado = calcularNotaCEBRASPE(acertos, erros);
-    setResultado(resultadoCalculado);
-  }, [acertos, erros]);
-
-  // Efeito para cálculo automático quando valores mudam
-  useEffect(() => {
-    if (autoCalculate) {
-      handleAutoCalculate();
-    }
-  }, [acertos, erros, autoCalculate, handleAutoCalculate]);
+  }, []);
 
   return (
     <section ref={ref} className="scroll-mt-20 py-8">
@@ -315,7 +291,7 @@ export function CalculadoraNota() {
               label="Acertos"
               value={acertos}
               onChange={handleAcertosChange}
-              max={60}
+              max={60 - erros}
               color="emerald"
               icon={CheckCircle2}
             />
@@ -342,11 +318,7 @@ export function CalculadoraNota() {
                 </span>
               </div>
               <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                <motion.div
-                  className="flex h-full"
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 0.3 }}
-                >
+                <div className="flex h-full">
                   <div
                     className="bg-emerald-500 h-full"
                     style={{ width: `${(acertos / 60) * 100}%` }}
@@ -359,7 +331,7 @@ export function CalculadoraNota() {
                     className="bg-slate-600 h-full"
                     style={{ width: `${(emBranco / 60) * 100}%` }}
                   />
-                </motion.div>
+                </div>
               </div>
               <div className="flex justify-between text-[10px] text-slate-500 mt-1.5">
                 <span>✅ {acertos}</span>
@@ -370,32 +342,15 @@ export function CalculadoraNota() {
 
             <div className="flex gap-3">
               <motion.button
-                onClick={calcular}
-                disabled={isCalculating}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-500/25 disabled:opacity-50"
-              >
-                {isCalculating ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Calculando...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    Calcular Nota
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
-                )}
-              </motion.button>
-
-              <motion.button
                 onClick={handleReset}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
               >
-                <RefreshCw className="w-4 h-4" />
+                <span className="flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4" />
+                  Resetar
+                </span>
               </motion.button>
             </div>
 
@@ -427,14 +382,12 @@ export function CalculadoraNota() {
                   <Calculator className="w-8 h-8 text-slate-600" />
                 </div>
                 <p className="text-slate-400 text-sm text-center">
-                  Ajuste os valores e clique em
+                  Ative o cálculo automático
                   <br />
-                  <span className="text-blue-400 font-medium">
-                    "Calcular Nota"
-                  </span>
+                  ou ajuste os sliders
                 </p>
                 <p className="text-[10px] text-slate-500 mt-2">
-                  ou ative o cálculo automático
+                  para ver a pontuação
                 </p>
               </motion.div>
             )}

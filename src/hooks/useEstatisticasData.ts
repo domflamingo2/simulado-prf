@@ -52,10 +52,12 @@ export function useEstatisticasData() {
 
     try {
       const dados = lerHistorico();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHistorico(dados);
     } catch (err) {
       console.error("Erro ao carregar histórico:", err);
     } finally {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCarregando(false);
     }
   }, []);

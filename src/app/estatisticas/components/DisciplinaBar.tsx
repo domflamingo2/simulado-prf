@@ -68,7 +68,6 @@ export function DisciplinaBar({
   const erros = total - acertos;
   const isGood = percentual >= 70;
   const isWarning = percentual >= 40 && percentual < 70;
-  const isBad = percentual < 40;
 
   const getTendenciaIcon = () => {
     switch (tendencia) {

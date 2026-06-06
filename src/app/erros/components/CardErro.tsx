@@ -1,15 +1,14 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  CheckCircle2, 
-  RotateCcw, 
-  Trash2, 
-  ChevronDown, 
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  CheckCircle2,
+  ChevronDown,
   ChevronUp,
-  AlertCircle,
   Lightbulb,
-  XCircle
+  RotateCcw,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -58,7 +57,8 @@ export function CardErro({
     },
   };
 
-  const RespostaIcon = respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.icon || XCircle;
+  const RespostaIcon =
+    respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.icon || XCircle;
 
   return (
     <motion.div
@@ -73,9 +73,11 @@ export function CardErro({
     >
       {/* Efeito de glow no hover */}
       {isHovered && (
-        <div className={`absolute -inset-0.5 rounded-2xl blur-md opacity-30 transition-opacity duration-300 ${
-          isRevisado ? "bg-emerald-500" : "bg-rose-500"
-        }`} />
+        <div
+          className={`absolute -inset-0.5 rounded-2xl blur-md opacity-30 transition-opacity duration-300 ${
+            isRevisado ? "bg-emerald-500" : "bg-rose-500"
+          }`}
+        />
       )}
 
       <GlassCard
@@ -121,12 +123,20 @@ export function CardErro({
 
             {/* Badge de dificuldade (opcional) */}
             {erro.dificuldade && (
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                erro.dificuldade === 3 ? "bg-purple-500/20 text-purple-400" :
-                erro.dificuldade === 2 ? "bg-amber-500/20 text-amber-400" :
-                "bg-blue-500/20 text-blue-400"
-              }`}>
-                {erro.dificuldade === 3 ? "Difícil" : erro.dificuldade === 2 ? "Médio" : "Fácil"}
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${
+                  erro.dificuldade === 3
+                    ? "bg-purple-500/20 text-purple-400"
+                    : erro.dificuldade === 2
+                      ? "bg-amber-500/20 text-amber-400"
+                      : "bg-blue-500/20 text-blue-400"
+                }`}
+              >
+                {erro.dificuldade === 3
+                  ? "Difícil"
+                  : erro.dificuldade === 2
+                    ? "Médio"
+                    : "Fácil"}
               </span>
             )}
           </div>
@@ -153,11 +163,17 @@ export function CardErro({
         {/* Resposta correta destacada */}
         <div className="mt-3 p-3 rounded-lg bg-slate-800/30 border border-white/5">
           <div className="flex items-center gap-2">
-            <div className={`p-1 rounded-lg ${respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.bg}`}>
-              <RespostaIcon className={`w-3.5 h-3.5 ${respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.text}`} />
+            <div
+              className={`p-1 rounded-lg ${respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.bg}`}
+            >
+              <RespostaIcon
+                className={`w-3.5 h-3.5 ${respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.text}`}
+              />
             </div>
             <span className="text-xs text-slate-400">Resposta correta:</span>
-            <span className={`text-sm font-bold ${respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.text}`}>
+            <span
+              className={`text-sm font-bold ${respostaConfig[erro.resposta as "CERTO" | "ERRADO"]?.text}`}
+            >
               {erro.resposta}
             </span>
           </div>
@@ -229,7 +245,7 @@ export function CardErro({
           animate={{ opacity: isHovered ? 1 : 0 }}
           className="absolute inset-0 pointer-events-none rounded-xl"
           style={{
-            boxShadow: `inset 0 0 20px ${isRevisado ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)'}`,
+            boxShadow: `inset 0 0 20px ${isRevisado ? "rgba(16, 185, 129, 0.05)" : "rgba(244, 63, 94, 0.05)"}`,
           }}
         />
       </GlassCard>

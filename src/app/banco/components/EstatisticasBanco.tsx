@@ -406,12 +406,17 @@ export function EstatisticasBanco({
     showToast("Todos os filtros removidos");
   }, [onFiltrarPorDificuldade, onFiltrarPorBanca, onFiltrarPorAno, showToast]);
 
-  const totalSafe = stats?.total ?? 0;
-  const porDif = stats?.porDificuldade ?? { 1: 0, 2: 0, 3: 0 };
-  const bancas = stats?.bancasPrincipais ?? {};
-  const anos = stats?.questoesPorAno ?? {};
-  const ultimasAdd = stats?.ultimasAdicoes ?? 0;
-  const taxaAcerto = stats?.taxaAcertoMedia;
+  // Memoized derivations from stats
+  const totalSafe = useMemo(() => stats?.total ?? 0, [stats]);
+  const porDif = useMemo(
+    () => stats?.porDificuldade ?? { 1: 0, 2: 0, 3: 0 },
+    [stats],
+  );
+  const bancas = useMemo(() => stats?.bancasPrincipais ?? {}, [stats]);
+  const anos = useMemo(() => stats?.questoesPorAno ?? {}, [stats]);
+  const ultimasAdd = useMemo(() => stats?.ultimasAdicoes ?? 0, [stats]);
+  const taxaAcerto = useMemo(() => stats?.taxaAcertoMedia, [stats]);
+  const mediaDificuldade = useMemo(() => stats?.mediaDificuldade, [stats]);
 
   const cards = useMemo(
     () => [
@@ -428,7 +433,7 @@ export function EstatisticasBanco({
       {
         icon: TrendingUp,
         label: "Dif. Média",
-        value: stats?.mediaDificuldade ?? "—",
+        value: mediaDificuldade ?? "—",
         sub: "1 = fácil · 3 = difícil",
         accent: "text-purple-400",
         bg: "bg-purple-500/5",
@@ -496,7 +501,7 @@ export function EstatisticasBanco({
         delay: 0.4,
       },
     ],
-    [stats, totalSafe, bancas, anos, taxaAcerto, ultimasAdd],
+    [stats, totalSafe, bancas, anos, taxaAcerto, ultimasAdd, mediaDificuldade],
   );
 
   const dificuldades = useMemo(
@@ -524,17 +529,35 @@ export function EstatisticasBanco({
     [anos],
   );
 
-  const activeFilters = [
-    activeDificuldade != null && {
-      label: `${activeDificuldade === 1 ? "Fácil" : activeDificuldade === 2 ? "Médio" : "Difícil"}`,
-      onRemove: () => handleDificuldade(activeDificuldade),
-    },
-    activeBanca && {
-      label: activeBanca,
-      onRemove: () => handleBanca(activeBanca),
-    },
-    activeAno && { label: activeAno, onRemove: () => handleAno(activeAno) },
-  ].filter(Boolean) as { label: string; onRemove: () => void }[];
+  const activeFilters = useMemo(() => {
+    const filters = [
+      activeDificuldade != null && {
+        label:
+          activeDificuldade === 1
+            ? "Fácil"
+            : activeDificuldade === 2
+              ? "Médio"
+              : "Difícil",
+        onRemove: () => handleDificuldade(activeDificuldade),
+      },
+      activeBanca && {
+        label: activeBanca,
+        onRemove: () => handleBanca(activeBanca),
+      },
+      activeAno && {
+        label: activeAno,
+        onRemove: () => handleAno(activeAno),
+      },
+    ].filter(Boolean) as { label: string; onRemove: () => void }[];
+    return filters;
+  }, [
+    activeDificuldade,
+    activeBanca,
+    activeAno,
+    handleDificuldade,
+    handleBanca,
+    handleAno,
+  ]);
 
   if (isLoading) return <StatsSkeleton />;
   if (!totalSafe)

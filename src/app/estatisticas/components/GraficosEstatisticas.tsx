@@ -3,6 +3,7 @@
 import {
   BarElement,
   CategoryScale,
+  ChartData,
   Chart as ChartJS,
   Filler,
   Legend,
@@ -14,7 +15,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { motion } from "framer-motion";
-import { Bar, Line, Radar } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import {
@@ -150,9 +151,9 @@ const OPCOES_RADAR = {
 };
 
 interface GraficosEstatisticasProps {
-  dadosRadar: any;
-  dadosLine: any;
-  dadosBar: any;
+  dadosRadar?: ChartData<"radar", number[], string>;
+  dadosLine?: ChartData<"line", number[], string>;
+  dadosBar?: ChartData<"bar", number[], string>;
   isLoading?: boolean;
 }
 
@@ -171,7 +172,8 @@ export function GraficosEstatisticas({
   dadosBar,
   isLoading = false,
 }: GraficosEstatisticasProps) {
-  const hasLineData = dadosLine?.labels?.length >= 2;
+  // Verificação segura: labels deve existir e ter pelo menos 2 itens
+  const hasLineData = !!(dadosLine?.labels && dadosLine.labels.length >= 2);
 
   return (
     <>
@@ -214,9 +216,19 @@ export function GraficosEstatisticas({
             </div>
             {isLoading ? (
               <SkeletonChart />
+            ) : hasLineData ? (
+              <div className="h-64">
+                <Line data={dadosLine} options={OPCOES_LINE} />
+              </div>
             ) : (
-              <div className="h-80">
-                <Radar data={dadosRadar} options={OPCOES_RADAR} />
+              <div className="h-64 flex flex-col items-center justify-center">
+                <LineChart className="w-12 h-12 text-slate-600 mb-3" />
+                <p className="text-sm text-slate-500 text-center">
+                  Necessário ao menos 2 simulados para exibir desempenho por
+                </p>
+                <p className="text-[10px] text-slate-600 mt-1">
+                  Complete mais simulados para acompanhar sua progressão
+                </p>
               </div>
             )}
             <p className="text-[10px] text-slate-500 text-center mt-3">
@@ -332,14 +344,22 @@ export function GraficosEstatisticas({
             </div>
             {isLoading ? (
               <SkeletonChart />
-            ) : (
+            ) : dadosBar ? (
               <div className="h-64">
                 <Bar data={dadosBar} options={OPCOES_BAR} />
               </div>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center">
+                <BarChart3 className="w-12 h-12 text-slate-600 mb-3" />
+                <p className="text-sm text-slate-500 text-center">
+                  Dados insuficientes para exibir o gráfico
+                </p>
+                <p className="text-[10px] text-slate-600 mt-1">
+                  Complete mais simulados para visualizar a distribuição de
+                  erros
+                </p>
+              </div>
             )}
-            <p className="text-[10px] text-slate-500 text-center mt-3">
-              🔍 Identifique as disciplinas que mais precisam de atenção
-            </p>
           </GlassCard>
         </motion.div>
       </div>

@@ -16,7 +16,7 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChangeEvent, useMemo, useState } from "react";
 import { SectionTitle } from "./SectionTitle";
 
 /* ================= ANIMAÇÃO ================= */
@@ -37,11 +37,16 @@ const staggerContainer = {
 
 /* ================= SEARCH BAR ================= */
 
-const SearchBar = ({ onSearch, onClear }: any) => {
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+  onClear: () => void;
+}
+
+const SearchBar = ({ onSearch, onClear }: SearchBarProps) => {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
     onSearch(value);
@@ -83,7 +88,17 @@ const SearchBar = ({ onSearch, onClear }: any) => {
 
 /* ================= CATEGORY FILTER ================= */
 
-const CategoryFilter = ({ categories, selected, onSelect }: any) => (
+interface CategoryFilterProps {
+  categories: string[];
+  selected: string | null;
+  onSelect: (category: string | null) => void;
+}
+
+const CategoryFilter = ({
+  categories,
+  selected,
+  onSelect,
+}: CategoryFilterProps) => (
   <motion.div variants={fadeInUp} className="flex flex-wrap gap-2 mb-5">
     <button
       onClick={() => onSelect(null)}
@@ -96,7 +111,7 @@ const CategoryFilter = ({ categories, selected, onSelect }: any) => (
       Todas
     </button>
 
-    {categories.map((c: string) => (
+    {categories.map((c) => (
       <button
         key={c}
         onClick={() => onSelect(c)}
@@ -114,7 +129,14 @@ const CategoryFilter = ({ categories, selected, onSelect }: any) => (
 
 /* ================= FAQ ITEM ================= */
 
-const FAQItem = ({ pergunta, resposta, categoria, index }: any) => {
+interface FAQItemProps {
+  pergunta: string;
+  resposta: string;
+  categoria: string;
+  index: number;
+}
+
+const FAQItem = ({ pergunta, resposta, categoria, index }: FAQItemProps) => {
   const [open, setOpen] = useState(false);
   const [useful, setUseful] = useState<boolean | null>(null);
 

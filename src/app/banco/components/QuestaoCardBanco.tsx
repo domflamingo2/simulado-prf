@@ -369,19 +369,14 @@ export const QuestaoCardBanco = memo(function QuestaoCardBanco({
   const [expandido, setExpandido] = useState(false);
   const [mostrarResposta, setMostrarResposta] = useState(false);
   const [isFavoriting, setIsFavoriting] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const { copy, copying } = useClipboard();
-
   const delay = Math.min(index * 0.02, 0.3);
 
   const disciplinaConfig = useMemo(
     () => DISCIPLINAS_CONFIG[questao.disciplina] ?? FALLBACK_DISCIPLINA,
     [questao.disciplina],
   );
-
-  const dificuldadeConfig =
-    DIFICULDADE_CONFIG[(questao.dificuldade as DificuldadeLevel) ?? 2];
 
   const isFavoritingRef = useRef(false);
 
@@ -418,8 +413,6 @@ export const QuestaoCardBanco = memo(function QuestaoCardBanco({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3, ease: "easeOut" }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className="group"
     >
       <div
@@ -610,6 +603,7 @@ export const QuestaoListVirtualizada = memo(function QuestaoListVirtualizada({
     [questoes],
   );
 
+  // eslint-disable-next-line react-compiler/react-compiler
   const virtualizer = useVirtualizer({
     count: questoes.length,
     getScrollElement: () => parentRef.current,
@@ -697,6 +691,8 @@ export const QuestaoListPaginada = memo(function QuestaoListPaginada({
   const questoesPagina = questoes.slice(inicio, inicio + itensPorPagina);
 
   useEffect(() => {
+    // Resetar página quando a lista de questões mudar completamente
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPagina(0);
   }, [questoes]);
 

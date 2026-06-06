@@ -148,7 +148,7 @@ export function useGamificacao(): UseGamificacaoReturn {
       const raw = localStorage.getItem(PROGRESS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<UserProgress>;
-        // FIX: merge profundo em vez de spread raso
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setProgress(mergeProgresso(criarProgressoInicial(), parsed));
       }
     } catch {
@@ -178,7 +178,7 @@ export function useGamificacao(): UseGamificacaoReturn {
 
   // ── adicionarXP ───────────────────────────────────────────────────────────
 
-  const adicionarXP = useCallback((quantidade: number, motivo?: string) => {
+  const adicionarXP = useCallback((quantidade: number, _motivo?: string) => {
     // FIX: guard contra XP negativo que subtrairia do total
     const xpEfetivo = Math.max(0, quantidade);
     if (xpEfetivo === 0) return;

@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, Home, Trophy, XCircle, ChevronLeft, Sparkles, Award } from "lucide-react";
+import {
+  Award,
+  CheckCircle2,
+  Home,
+  Sparkles,
+  Trophy,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -54,7 +61,9 @@ export function HeaderRevisao({
                 className="block p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 transition-all duration-300 group"
                 aria-label="Voltar ao início"
               >
-                <Home className={`w-4 h-4 text-slate-400 transition-colors duration-300 ${isHoveredHome ? "text-white" : ""}`} />
+                <Home
+                  className={`w-4 h-4 text-slate-400 transition-colors duration-300 ${isHoveredHome ? "text-white" : ""}`}
+                />
               </Link>
             </motion.div>
 
@@ -64,14 +73,18 @@ export function HeaderRevisao({
                 <div className="p-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600">
                   <Award className="w-3.5 h-3.5 text-white" />
                 </div>
-                <h1 className="text-lg font-bold text-white">Revisão de Simulado</h1>
+                <h1 className="text-lg font-bold text-white">
+                  Revisão de Simulado
+                </h1>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-[11px] text-slate-400">{data}</p>
                 <div className="w-1 h-1 rounded-full bg-slate-600" />
                 <div className="flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5 text-yellow-500" />
-                  <p className="text-[11px] text-slate-400">{classificacaoMensagem}</p>
+                  <p className="text-[11px] text-slate-400">
+                    {classificacaoMensagem}
+                  </p>
                 </div>
               </div>
             </div>
@@ -105,13 +118,17 @@ export function HeaderRevisao({
           <div className="flex items-center justify-between text-[11px]">
             <div className="flex items-center gap-1.5">
               <span className="text-slate-500">Progresso da revisão</span>
-              <span className="text-blue-400 font-semibold">{progresso.atual}</span>
+              <span className="text-blue-400 font-semibold">
+                {progresso.atual}
+              </span>
               <span className="text-slate-500">/</span>
               <span className="text-slate-400">{progresso.total}</span>
             </div>
-            <span className="text-slate-500 font-mono">{Math.round(percentual)}%</span>
+            <span className="text-slate-500 font-mono">
+              {Math.round(percentual)}%
+            </span>
           </div>
-          
+
           <div className="relative">
             <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
               <motion.div
@@ -137,8 +154,12 @@ export function HeaderRevisao({
 
       <style jsx>{`
         @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
         }
         .animate-shimmer {
           animation: shimmer 1.5s infinite;

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   Clock,
   HelpCircle,
+  LucideIcon,
   Minus,
   TrendingDown,
   TrendingUp,
@@ -13,7 +14,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 
 const COLOR_MAP: Record<
   string,
-  { bg: string; border: string; text: string; glow: string; icon: any }
+  { bg: string; border: string; text: string; glow: string; icon: LucideIcon }
 > = {
   emerald: {
     bg: "bg-emerald-500/10",

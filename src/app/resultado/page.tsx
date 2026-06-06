@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Brain, Home, Sparkles, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import FeedbackCompartilhar from "@/components/FeedbackCompartilhar";
 import Footer from "@/components/layout/Footer";
@@ -23,6 +23,7 @@ import { StatsResumo } from "./components/StatsResumo";
 
 export default function ResultadoPage() {
   const router = useRouter();
+  const [sucesso, setSucesso] = useState(false);
   const { simulado, historico, comparacao, classificacao, erroCarregamento } =
     useResultadoData();
   const insights = useInsights(simulado, historico);
@@ -31,10 +32,8 @@ export default function ResultadoPage() {
     gerandoImagem,
     progresso,
     erro,
-    cancelarGeracao,
     compartilharResultado,
     salvarImagem,
-    compartilharViaWebShare,
   } = useCompartilharResultado();
 
   const refazerSimulado = useCallback(() => {
@@ -283,10 +282,8 @@ export default function ResultadoPage() {
           gerandoImagem={gerandoImagem}
           progresso={progresso}
           erro={erro}
-          onCompartilhar={compartilharResultado}
-          onSalvar={salvarImagem}
-          onCompartilharWeb={compartilharViaWebShare}
-          onCancelar={cancelarGeracao}
+          sucesso={sucesso}
+          onFecharSucesso={() => setSucesso(false)}
         />
       </div>
       <Footer />

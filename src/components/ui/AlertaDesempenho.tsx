@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
+import { AlertTriangle, LucideIcon, RotateCcw, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 type AlertType = "critico" | "alerta" | "info";
@@ -18,19 +18,19 @@ const configs: Record<
     bg: "bg-rose-500/10",
     border: "border-rose-500/30",
     text: "text-rose-300",
-    icon: require("lucide-react").AlertTriangle,
+    icon: AlertTriangle,
   },
   alerta: {
     bg: "bg-amber-500/10",
     border: "border-amber-500/30",
     text: "text-amber-300",
-    icon: require("lucide-react").RotateCcw,
+    icon: RotateCcw,
   },
   info: {
     bg: "bg-blue-500/10",
     border: "border-blue-500/30",
     text: "text-blue-300",
-    icon: require("lucide-react").TrendingUp,
+    icon: TrendingUp,
   },
 };
 

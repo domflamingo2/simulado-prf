@@ -1,7 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BookOpen, Download, Trash2, XCircle, Sparkles, AlertTriangle, Shield } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpen,
+  Download,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -33,10 +39,7 @@ export function HeaderErros({
           {/* Lado esquerdo - Logo e título */}
           <div className="flex items-center gap-4">
             {/* Botão voltar */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
                 href="/"
                 className="block p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 transition-all duration-300 group"
@@ -59,7 +62,7 @@ export function HeaderErros({
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs sm:text-sm text-slate-400">
-                  {totalErros} questão{totalErros !== 1 ? "" : ""} para revisar
+                  {totalErros} questão{totalErros !== 1 ? "s" : ""} para revisar
                 </p>
                 {hasErrors && (
                   <motion.div
@@ -98,7 +101,7 @@ export function HeaderErros({
               <span className="hidden sm:inline text-sm font-medium">
                 Exportar
               </span>
-              
+
               {/* Tooltip */}
               {isExportHovered && hasErrors && (
                 <motion.div

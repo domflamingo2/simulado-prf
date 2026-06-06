@@ -23,6 +23,8 @@ import {
   useState,
 } from "react";
 
+import Image from "next/image";
+
 interface VideoCardProps {
   video: Video;
   isAssistido: boolean;
@@ -57,15 +59,12 @@ function formatTempoRestante(minutos: number): string {
   return m > 0 ? `~${h}h ${m}min` : `~${h}h`;
 }
 
-function useThrottledCallback<T extends (...args: never[]) => void>(
-  fn: T,
-  deps: React.DependencyList,
-): T {
+function useThrottledCallback<T extends (...args: never[]) => void>(fn: T): T {
   const rafRef = useRef<number | null>(null);
   const fnRef = useRef(fn);
   useLayoutEffect(() => {
     fnRef.current = fn;
-  }, deps);
+  }, [fn]); // dependência explícita
   return useCallback((...args: Parameters<T>) => {
     if (rafRef.current !== null) return;
     rafRef.current = requestAnimationFrame(() => {
@@ -124,7 +123,6 @@ function VideoCardBase({
       innerRef.current.style.setProperty("--rx", `${rx}deg`);
       innerRef.current.style.setProperty("--ry", `${ry}deg`);
     },
-    [],
   );
 
   const handleMouseLeave = () => {
@@ -238,21 +236,22 @@ function VideoCardBase({
               <span className="text-xs text-slate-600">Sem prévia</span>
             </div>
           ) : (
-            <img
-              src={thumbnailUrl ?? undefined}
+            <Image
+              src={thumbnailUrl ?? ""}
               alt=""
-              aria-hidden="true"
-              draggable={false}
-              loading="lazy"
-              decoding="async"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className={`object-cover transition-all duration-700 group-hover:scale-110 ${
+                imgLoaded ? "opacity-100" : "opacity-0"
+              }`}
               onLoad={() => setImgLoaded(true)}
               onError={() => {
                 setImgError(true);
                 setImgLoaded(true);
               }}
-              className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
-                imgLoaded ? "opacity-100" : "opacity-0"
-              }`}
+              draggable={false}
+              loading="lazy"
+              decoding="async"
             />
           )}
 

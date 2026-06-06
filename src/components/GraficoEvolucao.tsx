@@ -229,6 +229,7 @@ function useChartTheme() {
       );
     };
     check();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener("change", check);

@@ -27,21 +27,6 @@ E mais:
 
 ---
 
-## 🤖 Construido com IA
-
-Este projeto e um exemplo real de como a IA pode acelerar o desenvolvimento:
-
-- 💡 Estrutura do sistema planejada com IA
-- 🎨 UI/UX criada com auxilio de IA
-- 🧠 Logica e analise adaptativa com IA
-- ⚡ Otimizacoes e melhorias continuas com IA
-- 📚 **Geração de questões com IA**
-
-👉 Ou seja:  
-**um projeto moderno, inteligente e construido com as ferramentas do futuro.**
-
----
-
 ## ⚠️ Sobre as Questões (IMPORTANTE)
 
 > 🤖 As questões utilizadas na plataforma foram geradas com apoio de Inteligencia Artificial.
@@ -55,7 +40,7 @@ Isso significa que:
 📂 Localização das questões no projeto:
 
 ```bash
-src/data/questoes/
+src/data/questoes/bancodequestao
 ```
 
 ---

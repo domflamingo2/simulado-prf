@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, Trophy, Zap, Brain, CheckCircle2, Sparkles } from "lucide-react";
+import { Calendar, Trophy, Zap, Brain, CheckCircle2 } from "lucide-react";
 
 interface HeaderResultadoProps {
   data: string;

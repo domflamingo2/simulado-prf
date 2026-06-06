@@ -661,7 +661,7 @@ const ESCALAS_CARTESIANAS: ChartOptions<"line">["scales"] = {
 const OPCOES_LINE: ChartOptions<"line"> = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: BASE_PLUGIN_OPTIONS as any,
+  plugins: BASE_PLUGIN_OPTIONS,
   scales: ESCALAS_CARTESIANAS,
   elements: {
     line: { tension: 0.3, borderWidth: 2 },
@@ -672,7 +672,7 @@ const OPCOES_LINE: ChartOptions<"line"> = {
 const OPCOES_BAR: ChartOptions<"bar"> = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { ...(BASE_PLUGIN_OPTIONS as any), legend: { display: false } },
+  plugins: { ...BASE_PLUGIN_OPTIONS, legend: { display: false } },
   scales: ESCALAS_CARTESIANAS,
   elements: { bar: { borderRadius: 6, borderSkipped: false as const } },
 };
@@ -680,7 +680,7 @@ const OPCOES_BAR: ChartOptions<"bar"> = {
 const OPCOES_RADAR: ChartOptions<"radar"> = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: BASE_PLUGIN_OPTIONS as any,
+  plugins: BASE_PLUGIN_OPTIONS,
   scales: {
     r: {
       beginAtZero: true,

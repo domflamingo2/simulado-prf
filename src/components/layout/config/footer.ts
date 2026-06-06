@@ -6,6 +6,7 @@ import {
   Clock,
   FileText,
   Home,
+  LucideIcon,
   Settings,
   Target,
   TrendingUp,
@@ -20,7 +21,7 @@ export type IconComponent = React.ComponentType<{ className?: string }>;
 export interface LinkItem {
   href: string;
   label: string;
-  icon: IconComponent;
+  icon?: LucideIcon;
   description?: string;
   isExternal?: boolean;
   badge?: string;
@@ -158,11 +159,6 @@ export const footerInfo = {
   version: "3.0.0",
   beta: true,
   year: new Date().getFullYear(),
-  stats: {
-    questions: 5000,
-    users: 12500,
-    simulados: 45000,
-  },
   author: {
     name: "Gabriel Dev",
     role: "Full Stack Developer",
@@ -189,8 +185,4 @@ export const getRandomMotivationalPhrase = (): string => {
 
 export const getTechStack = () => {
   return tecnologias.map((tech) => tech.name).join(" • ");
-};
-
-export const getFooterStats = () => {
-  return footerInfo.stats;
 };

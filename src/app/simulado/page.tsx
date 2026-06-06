@@ -60,17 +60,10 @@ export default function SimuladoPage() {
   // ───────────────────────────────────────────────────────────────────────────
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-
   const [shakeQuestao, setShakeQuestao] = useState<number | null>(null);
-
   const [showSuccess, setShowSuccess] = useState(false);
-
   const [tempoRestante, setTempoRestante] = useState<number>(0);
-
-  // FIX: hydration mismatch
   const [loadingProgress, setLoadingProgress] = useState(0);
-
-  // FIX: hydration mismatch
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -99,135 +92,16 @@ export default function SimuladoPage() {
   const { finalizarSimulado, isFinalizing } = useFinalizarSimulado();
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Fake loading progress
-  // ───────────────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!loading) {
-      setLoadingProgress(100);
-      return;
-    }
-
-    setLoadingProgress(0);
-
-    const interval = setInterval(() => {
-      setLoadingProgress((prev) => {
-        if (prev >= 95) return prev;
-
-        const increment = Math.random() * 10 + 3;
-
-        return Math.min(prev + increment, 95);
-      });
-    }, 250);
-
-    return () => clearInterval(interval);
-  }, [loading]);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Timer
-  // ───────────────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!state) return;
-
-    setTempoRestante(tempoMaximo);
-
-    const timer = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - state.tempoInicio) / 1000);
-
-      const remaining = Math.max(0, tempoMaximo - elapsed);
-
-      setTempoRestante(remaining);
-
-      if (remaining <= 0) {
-        clearInterval(timer);
-
-        handleFinalizar();
-
-        toast.warning("Tempo esgotado! Finalizando simulado...");
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [state, tempoMaximo]);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Auto save
-  // ───────────────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!state) return;
-
-    const interval = setInterval(() => {
-      salvarProgresso(stateRef.current);
-
-      setLastSaved(new Date());
-
-      toast.info("💾 Progresso salvo automaticamente", {
-        duration: 2000,
-      });
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [state, salvarProgresso, stateRef]);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Keyboard shortcuts
-  // ───────────────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!state) return;
-
-      switch (e.key) {
-        case "ArrowLeft":
-          e.preventDefault();
-          handleNavegar("anterior");
-          break;
-
-        case "ArrowRight":
-          e.preventDefault();
-          handleNavegar("proxima");
-          break;
-
-        case "m":
-        case "M":
-          e.preventDefault();
-
-          handleMarcarRevisao();
-
-          toast.info(
-            isMarcada ? "Questão desmarcada" : "Questão marcada para revisão",
-          );
-
-          break;
-
-        case "Escape":
-          if (!showExitConfirm) {
-            setShowExitConfirm(true);
-          }
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state, showExitConfirm]);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Derived values
+  // Derived values (precisa vir antes dos useEffects que as usam)
   // ───────────────────────────────────────────────────────────────────────────
 
   const respondidas = useMemo(() => {
     if (!state) return 0;
-
     return state.questoes.filter((q) => q.respostaUsuario !== undefined).length;
   }, [state]);
 
   const percentualProgresso = useMemo(() => {
     if (!state || state.questoes.length === 0) return 0;
-
     return (respondidas / state.questoes.length) * 100;
   }, [state, respondidas]);
 
@@ -238,7 +112,7 @@ export default function SimuladoPage() {
     : false;
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Actions
+  // Actions (precisa vir antes dos useEffects que as usam)
   // ───────────────────────────────────────────────────────────────────────────
 
   const handleFinalizar = useCallback(() => {
@@ -247,18 +121,14 @@ export default function SimuladoPage() {
     finalizarSimulado(
       state.questoes,
       state.tempoInicio,
-
       modo === "turbo"
         ? "TURBO"
         : modo === "adaptativo"
           ? "ADAPTATIVO"
           : "COMPLETO",
-
       limparProgresso,
-
       () => {
         setShowSuccess(true);
-
         toast.success("Simulado finalizado com sucesso! 🎉");
       },
     );
@@ -287,16 +157,19 @@ export default function SimuladoPage() {
     [state, setQuestaoAtual],
   );
 
+  const handleMarcarRevisao = useCallback(() => {
+    if (!state) return;
+    toggleMarcacao(state.questaoAtual + 1);
+  }, [state, toggleMarcacao]);
+
   const handleNavegarAdapter = useCallback(
     (direcao: NavegacaoDirecao) => {
       if (direcao === "anterior") {
         handleNavegar("anterior");
       }
-
       if (direcao === "proxima") {
         handleNavegar("proxima");
       }
-
       if (direcao === "finalizar") {
         handleFinalizar();
       }
@@ -309,16 +182,13 @@ export default function SimuladoPage() {
       if (!state) return;
 
       const idx = state.questaoAtual;
-
       const questaoAtualObj = state.questoes[idx];
 
       atualizarResposta(idx, resposta);
 
       if (resposta && resposta !== questaoAtualObj.resposta) {
         setShakeQuestao(idx);
-
         setTimeout(() => setShakeQuestao(null), 500);
-
         toast.error("❌ Resposta incorreta! Verifique a explicação.");
       } else if (resposta) {
         toast.success("✅ Resposta correta! Continue assim!");
@@ -333,27 +203,120 @@ export default function SimuladoPage() {
     [state, atualizarResposta, setQuestaoAtual],
   );
 
-  const handleMarcarRevisao = useCallback(() => {
-    if (!state) return;
-
-    toggleMarcacao(state.questaoAtual + 1);
-  }, [state, toggleMarcacao]);
-
   const handleSair = useCallback(() => {
     if (state) {
       if (respondidas > 0) {
         salvarProgresso(state);
-
         setLastSaved(new Date());
-
         toast.info("Progresso salvo! Você pode continuar depois.");
       } else {
         limparProgresso();
       }
     }
-
     router.push("/");
   }, [state, respondidas, salvarProgresso, limparProgresso, router]);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Fake loading progress
+  // ───────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!loading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoadingProgress(100);
+      return;
+    }
+
+    setLoadingProgress(0);
+
+    const interval = setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev >= 95) return prev;
+        const increment = Math.random() * 10 + 3;
+        return Math.min(prev + increment, 95);
+      });
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Timer
+  // ───────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!state) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTempoRestante(tempoMaximo);
+
+    const timer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - state.tempoInicio) / 1000);
+      const remaining = Math.max(0, tempoMaximo - elapsed);
+      setTempoRestante(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        handleFinalizar();
+        toast.warning("Tempo esgotado! Finalizando simulado...");
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [state, tempoMaximo, handleFinalizar]);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Auto save
+  // ───────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!state) return;
+
+    const interval = setInterval(() => {
+      salvarProgresso(stateRef.current);
+      setLastSaved(new Date());
+      toast.info("💾 Progresso salvo automaticamente", { duration: 2000 });
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [state, salvarProgresso, stateRef]);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Keyboard shortcuts
+  // ───────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!state) return;
+
+      switch (e.key) {
+        case "ArrowLeft":
+          e.preventDefault();
+          handleNavegar("anterior");
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          handleNavegar("proxima");
+          break;
+        case "m":
+        case "M":
+          e.preventDefault();
+          handleMarcarRevisao();
+          toast.info(
+            isMarcada ? "Questão desmarcada" : "Questão marcada para revisão",
+          );
+          break;
+        case "Escape":
+          if (!showExitConfirm) {
+            setShowExitConfirm(true);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [state, showExitConfirm, handleNavegar, handleMarcarRevisao, isMarcada]);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Loading
@@ -378,7 +341,6 @@ export default function SimuladoPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <GlassCard className="p-8 text-center max-w-md">
           <p className="text-slate-400 mb-4">Erro ao carregar questões.</p>
-
           <button
             onClick={() => router.push("/")}
             className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium hover:from-blue-500 hover:to-blue-400 transition-all"
@@ -414,7 +376,6 @@ export default function SimuladoPage() {
               onCancel={() => setShowExitConfirm(false)}
             />
           )}
-
           {showSuccess && <SuccessNotification type="congrats" />}
         </AnimatePresence>
 
@@ -436,27 +397,19 @@ export default function SimuladoPage() {
           <AnimatePresence mode="wait">
             <motion.div
               key={state.questaoAtual}
-              initial={{
-                opacity: 0,
-                x: 20,
-              }}
+              initial={{ opacity: 0, x: 20 }}
               animate={{
                 opacity: 1,
-
                 x:
                   shakeQuestao === state.questaoAtual
                     ? [0, -10, 10, -10, 10, 0]
                     : 0,
-
                 transition:
                   shakeQuestao === state.questaoAtual
                     ? { duration: 0.4 }
                     : { duration: 0.2 },
               }}
-              exit={{
-                opacity: 0,
-                x: -20,
-              }}
+              exit={{ opacity: 0, x: -20 }}
             >
               <Suspense
                 fallback={

@@ -6,7 +6,7 @@ import { MODOS } from "@/constants/modosEstudo";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { motion } from "framer-motion";
 import * as Icons from "lucide-react";
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 import { SectionTitle } from "./SectionTitle";
 
 const fadeInUp = {
@@ -23,17 +23,50 @@ const staggerContainer = {
   },
 };
 
-const getIcon = (iconName: string) => {
-  const IconComponent = (Icons as any)[iconName];
-  return IconComponent || Icons.HelpCircle;
+// Cache tipado para ícones
+const iconCache = new Map<string, React.ElementType>();
+
+const getIcon = (iconName: string): React.ElementType => {
+  if (iconCache.has(iconName)) {
+    return iconCache.get(iconName)!;
+  }
+  const IconComponent = (Icons as Record<string, React.ElementType>)[iconName];
+  const result = IconComponent || Icons.HelpCircle;
+  iconCache.set(iconName, result);
+  return result;
 };
 
-const ModoCard = React.memo(
-  ({ icon, titulo, descricao, detalhes, cor, popular = false }: any) => {
-    const IconComponent = getIcon(icon);
+// Componente de ícone dinâmico memoizado (fora do render)
+const DynamicIcon = memo(
+  ({ name, className }: { name: string; className?: string }) => {
+    const Icon = getIcon(name);
+    return <Icon className={className} />;
+  },
+);
+DynamicIcon.displayName = "DynamicIcon";
+
+// Tipos das props do ModoCard
+interface ModoCardProps {
+  icon: string;
+  titulo: string;
+  descricao: string;
+  detalhes: string[];
+  cor: "blue" | "purple" | "emerald" | "amber" | "rose" | "cyan";
+  popular?: boolean;
+}
+
+const ModoCard = memo(
+  ({
+    icon,
+    titulo,
+    descricao,
+    detalhes,
+    cor,
+    popular = false,
+  }: ModoCardProps) => {
     const [isHovered, setIsHovered] = useState(false);
 
-    const corClasses = {
+    const corClasses: Record<string, string> = {
       blue: "bg-gradient-to-br from-blue-500 to-blue-600",
       purple: "bg-gradient-to-br from-purple-500 to-purple-600",
       emerald: "bg-gradient-to-br from-emerald-500 to-emerald-600",
@@ -42,8 +75,7 @@ const ModoCard = React.memo(
       cyan: "bg-gradient-to-br from-cyan-500 to-cyan-600",
     };
 
-    const gradient =
-      corClasses[cor as keyof typeof corClasses] || corClasses.blue;
+    const gradient = corClasses[cor] || corClasses.blue;
 
     return (
       <motion.div
@@ -75,7 +107,7 @@ const ModoCard = React.memo(
             <div
               className={`w-14 h-14 rounded-xl ${gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}
             >
-              <IconComponent className="w-7 h-7 text-white" />
+              <DynamicIcon name={icon} className="w-7 h-7 text-white" />
             </div>
 
             {isHovered && (
@@ -95,7 +127,7 @@ const ModoCard = React.memo(
           </p>
 
           <ul className="space-y-2.5">
-            {detalhes.map((detalhe: string, idx: number) => (
+            {detalhes.map((detalhe, idx) => (
               <motion.li
                 key={idx}
                 initial={{ opacity: 0, x: -5 }}
@@ -109,7 +141,6 @@ const ModoCard = React.memo(
             ))}
           </ul>
 
-          {/* Barra decorativa no hover */}
           {isHovered && (
             <motion.div
               initial={{ scaleX: 0 }}
@@ -145,12 +176,11 @@ export function ModosEstudoSection() {
         animate={isVisible ? "visible" : "hidden"}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
-        {MODOS.map((modo, idx) => (
-          <ModoCard key={modo.titulo} {...modo} index={idx} />
+        {MODOS.map((modo) => (
+          <ModoCard key={modo.titulo} {...modo} />
         ))}
       </motion.div>
 
-      {/* Dica adicional */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={isVisible ? { opacity: 1, y: 0 } : {}}

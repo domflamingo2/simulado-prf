@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Brain, Settings2, Sparkles, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { useTreinoConfig } from "@/hooks/useTreinoConfig";
 import { iniciarTreino } from "@/lib/treino";
@@ -27,12 +28,7 @@ export default function TreinoPage() {
 
   const handleIniciarTreino = () => {
     if (!disciplinaSelecionada) {
-      const toast = (window as any).toast?.error;
-
-      if (toast) {
-        toast("Selecione uma disciplina para continuar.");
-      }
-
+      toast.error("Selecione uma disciplina para continuar.");
       return;
     }
 

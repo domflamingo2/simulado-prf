@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 
+import { HistoricoSimulado, Questao } from "@/data/questoes/index";
+
 import QuestaoCard from "@/components/QuestaoCard";
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
 import { useQuestoesFiltradas } from "@/hooks/useQuestoesFiltradas";
@@ -17,6 +19,13 @@ import { HeaderRevisao } from "./components/HeaderRevisao";
 import { LoadingState } from "./components/LoadingState";
 import { NavegacaoQuestoes } from "./components/NavegacaoQuestoes";
 import { SeletorSimulado } from "./components/SeletorSimulado";
+
+interface Simulado {
+  id: string;
+  modo: string;
+  questoes: Questao[];
+  // outras propriedades necessárias
+}
 
 export default function RevisaoPage() {
   const router = useRouter();
@@ -49,6 +58,9 @@ export default function RevisaoPage() {
 
   // Resetar questão atual quando os filtros mudam
   useEffect(() => {
+    // Resetar para a primeira questão quando os filtros mudam ou a lista é reduzida.
+    // Isso é intencional e não causa loop porque as dependências são estáveis.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuestaoAtual(0);
   }, [filtros, questoesFiltradas.length]);
 
@@ -102,7 +114,7 @@ export default function RevisaoPage() {
   }, [simuladoSelecionado, router]);
 
   const handleQuestaoClick = useCallback(
-    (questao: any, index: number) => {
+    (questao: Questao, _index: number) => {
       const filtradaIndex = questoesFiltradas.findIndex((q) => q === questao);
       if (filtradaIndex !== -1) {
         setQuestaoAtual(filtradaIndex);
@@ -112,7 +124,7 @@ export default function RevisaoPage() {
   );
 
   const handleMudarSimulado = useCallback(
-    (simulado: any) => {
+    (simulado: HistoricoSimulado) => {
       setSimuladoSelecionado(simulado);
       setQuestaoAtual(0);
       router.push(`/revisao?id=${simulado.id}`);

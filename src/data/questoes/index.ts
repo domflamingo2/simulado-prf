@@ -1186,9 +1186,9 @@ export const questoes: Questao[] = [
  */
 export class QuestaoCache {
   private static instance: QuestaoCache;
-  private cache = new Map<string, any>();
+  private cache = new Map<string, unknown>();
   private timestamps = new Map<string, number>();
-  private readonly TTL = 5 * 60 * 1000; // 5 minutos
+  private readonly TTL = 5 * 60 * 1000;
 
   private constructor() {}
 
@@ -1205,7 +1205,7 @@ export class QuestaoCache {
     return Date.now() - timestamp > this.TTL;
   }
 
-  private setCache(key: string, value: any): void {
+  private setCache(key: string, value: unknown): void {
     this.cache.set(key, value);
     this.timestamps.set(key, Date.now());
   }
@@ -1213,7 +1213,7 @@ export class QuestaoCache {
   getQuestoesPorDisciplina(disciplina: Disciplina): Questao[] {
     const key = `disciplina:${disciplina}`;
     if (!this.isExpired(key) && this.cache.has(key)) {
-      return this.cache.get(key)!;
+      return this.cache.get(key) as Questao[];
     }
     const result = questoes.filter((q) => q.disciplina === disciplina);
     this.setCache(key, result);
@@ -1223,7 +1223,7 @@ export class QuestaoCache {
   getQuestoesPorDificuldade(dificuldade: NivelDificuldade): Questao[] {
     const key = `dificuldade:${dificuldade}`;
     if (!this.isExpired(key) && this.cache.has(key)) {
-      return this.cache.get(key)!;
+      return this.cache.get(key) as Questao[];
     }
     const result = questoes.filter((q) => q.dificuldade === dificuldade);
     this.setCache(key, result);
@@ -1233,7 +1233,7 @@ export class QuestaoCache {
   getQuestoesPorBanca(banca: string): Questao[] {
     const key = `banca:${banca}`;
     if (!this.isExpired(key) && this.cache.has(key)) {
-      return this.cache.get(key)!;
+      return this.cache.get(key) as Questao[];
     }
     const result = questoes.filter((q) => q.banca_referencia === banca);
     this.setCache(key, result);
@@ -1243,7 +1243,7 @@ export class QuestaoCache {
   getEstatisticasBanco(): StatsData {
     const key = "estatisticas:banco";
     if (!this.isExpired(key) && this.cache.has(key)) {
-      return this.cache.get(key)!;
+      return this.cache.get(key) as StatsData;
     }
     const result = getEstatisticasBanco();
     this.setCache(key, result);
@@ -1298,7 +1298,6 @@ export class QuestaoIndices {
   private construirIndices(): void {
     // Inicializar maps
     DISCIPLINAS_ENUM.forEach((d) => this.indices.porDisciplina.set(d, []));
-    ["administracao"] as any; // Placeholder
 
     // Construir índices
     for (const q of questoes) {
@@ -1539,11 +1538,22 @@ export function getEstatisticasBanco(): StatsData {
 export function calcularMetricasPerformance(
   historico: HistoricoSimulado[],
 ): PerformanceMetrics {
-  // Inicializar acumuladores
+  // Ou inicializar corretamente:
   const tempoPorDisciplina: Record<
     Disciplina,
     { total: number; count: number }
-  > = {} as any;
+  > = {
+    PORTUGUES: { total: 0, count: 0 },
+    ETICA: { total: 0, count: 0 },
+    RACIOCINIO_LOGICO: { total: 0, count: 0 },
+    DIREITO_CONSTITUCIONAL: { total: 0, count: 0 },
+    DIREITO_ADMINISTRATIVO: { total: 0, count: 0 },
+    ADMINISTRACAO: { total: 0, count: 0 },
+    ARQUIVOLOGIA: { total: 0, count: 0 },
+    INFORMATICA: { total: 0, count: 0 },
+    LEGISLACAO_PRF: { total: 0, count: 0 },
+  };
+
   const acertosPorDificuldade: Record<
     NivelDificuldade,
     { acertos: number; total: number }
@@ -1946,7 +1956,6 @@ function getQuestoesDisponiveis(
   opts: SelecaoAdaptativaOptions,
 ): Questao[] {
   const questoesVistas = new Set<string>();
-  const questoesIds = new Set<string>();
 
   if (opts.evitarRepetidos) {
     for (const simulado of historico.slice(-opts.limiteQuestoesVistas)) {

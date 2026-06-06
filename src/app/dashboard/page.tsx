@@ -17,6 +17,15 @@ import { NIVEIS } from "@/data/questoes/index";
 import { useGamificacao } from "@/hooks/useGamificacao";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { classificarDesempenho } from "@/lib/simulado-logic";
+import {
+  BarChart3,
+  BookOpen,
+  LucideIcon,
+  Play,
+  Target,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { AlertasDesempenho } from "./components/AlertasDesempenho";
 import { BackupCard } from "./components/BackupCard";
 import { HeaderDashboard } from "./components/HeaderDashboard";
@@ -29,6 +38,12 @@ import { RegraCEBRASPE } from "./components/RegraCEBRASPE";
 import { SearchModos } from "./components/SearchModos";
 import { StatsGrid } from "./components/StatsGrid";
 import { WelcomeScreen } from "./components/WelcomeScreen";
+
+declare global {
+  interface Window {
+    showSaveFilePicker?: (options?: unknown) => Promise<FileSystemFileHandle>;
+  }
+}
 
 const Confetti = lazy(() =>
   import("@/components/ui/Confetti").catch(() => ({ default: () => null })),
@@ -57,7 +72,7 @@ type ModoVariant = "blue" | "amber" | "emerald" | "rose" | "purple" | "cyan";
 
 interface ModoEstudoItem {
   href: string;
-  icon: any;
+  icon: LucideIcon;
   variant: ModoVariant;
   title: string;
   description: string;
@@ -70,7 +85,7 @@ interface ModoEstudoItem {
 const MODOS_ESTUDO: ModoEstudoItem[] = [
   {
     href: "/simulado?modo=completo",
-    icon: require("lucide-react").Play,
+    icon: Play,
     variant: "blue",
     title: "Simulado Completo",
     description: "60 questões • 4 horas • Ambiente real CEBRASPE",
@@ -80,7 +95,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/simulado?modo=turbo",
-    icon: require("lucide-react").Zap,
+    icon: Zap,
     variant: "amber",
     title: "Modo Turbo",
     description: "50 questões • 40 min • Revisão rápida",
@@ -90,7 +105,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/treino",
-    icon: require("lucide-react").BookOpen,
+    icon: BookOpen,
     variant: "emerald",
     title: "Treino Específico",
     description: "Foque na sua disciplina mais fraca",
@@ -99,7 +114,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/erros",
-    icon: require("lucide-react").XCircle,
+    icon: XCircle,
     variant: "rose",
     title: "Revisar Erros",
     description: "Banco de questões que você errou",
@@ -109,7 +124,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/simulado?modo=adaptativo",
-    icon: require("lucide-react").Target,
+    icon: Target,
     variant: "purple",
     title: "Adaptativo IA",
     description: "IA seleciona suas maiores dificuldades",
@@ -119,7 +134,7 @@ const MODOS_ESTUDO: ModoEstudoItem[] = [
   },
   {
     href: "/estatisticas",
-    icon: require("lucide-react").BarChart3,
+    icon: BarChart3,
     variant: "cyan",
     title: "Estatísticas",
     description: "Análise profunda por disciplina",
@@ -206,11 +221,11 @@ export default function Dashboard() {
   const [exportError, setExportError] = useState<string | null>(null);
 
   const { progress, showLevelUp, dismissLevelUp } = useGamificacao();
-  const { value: historicoRaw, setValue: setHistoricoStorage } =
-    useLocalStorage<unknown[]>({
-      key: LS_KEYS.historico,
-      defaultValue: [],
-    });
+
+  const { value: historicoRaw } = useLocalStorage<unknown[]>({
+    key: LS_KEYS.historico,
+    defaultValue: [],
+  });
 
   const historicoNormalizado = useMemo((): HistoricoItem[] => {
     if (!Array.isArray(historicoRaw)) return [];
@@ -337,6 +352,7 @@ export default function Dashboard() {
   }, [searchTerm]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -346,7 +362,9 @@ export default function Dashboard() {
     const conquista = params.get("conquista");
     if (!conquista) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowNewBadge(conquista);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowConfetti(true);
     window.history.replaceState({}, "", window.location.pathname);
 
@@ -408,10 +426,10 @@ export default function Dashboard() {
 
       if (
         "showSaveFilePicker" in window &&
-        typeof (window as any).showSaveFilePicker === "function"
+        typeof window.showSaveFilePicker === "function"
       ) {
         try {
-          const handle = await (window as any).showSaveFilePicker({
+          const handle = await window.showSaveFilePicker({
             suggestedName: `prf-backup-${dateStr}.json`,
             types: [
               {

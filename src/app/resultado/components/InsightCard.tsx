@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 
 interface InsightCardProps {
-  id: string;
   tipo: "positivo" | "alerta" | "dica";
   mensagem: string;
   acao?: string;
@@ -19,7 +18,6 @@ interface InsightCardProps {
 }
 
 export function InsightCard({
-  id,
   tipo,
   mensagem,
   acao,

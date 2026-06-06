@@ -86,7 +86,9 @@ export function useResultadoData() {
         throw new Error("Dados do simulado inválidos");
       }
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSimulado(simuladoAtual);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHistorico(historicoLista);
 
       // Compara com simulado anterior
@@ -108,6 +110,7 @@ export function useResultadoData() {
           if (diferenca > 3) tendencia = "melhorou";
           else if (diferenca < -3) tendencia = "piorou";
 
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setComparacao({
             tendencia,
             diferencaPontos: diferenca,

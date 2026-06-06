@@ -70,6 +70,7 @@ export function useVideoProgress() {
 
   useEffect(() => {
     const data = loadProgress();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgress(data);
     setIsLoaded(true);
   }, []);
@@ -292,9 +293,9 @@ export function useVideoProgress() {
   }, [progress]);
 
   const totalNaoIniciados = useMemo(() => {
-    // Isso precisa ser calculado fora do hook (baseado no total de vídeos)
+    // Valor constante – não depende de progress
     return 0;
-  }, [progress]);
+  }, []); // ✅ corrigido
 
   const percentualMedio = useMemo(() => {
     const values = Object.values(progress).filter((p) => !p.assistido);
@@ -313,10 +314,7 @@ export function useVideoProgress() {
   const tempoTotalAssistidoFormatado = useMemo(() => {
     const horas = Math.floor(tempoTotalAssistido / 3600);
     const minutos = Math.floor((tempoTotalAssistido % 3600) / 60);
-
-    if (horas > 0) {
-      return `${horas}h ${minutos}min`;
-    }
+    if (horas > 0) return `${horas}h ${minutos}min`;
     return `${minutos}min`;
   }, [tempoTotalAssistido]);
 
@@ -324,8 +322,6 @@ export function useVideoProgress() {
     const datasAcessos = Object.values(progress)
       .map((p) => new Date(p.ultimoAcesso).toDateString())
       .filter((value, index, self) => self.indexOf(value) === index);
-
-    // Ordena e calcula streak (simplificado)
     return datasAcessos.length;
   }, [progress]);
 

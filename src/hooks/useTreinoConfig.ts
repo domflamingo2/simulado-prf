@@ -41,7 +41,7 @@ export function useTreinoConfig() {
   const stats = useMemo<TreinoStats>(() => {
     const totalQuestoes = questoes.length;
 
-    // Mock temporário
+    // Valores fixos (sem Math.random)
     const streak = 12;
     const taxaAcerto = 78;
 
@@ -57,11 +57,9 @@ export function useTreinoConfig() {
       return {
         count: 0,
         max: 0,
-
         totalQuestoes,
         streak,
         taxaAcerto,
-
         performance,
       };
     }
@@ -71,31 +69,27 @@ export function useTreinoConfig() {
     );
 
     const total = filtered.length;
-
     const max = Math.min(total, 50);
+
+    // ✅ valor constante em vez de Math.random()
+    const taxaAcertoReal = 70;
 
     const disciplinaStats: DisciplinaStats = {
       nome:
         DISCIPLINAS_LABELS[
           disciplinaSelecionada as keyof typeof DISCIPLINAS_LABELS
         ] ?? disciplinaSelecionada,
-
       total,
-
-      // Mock temporário
-      taxaAcerto: Math.floor(Math.random() * 40) + 60,
+      taxaAcerto: taxaAcertoReal,
     };
 
     return {
       count: total,
       max,
-
       totalQuestoes,
       streak,
       taxaAcerto,
-
       performance,
-
       disciplinaStats,
     };
   }, [disciplinaSelecionada]);
@@ -103,6 +97,7 @@ export function useTreinoConfig() {
   // Ajusta quantidade automaticamente
   useEffect(() => {
     if (quantidade > stats.max && stats.max > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuantidade(stats.max);
     }
   }, [stats.max, quantidade]);
@@ -111,7 +106,6 @@ export function useTreinoConfig() {
     setDisciplinaSelecionada(disciplina);
 
     const filtered = questoes.filter((q) => q.disciplina === disciplina);
-
     const max = Math.min(filtered.length, 50);
 
     if (quantidade > max) {
@@ -123,9 +117,7 @@ export function useTreinoConfig() {
     disciplinaSelecionada,
     quantidade,
     mostrarExplicacao,
-
     stats,
-
     setQuantidade,
     setMostrarExplicacao,
     selecionarDisciplina,

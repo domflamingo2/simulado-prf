@@ -11,6 +11,7 @@ import {
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
+1;
 
 import { DisciplinaBar } from "./DisciplinaBar";
 
@@ -55,11 +56,6 @@ export function DisciplinasDesempenho({
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-  };
-
-  const statsVariants = {
-    hidden: { opacity: 0, scale: 0.9 },
-    visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
   };
 
   return (

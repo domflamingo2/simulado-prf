@@ -721,9 +721,9 @@ export function gerarRecomendacoes(
     acoesImediatas.push("🎯 Revisar teoria antes de fazer mais simulados");
   }
 
-  let estrategia: RecomendacaoPosSimulado["estrategia"] = "manter";
-  let modoSugerido: ModoSimulado = "COMPLETO";
-  let justificativa = "";
+  let estrategia: RecomendacaoPosSimulado["estrategia"];
+  let modoSugerido: ModoSimulado;
+  let justificativa: string;
 
   if (tendencia === "caindo" || muitoFracas.length > 0) {
     estrategia = "revisar";

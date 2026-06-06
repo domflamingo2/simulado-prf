@@ -1,7 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Layers, Sparkles, Target } from "lucide-react";
+import {
+  Archive,
+  BrainCircuit,
+  Briefcase,
+  Building2,
+  Cpu,
+  FileText,
+  Gavel,
+  Layers,
+  LucideIcon,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+  Target,
+} from "lucide-react";
 
 import { questoes } from "@/data/questoes";
 import { Disciplina } from "@/data/questoes/index";
@@ -11,7 +25,7 @@ import { DisciplinaCard } from "./DisciplinaCard";
 export const DISCIPLINAS_CONFIG: {
   value: Disciplina;
   label: string;
-  icon: any;
+  icon: LucideIcon; // ✅ substitui any
   color: string;
   bgGradient: string;
   iconBg: string;
@@ -20,7 +34,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "PORTUGUES",
     label: "Língua Portuguesa",
-    icon: require("lucide-react").FileText,
+    icon: FileText,
     color: "text-blue-400",
     bgGradient: "group-hover:bg-blue-500/5 border-blue-500/20",
     iconBg: "bg-blue-500/10 text-blue-400",
@@ -29,7 +43,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "ETICA",
     label: "Ética e Conduta",
-    icon: require("lucide-react").ShieldCheck,
+    icon: ShieldCheck,
     color: "text-purple-400",
     bgGradient: "group-hover:bg-purple-500/5 border-purple-500/20",
     iconBg: "bg-purple-500/10 text-purple-400",
@@ -38,7 +52,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "RACIOCINIO_LOGICO",
     label: "Raciocínio Lógico",
-    icon: require("lucide-react").BrainCircuit,
+    icon: BrainCircuit,
     color: "text-pink-400",
     bgGradient: "group-hover:bg-pink-500/5 border-pink-500/20",
     iconBg: "bg-pink-500/10 text-pink-400",
@@ -47,7 +61,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "DIREITO_CONSTITUCIONAL",
     label: "Dir. Constitucional",
-    icon: require("lucide-react").Scale,
+    icon: Scale,
     color: "text-emerald-400",
     bgGradient: "group-hover:bg-emerald-500/5 border-emerald-500/20",
     iconBg: "bg-emerald-500/10 text-emerald-400",
@@ -56,7 +70,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "DIREITO_ADMINISTRATIVO",
     label: "Dir. Administrativo",
-    icon: require("lucide-react").Building2,
+    icon: Building2,
     color: "text-cyan-400",
     bgGradient: "group-hover:bg-cyan-500/5 border-cyan-500/20",
     iconBg: "bg-cyan-500/10 text-cyan-400",
@@ -65,7 +79,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "ADMINISTRACAO",
     label: "Administração",
-    icon: require("lucide-react").Briefcase,
+    icon: Briefcase,
     color: "text-amber-400",
     bgGradient: "group-hover:bg-amber-500/5 border-amber-500/20",
     iconBg: "bg-amber-500/10 text-amber-400",
@@ -74,7 +88,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "ARQUIVOLOGIA",
     label: "Arquivologia",
-    icon: require("lucide-react").Archive,
+    icon: Archive,
     color: "text-orange-400",
     bgGradient: "group-hover:bg-orange-500/5 border-orange-500/20",
     iconBg: "bg-orange-500/10 text-orange-400",
@@ -83,7 +97,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "INFORMATICA",
     label: "Informática",
-    icon: require("lucide-react").Cpu,
+    icon: Cpu,
     color: "text-indigo-400",
     bgGradient: "group-hover:bg-indigo-500/5 border-indigo-500/20",
     iconBg: "bg-indigo-500/10 text-indigo-400",
@@ -92,7 +106,7 @@ export const DISCIPLINAS_CONFIG: {
   {
     value: "LEGISLACAO_PRF",
     label: "Legislação PRF",
-    icon: require("lucide-react").Gavel,
+    icon: Gavel,
     color: "text-rose-400",
     bgGradient: "group-hover:bg-rose-500/5 border-rose-500/20",
     iconBg: "bg-rose-500/10 text-rose-400",

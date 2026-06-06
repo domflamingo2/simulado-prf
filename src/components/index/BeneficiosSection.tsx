@@ -24,18 +24,29 @@ const staggerContainer = {
   },
 };
 
-const iconCache = new Map<string, React.ElementType>();
+// Mapeamento estático de nomes de ícones para componentes
+type IconName = keyof typeof Icons;
+const ICON_COMPONENTS: Record<string, React.ElementType> = {};
 
-const getIcon = (iconName: string): React.ElementType => {
-  if (iconCache.has(iconName)) {
-    return iconCache.get(iconName)!;
+// Preenche o cache com todos os ícones disponíveis
+for (const [key, value] of Object.entries(Icons)) {
+  if (
+    typeof value === "function" &&
+    key !== "createElement" &&
+    key !== "forwardRef"
+  ) {
+    ICON_COMPONENTS[key] = value as React.ElementType;
   }
-  const IconComponent = (Icons as any)[iconName];
-  const fallbackIcon = Icons.HelpCircle;
-  const result = IconComponent || fallbackIcon;
-  iconCache.set(iconName, result);
-  return result;
-};
+}
+
+// Componente que renderiza o ícone de forma estática
+const DynamicIcon = memo(
+  ({ name, className }: { name: string; className?: string }) => {
+    const IconComponent = ICON_COMPONENTS[name] || Icons.HelpCircle;
+    return <IconComponent className={className} />;
+  },
+);
+DynamicIcon.displayName = "DynamicIcon";
 
 const BeneficioCard = memo(
   ({
@@ -53,7 +64,6 @@ const BeneficioCard = memo(
     destaque: boolean;
     index: number;
   }) => {
-    const IconComponent = getIcon(icon);
     const [isHovered, setIsHovered] = useState(false);
 
     return (
@@ -81,7 +91,8 @@ const BeneficioCard = memo(
                   : "bg-gradient-to-br from-blue-500/20 to-purple-500/20"
               } ${isHovered ? "scale-110 rotate-3" : ""}`}
             >
-              <IconComponent
+              <DynamicIcon
+                name={icon}
                 className={`w-5 h-5 transition-all duration-300 ${
                   destaque ? "text-amber-400" : "text-blue-400"
                 }`}

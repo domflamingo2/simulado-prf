@@ -1,15 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Minus,
-  TrendingDown,
-  TrendingUp,
-  Trophy,
-} from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Trophy } from "lucide-react";
 
 import StatCard from "@/components/ui/StatCard";
 
@@ -45,32 +37,6 @@ export function StatsGrid({
       positive: tendencia === "up",
     };
   };
-
-  const getTendenciaIcon = () => {
-    switch (tendencia) {
-      case "up":
-        return <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />;
-      case "down":
-        return <TrendingDown className="w-3.5 h-3.5 text-rose-400" />;
-      default:
-        return <Minus className="w-3.5 h-3.5 text-slate-400" />;
-    }
-  };
-
-  const getTendenciaText = () => {
-    switch (tendencia) {
-      case "up":
-        return "em alta";
-      case "down":
-        return "em queda";
-      default:
-        return "estável";
-    }
-  };
-
-  const trendValue = getTrendValue();
-  const diffValue = (media7Dias - mediaGeral).toFixed(1);
-  const isPositive = diffValue !== "0.0" && parseFloat(diffValue) > 0;
 
   const containerVariants = {
     hidden: { opacity: 0 },

@@ -92,7 +92,6 @@ const ESTRUTURA_PRF: Record<Disciplina, { nome: string; questoes: number }> = {
   LEGISLACAO_PRF: { nome: "Legislação PRF", questoes: 6 },
 };
 
-// FIX: naoRespondidas adicionado em todas as 9 disciplinas
 function criarStatsVazias(): Record<Disciplina, EstatisticasDisciplina> {
   const vazio: EstatisticasDisciplina = {
     total: 0,
@@ -103,7 +102,6 @@ function criarStatsVazias(): Record<Disciplina, EstatisticasDisciplina> {
     percentual: 0,
     pontuacao: 0,
   };
-
   return {
     PORTUGUES: { ...vazio },
     ETICA: { ...vazio },
@@ -117,9 +115,6 @@ function criarStatsVazias(): Record<Disciplina, EstatisticasDisciplina> {
   };
 }
 
-// FIX: rastreia naoRespondidas separadamente de brancos.
-// undefined → questão não vista (naoRespondidas)
-// null      → usuário deixou em branco explicitamente (brancos)
 function calcularEstatisticasPuras(
   questoes: Questao[],
   respostas: Map<string, RespostaCebraspe | null>,
@@ -136,27 +131,13 @@ function calcularEstatisticasPuras(
     const temResposta = respostas.has(q.id);
     const resposta = respostas.get(q.id);
 
-    if (!desempenhoPorDisciplina[q.disciplina]) {
-      desempenhoPorDisciplina[q.disciplina] = {
-        total: 0,
-        acertos: 0,
-        erros: 0,
-        brancos: 0,
-        naoRespondidas: 0,
-        percentual: 0,
-        pontuacao: 0,
-      };
-    }
-
     const stats = desempenhoPorDisciplina[q.disciplina];
     stats.total++;
 
     if (!temResposta) {
-      // Questão não vista — não está no Map
       naoRespondidas++;
       stats.naoRespondidas++;
     } else if (resposta === null) {
-      // Usuário pulou explicitamente
       brancos++;
       stats.brancos++;
     } else if (resposta === q.resposta) {
@@ -204,6 +185,37 @@ function embaralharArray<T>(array: T[]): T[] {
 
 function gerarIdSimulado(): string {
   return `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function analisarDisciplinasFracas(
+  historico: HistoricoSimulado[],
+): Array<{ disciplina: Disciplina; taxaErro: number }> {
+  const stats = new Map<Disciplina, { acertos: number; total: number }>();
+  historico.forEach((h) => {
+    h.questoes.forEach((q) => {
+      if (!stats.has(q.disciplina))
+        stats.set(q.disciplina, { acertos: 0, total: 0 });
+      const atual = stats.get(q.disciplina)!;
+      atual.total++;
+      if (q.respostaUsuario === q.resposta) atual.acertos++;
+    });
+  });
+  return Array.from(stats.entries())
+    .map(([disciplina, { acertos, total }]) => ({
+      disciplina,
+      taxaErro: total > 0 ? 1 - acertos / total : 0,
+    }))
+    .sort((a, b) => b.taxaErro - a.taxaErro);
+}
+
+function detectarModo(
+  questoes: Questao[],
+  respondidasCount: number,
+): ModoSimulado {
+  if (questoes.length === 60) return "COMPLETO";
+  if (questoes.length === 50) return "TURBO";
+  if (respondidasCount > 0 && respondidasCount < 20) return "ERROS";
+  return "DISCIPLINA";
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -264,9 +276,65 @@ export function useSimulado(): UseSimuladoReturn {
   }, [estado.fase, estado.questoes, estado.respostas, tempoDecorrido]);
 
   // ═══════════════════════════════════════════════════════════
+  // FUNÇÕES DE PERSISTÊNCIA (declaradas cedo para uso em efeitos)
+  // ═══════════════════════════════════════════════════════════
+
+  const salvarProgresso = useCallback(() => {
+    if (estado.fase !== "em-andamento") return;
+
+    const respostasObj: Record<string, RespostaCebraspe | null> = {};
+    estado.respostas.forEach((val, key) => {
+      respostasObj[key] = val;
+    });
+
+    const dadosSalvar = {
+      estado: { ...estado, respostas: respostasObj },
+      timestamp: Date.now(),
+      tempoUiSnapshot: tempoUi,
+    };
+
+    localStorage.setItem(CHAVE_PROGRESSO, JSON.stringify(dadosSalvar));
+  }, [estado, tempoUi]);
+
+  const carregarProgresso = useCallback((): boolean => {
+    try {
+      const dados = localStorage.getItem(CHAVE_PROGRESSO);
+      if (!dados) return false;
+
+      const parsed = JSON.parse(dados);
+      const { estado: estadoSalvo, tempoUiSnapshot, timestamp } = parsed;
+
+      const horasPassadas = (Date.now() - timestamp) / (1000 * 60 * 60);
+      if (horasPassadas > 24) {
+        localStorage.removeItem(CHAVE_PROGRESSO);
+        return false;
+      }
+
+      const respostasRestauradas = new Map<string, RespostaCebraspe | null>();
+      if (estadoSalvo.respostas) {
+        Object.entries(estadoSalvo.respostas).forEach(([key, value]) => {
+          respostasRestauradas.set(key, value as RespostaCebraspe | null);
+        });
+      }
+
+      setTempoUi(tempoUiSnapshot || 0);
+      setEstado({
+        ...estadoSalvo,
+        respostas: respostasRestauradas,
+        fase: "pausado",
+      });
+      return true;
+    } catch (error) {
+      console.error("Erro ao carregar progresso:", error);
+      return false;
+    }
+  }, []);
+
+  // ═══════════════════════════════════════════════════════════
   // EFEITOS
   // ═══════════════════════════════════════════════════════════
 
+  // Efeito de animação do tempo (UI)
   useEffect(() => {
     if (estado.fase === "em-andamento") {
       tempoInicioRef.current = Date.now();
@@ -285,6 +353,7 @@ export function useSimulado(): UseSimuladoReturn {
       };
     } else {
       if (tempoUi > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEstado((prev) => ({
           ...prev,
           tempoAcumuladoAnterior: prev.tempoAcumuladoAnterior + tempoUi,
@@ -294,11 +363,12 @@ export function useSimulado(): UseSimuladoReturn {
     }
   }, [estado.fase, tempoUi]);
 
+  // Auto‑save
   useEffect(() => {
     if (estado.fase !== "em-andamento") return;
     const autoSave = setInterval(() => salvarProgresso(), 30000);
     return () => clearInterval(autoSave);
-  }, [estado.fase, estado]);
+  }, [estado.fase, salvarProgresso]);
 
   // ═══════════════════════════════════════════════════════════
   // AÇÕES
@@ -424,7 +494,6 @@ export function useSimulado(): UseSimuladoReturn {
 
       const modoDetectado = detectarModo(prev.questoes, prev.respostas.size);
 
-      // FIX: naoRespondidas adicionado ao objeto estatisticas do HistoricoSimulado
       const historicoItem: HistoricoSimulado = {
         id: gerarIdSimulado(),
         data: new Date().toISOString(),
@@ -489,61 +558,6 @@ export function useSimulado(): UseSimuladoReturn {
     localStorage.removeItem(CHAVE_PROGRESSO);
   }, []);
 
-  // ═══════════════════════════════════════════════════════════
-  // PERSISTÊNCIA
-  // ═══════════════════════════════════════════════════════════
-
-  const salvarProgresso = useCallback(() => {
-    if (estado.fase !== "em-andamento") return;
-
-    const respostasObj: Record<string, RespostaCebraspe | null> = {};
-    estado.respostas.forEach((val, key) => {
-      respostasObj[key] = val;
-    });
-
-    const dadosSalvar = {
-      estado: { ...estado, respostas: respostasObj },
-      timestamp: Date.now(),
-      tempoUiSnapshot: tempoUi,
-    };
-
-    localStorage.setItem(CHAVE_PROGRESSO, JSON.stringify(dadosSalvar));
-  }, [estado, tempoUi]);
-
-  const carregarProgresso = useCallback((): boolean => {
-    try {
-      const dados = localStorage.getItem(CHAVE_PROGRESSO);
-      if (!dados) return false;
-
-      const parsed = JSON.parse(dados);
-      const { estado: estadoSalvo, tempoUiSnapshot, timestamp } = parsed;
-
-      const horasPassadas = (Date.now() - timestamp) / (1000 * 60 * 60);
-      if (horasPassadas > 24) {
-        localStorage.removeItem(CHAVE_PROGRESSO);
-        return false;
-      }
-
-      const respostasRestauradas = new Map<string, RespostaCebraspe | null>();
-      if (estadoSalvo.respostas) {
-        Object.entries(estadoSalvo.respostas).forEach(([key, value]) => {
-          respostasRestauradas.set(key, value as RespostaCebraspe | null);
-        });
-      }
-
-      setTempoUi(tempoUiSnapshot || 0);
-      setEstado({
-        ...estadoSalvo,
-        respostas: respostasRestauradas,
-        fase: "pausado",
-      });
-      return true;
-    } catch (error) {
-      console.error("Erro ao carregar progresso:", error);
-      return false;
-    }
-  }, []);
-
   return {
     estado,
     fase: estado.fase,
@@ -564,39 +578,4 @@ export function useSimulado(): UseSimuladoReturn {
     salvarProgresso,
     carregarProgresso,
   };
-}
-
-// ═══════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════
-
-function analisarDisciplinasFracas(
-  historico: HistoricoSimulado[],
-): Array<{ disciplina: Disciplina; taxaErro: number }> {
-  const stats = new Map<Disciplina, { acertos: number; total: number }>();
-  historico.forEach((h) => {
-    h.questoes.forEach((q) => {
-      if (!stats.has(q.disciplina))
-        stats.set(q.disciplina, { acertos: 0, total: 0 });
-      const atual = stats.get(q.disciplina)!;
-      atual.total++;
-      if (q.respostaUsuario === q.resposta) atual.acertos++;
-    });
-  });
-  return Array.from(stats.entries())
-    .map(([disciplina, { acertos, total }]) => ({
-      disciplina,
-      taxaErro: total > 0 ? 1 - acertos / total : 0,
-    }))
-    .sort((a, b) => b.taxaErro - a.taxaErro);
-}
-
-function detectarModo(
-  questoes: Questao[],
-  respondidasCount: number,
-): ModoSimulado {
-  if (questoes.length === 60) return "COMPLETO";
-  if (questoes.length === 50) return "TURBO";
-  if (respondidasCount > 0 && respondidasCount < 20) return "ERROS";
-  return "DISCIPLINA";
 }

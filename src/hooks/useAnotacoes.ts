@@ -157,6 +157,7 @@ export function useAnotacoes() {
 
   useEffect(() => {
     const data = carregarLocalStorage();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAnotacoes(data);
     setLoading(false);
     isInitializedRef.current = true;
@@ -341,11 +342,14 @@ export function useAnotacoes() {
     [anotacoes],
   );
 
-  const anotacoesUltimos7Dias = useMemo(() => {
+  const [anotacoesUltimos7Dias, setAnotacoesUltimos7Dias] = useState(0);
+
+  useEffect(() => {
     const limite = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    // FIX: `new Date().setDate(...)` mutava o objeto; agora usa aritmética de ms
-    return anotacoes.filter((a) => new Date(a.createdAt).getTime() >= limite)
-      .length;
+    const count = anotacoes.filter(
+      (a) => new Date(a.createdAt).getTime() >= limite,
+    ).length;
+    setAnotacoesUltimos7Dias(count);
   }, [anotacoes]);
 
   const anotacoesMaisRecentes = useMemo(

@@ -1,12 +1,20 @@
 import { LucideIcon } from "lucide-react";
 import { GlassCard } from "./GlassCard";
 
-// Utilitário simples de classes (se você não tiver um 'clsx' ou 'cn' global)
-function cn(...inputs: (string | undefined | null | false)[]) {
-  return inputs.filter(Boolean).join(" ");
-}
-
 type StatVariant = "emerald" | "purple" | "amber" | "cyan" | "rose" | "blue";
+
+// Definir os tipos de glow aceitos pelo GlassCard
+type GlowColor =
+  | "purple"
+  | "cyan"
+  | "blue"
+  | "green"
+  | "red"
+  | "none"
+  | "orange"
+  | "white"
+  | null
+  | undefined;
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -30,10 +38,11 @@ const variants = {
   blue: "from-blue-500/20 to-blue-600/10 text-blue-400 border-blue-500/20",
 };
 
-const glowMap: Record<StatVariant, string> = {
+// Mapeamento com tipo literal correto
+const glowMap: Record<StatVariant, GlowColor> = {
   emerald: "green",
   purple: "purple",
-  amber: "yellow",
+  amber: "orange", // amber -> orange
   cyan: "cyan",
   rose: "red",
   blue: "blue",
@@ -58,10 +67,11 @@ export default function StatCard({
       className={`p-3 sm:p-4 h-full transition-all duration-300 ${
         onClick ? "cursor-pointer hover:scale-[1.02] active:scale-[0.98]" : ""
       }`}
-      glow={glow ? (glowColor as any) : undefined}
-      glowIntensity={glow ? "medium" : "subtle"}
+      glow={glow ? glowColor : undefined}
+      glowIntensity={glow ? "md" : undefined}
       onClick={onClick}
     >
+      {/* conteúdo permanece igual */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 text-slate-400">
           <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${textColor}`} />

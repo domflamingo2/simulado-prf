@@ -62,7 +62,8 @@ export function useQuestoesFiltradas(
       case "disciplina":
         result.sort((a, b) => a.disciplina.localeCompare(b.disciplina));
         break;
-      case "dificuldade":
+      case "dificuldade": {
+        // ✅ agora com chaves, a declaração é permitida
         const ordem: Record<string, number> = {
           DIFICIL: 0,
           MEDIO: 1,
@@ -74,6 +75,7 @@ export function useQuestoesFiltradas(
           return (ordem[da] ?? 1) - (ordem[db] ?? 1);
         });
         break;
+      }
     }
 
     return result;
