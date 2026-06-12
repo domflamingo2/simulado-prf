@@ -64,7 +64,6 @@ export function useErrosData() {
     try {
       const historico = lerHistorico();
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTotalSimulados(historico.length);
 
       const totalQuestoes = historico.reduce(
@@ -72,7 +71,6 @@ export function useErrosData() {
         0,
       );
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTotalQuestoesRespondidas(totalQuestoes);
 
       const errosMap = new Map<string, ErroComMetadados>();
@@ -116,23 +114,19 @@ export function useErrosData() {
         );
       });
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setErrosTodos(listaErros);
 
       const revisadosSalvos = lerJsonLS<string[]>(LS_REVISADOS, []);
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRevisados(new Set(revisadosSalvos));
 
       const removidosSalvos = lerJsonLS<string[]>(LS_REMOVIDOS, []);
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRemovidosLocal(new Set(removidosSalvos));
     } catch (err) {
       console.error("Erro ao carregar histórico:", err);
       toast.error("Erro ao carregar histórico. Tente recarregar a página.");
     } finally {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCarregando(false);
     }
   }, []);

@@ -117,41 +117,7 @@ const OPCOES_BAR = {
   },
 };
 
-const OPCOES_RADAR = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: BASE_PLUGIN_OPTIONS,
-  scales: {
-    r: {
-      beginAtZero: true,
-      max: 100,
-      ticks: {
-        color: "rgba(255,255,255,0.5)",
-        backdropColor: "transparent",
-        stepSize: 20,
-        font: { size: 9 },
-      },
-      grid: { color: "rgba(255,255,255,0.1)", circular: true },
-      pointLabels: {
-        color: "rgba(255,255,255,0.7)",
-        font: { size: 10, weight: "normal" as const },
-      },
-      angleLines: { color: "rgba(255,255,255,0.05)" },
-    },
-  },
-  elements: {
-    line: {
-      borderWidth: 2,
-    },
-    point: {
-      radius: 3,
-      hoverRadius: 5,
-    },
-  },
-};
-
 interface GraficosEstatisticasProps {
-  dadosRadar?: ChartData<"radar", number[], string>;
   dadosLine?: ChartData<"line", number[], string>;
   dadosBar?: ChartData<"bar", number[], string>;
   isLoading?: boolean;
@@ -167,7 +133,6 @@ const SkeletonChart = () => (
 );
 
 export function GraficosEstatisticas({
-  dadosRadar,
   dadosLine,
   dadosBar,
   isLoading = false,

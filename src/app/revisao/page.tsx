@@ -20,13 +20,6 @@ import { LoadingState } from "./components/LoadingState";
 import { NavegacaoQuestoes } from "./components/NavegacaoQuestoes";
 import { SeletorSimulado } from "./components/SeletorSimulado";
 
-interface Simulado {
-  id: string;
-  modo: string;
-  questoes: Questao[];
-  // outras propriedades necessárias
-}
-
 export default function RevisaoPage() {
   const router = useRouter();
   const {
@@ -114,7 +107,7 @@ export default function RevisaoPage() {
   }, [simuladoSelecionado, router]);
 
   const handleQuestaoClick = useCallback(
-    (questao: Questao, _index: number) => {
+    (questao: Questao) => {
       const filtradaIndex = questoesFiltradas.findIndex((q) => q === questao);
       if (filtradaIndex !== -1) {
         setQuestaoAtual(filtradaIndex);

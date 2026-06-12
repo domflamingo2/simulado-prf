@@ -19,7 +19,6 @@ export function DisciplinaBar({
   total,
   percentual,
   delay,
-  tendencia: _tendencia, // prefixo underscore indica não uso
 }: DisciplinaBarProps) {
   const [isHovered, setIsHovered] = useState(false);
   const erros = total - acertos;

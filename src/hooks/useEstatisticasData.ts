@@ -57,7 +57,6 @@ export function useEstatisticasData() {
     } catch (err) {
       console.error("Erro ao carregar histórico:", err);
     } finally {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCarregando(false);
     }
   }, []);

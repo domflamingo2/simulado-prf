@@ -37,7 +37,6 @@ interface Filters {
 const VALID_DIFICULDADES: DificuldadeLevel[] = ["todas", "1", "2", "3"];
 const VIRTUALIZE_THRESHOLD = 100;
 const TREINO_MAX_QUESTOES = 30;
-const DEBOUNCE_BUSCA_MS = 350;
 
 // ─── Loading Overlay ──────────────────────────────────────────────────────────
 
@@ -170,31 +169,26 @@ export default function BancoQuestoesPage() {
     dificuldade: "todas",
   });
 
-  // Favorites
-  const [favoritas, setFavoritas] = useState<Set<string>>(new Set());
+  // Favorites – inicialização lazy (sem efeito)
+  const [favoritas, setFavoritas] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem("prf_questoes_favoritas");
+      if (saved) return new Set(JSON.parse(saved) as string[]);
+    } catch {
+      // falha silenciosa
+    }
+    return new Set();
+  });
 
   // Scroll restoration ref
   const didRestoreScroll = useRef(false);
 
-  // 1. Carrega favoritos do localStorage apenas uma vez
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("prf_questoes_favoritas");
-      if (saved) setFavoritas(new Set(JSON.parse(saved) as string[]));
-    } catch (err) {
-      console.error("Erro ao ler favoritos", err);
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
-
-  // 2. Sincroniza filtros com a URL (inclusive navegação back/forward)
+  // Sincroniza filtros com a URL (navegação back/forward)
   useEffect(() => {
     const urlBusca = searchParams.get("busca") ?? "";
     const urlDisciplina = searchParams.get("disciplina") ?? "todas";
     const urlDificuldade = searchParams.get("dificuldade") ?? "todas";
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters({
       busca: urlBusca,
       disciplina: urlDisciplina,
@@ -206,9 +200,9 @@ export default function BancoQuestoesPage() {
     });
   }, [searchParams]);
 
-  // Scroll restoration
+  // Restaura scroll ao carregar
   useEffect(() => {
-    if (carregando || didRestoreScroll.current) return;
+    if (didRestoreScroll.current) return;
     didRestoreScroll.current = true;
     const saved = sessionStorage.getItem("banco_scroll_position");
     if (saved) {
@@ -219,7 +213,7 @@ export default function BancoQuestoesPage() {
     return () => {
       sessionStorage.setItem("banco_scroll_position", String(window.scrollY));
     };
-  }, [carregando]);
+  }, []);
 
   // URL sync helper
   const pushFiltersToURL = useCallback(
@@ -237,10 +231,7 @@ export default function BancoQuestoesPage() {
 
   const setFilter = useCallback(
     <K extends keyof Filters>(key: K, value: Filters[K]) => {
-      setFilters((prev) => ({
-        ...prev,
-        [key]: value,
-      }));
+      setFilters((prev) => ({ ...prev, [key]: value }));
     },
     [],
   );
@@ -256,23 +247,20 @@ export default function BancoQuestoesPage() {
     toast.success("Filtros limpos com sucesso!");
   }, [pushFiltersToURL]);
 
-  // Static data
+  // Dados estáticos
   const estatisticasBanco = useMemo(() => getEstatisticasBanco(), []);
   const statsPorDisciplina = useMemo(() => getStatsPorDisciplina(), []);
 
-  // Filtered questions
+  // Questões filtradas
   const questoesFiltradas = useMemo(() => {
     let result = questoes as typeof questoes;
-
     if (filters.disciplina !== "todas") {
       result = result.filter((q) => q.disciplina === filters.disciplina);
     }
-
     if (filters.dificuldade !== "todas") {
       const nivel = parseInt(filters.dificuldade, 10);
       result = result.filter((q) => q.dificuldade === nivel);
     }
-
     const termo = filters.busca.trim().toLowerCase();
     if (termo) {
       result = result.filter(
@@ -283,13 +271,12 @@ export default function BancoQuestoesPage() {
           q.tags?.some((t) => t.toLowerCase().includes(termo)),
       );
     }
-
     return result;
   }, [filters]);
 
   const shouldVirtualize = questoesFiltradas.length > VIRTUALIZE_THRESHOLD;
 
-  // Toggle favorite
+  // Toggle favorito
   const toggleFavorita = useCallback((id: string) => {
     setFavoritas((prev) => {
       const next = new Set(prev);
@@ -306,14 +293,25 @@ export default function BancoQuestoesPage() {
           JSON.stringify([...next]),
         );
       } catch {
-        // Falha silenciosa – localStorage pode estar cheio ou desativado
         console.warn("Não foi possível salvar favoritos no localStorage");
       }
       return next;
     });
   }, []);
 
-  // Export questions
+  // 1. Carrega favoritos do localStorage apenas uma vez
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("prf_questoes_favoritas");
+      if (saved) setFavoritas(new Set(JSON.parse(saved) as string[]));
+    } catch (err) {
+      console.error("Erro ao ler favoritos", err);
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  // Exportar questão com payload otimizado
   const exportarQuestoes = useCallback(async () => {
     if (questoesFiltradas.length === 0) {
       toast.error("Nenhuma questão para exportar");
@@ -381,7 +379,7 @@ export default function BancoQuestoesPage() {
     }
   }, [questoesFiltradas, filters]);
 
-  // Start training
+  // Treinar com questões filtradas
   const iniciarTreino = useCallback(async () => {
     if (questoesFiltradas.length === 0) {
       toast.error("Nenhuma questão selecionada para treino");
@@ -418,7 +416,7 @@ export default function BancoQuestoesPage() {
     }
   }, [questoesFiltradas, router]);
 
-  // Active filter labels
+  // Filtros ativos (para exibição)
   const filtrosAtivos = useMemo(() => {
     const labels: string[] = [];
     if (filters.busca) labels.push(`"${filters.busca}"`);

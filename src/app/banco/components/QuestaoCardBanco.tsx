@@ -603,7 +603,7 @@ export const QuestaoListVirtualizada = memo(function QuestaoListVirtualizada({
     [questoes],
   );
 
-  // eslint-disable-next-line react-compiler/react-compiler
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: questoes.length,
     getScrollElement: () => parentRef.current,

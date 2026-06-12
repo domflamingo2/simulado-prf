@@ -59,36 +59,32 @@ export function ConfettiEffect({
 
   // Gera partículas quando o efeito é ativado
   useEffect(() => {
-    if (!isActive || dimensions.width === 0) {
-      setParticles([]);
-      return;
-    }
+    // Guard puro — sem setState no corpo do efeito
+    if (!isActive || dimensions.width === 0) return;
 
     const count = INTENSITY_MAP[intensity];
-    const newParticles: Particle[] = [];
-
-    for (let i = 0; i < count; i++) {
-      newParticles.push({
-        id: i,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        size: 4 + Math.random() * 8,
-        startX: Math.random() * dimensions.width,
-        duration: 1.5 + Math.random() * 2,
-        delay: Math.random() * 1.5,
-        rotation: Math.random() * 720,
-        driftX: (Math.random() - 0.5) * 150,
-        scale: 0.5 + Math.random() * 0.8,
-      });
-    }
+    const newParticles: Particle[] = Array.from({ length: count }, (_, i) => ({
+      id: i,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      size: 4 + Math.random() * 8,
+      startX: Math.random() * dimensions.width,
+      duration: 1.5 + Math.random() * 2,
+      delay: Math.random() * 1.5,
+      rotation: Math.random() * 720,
+      driftX: (Math.random() - 0.5) * 150,
+      scale: 0.5 + Math.random() * 0.8,
+    }));
 
     setParticles(newParticles);
 
-    // Limpa as partículas após 4 segundos
-    const timer = setTimeout(() => {
-      setParticles([]);
-    }, 4000);
+    const timer = setTimeout(() => setParticles([]), 4000);
 
-    return () => clearTimeout(timer);
+    // Cancela o timer E limpa partículas se o efeito for
+    // reexecutado antes do timeout (ex: isActive virar false)
+    return () => {
+      clearTimeout(timer);
+      setParticles([]);
+    };
   }, [isActive, dimensions.width, dimensions.height, intensity]);
 
   if (!isActive || particles.length === 0) return null;

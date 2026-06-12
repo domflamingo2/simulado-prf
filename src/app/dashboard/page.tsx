@@ -362,9 +362,7 @@ export default function Dashboard() {
     const conquista = params.get("conquista");
     if (!conquista) return;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowNewBadge(conquista);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowConfetti(true);
     window.history.replaceState({}, "", window.location.pathname);
 

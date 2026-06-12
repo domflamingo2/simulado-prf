@@ -314,24 +314,20 @@ const BackToTopButton = memo(function BackToTopButton({
 const Footer = () => {
   const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
-  // ✅ FIX: range [0.8, 1.0] — usar 1.0 em vez de 0.95 evita corte prematuro no iOS Safari
   const opacity = useTransform(scrollYProgress, [0.8, 1.0], [0, 1]);
 
   const [frase, setFrase] = useState(frasesMotivacionais[0]);
   const [mounted, setMounted] = useState(false);
   const [totalQuestoes, setTotalQuestoes] = useState<number | null>(null);
 
-  // ✅ FIX: variantes memorizadas — não recriadas a cada render
   const { fadeInUp, stagger } = useMemo(
     () => makeVariants(!!shouldReduceMotion),
     [shouldReduceMotion],
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFrase(
       frasesMotivacionais[
         Math.floor(Math.random() * frasesMotivacionais.length)
@@ -341,8 +337,6 @@ const Footer = () => {
     setTotalQuestoes(getTotalQuestoes());
   }, []);
 
-  // ✅ FIX: suprimir renderização no servidor para evitar hydration mismatch
-  // de conteúdo dinâmico (frase aleatória, totalQuestoes, anoAtual)
   if (!mounted) return null;
 
   return (
@@ -352,7 +346,6 @@ const Footer = () => {
       aria-label="Rodapé do site"
     >
       {/* ── Background Animado ───────────────────────────────────────────── */}
-      {/* ✅ FIX: pointer-events-none E aria-hidden para não aparecer em leitores de tela */}
       <div
         className="absolute inset-0 opacity-30 pointer-events-none"
         aria-hidden="true"

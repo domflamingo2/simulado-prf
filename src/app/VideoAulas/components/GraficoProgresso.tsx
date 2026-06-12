@@ -62,7 +62,7 @@ function progressColor(pct: number): string {
   return "from-rose-500 to-pink-400";
 }
 
-function getInsightMessage(percentual: number, _restante: number): string {
+function getInsightMessage(percentual: number): string {
   if (percentual === 100) return "🎉 Parabéns! Você completou todos os vídeos!";
   if (percentual >= 75) return "🚀 Quase lá! Continue com esse ritmo!";
   if (percentual >= 50) return "💪 Bom progresso! Continue assim!";
@@ -136,7 +136,7 @@ export function GraficoProgresso({
   } = stats;
 
   const gradiente = progressColor(percentual);
-  const insightMessage = getInsightMessage(percentual, duracaoRestante);
+  const insightMessage = getInsightMessage(percentual);
   const isCompleto = percentual === 100;
 
   return (

@@ -1,4 +1,4 @@
-1; // src/hooks/useDebouncedCallback.ts
+// src/hooks/useDebouncedCallback.ts
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 

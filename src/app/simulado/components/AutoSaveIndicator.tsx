@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, CheckCircle2, Clock, Save } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface AutoSaveIndicatorProps {
   isSaving?: boolean;
@@ -15,43 +15,40 @@ export function AutoSaveIndicator({
   lastSaved = null,
   error = null,
 }: AutoSaveIndicatorProps) {
-  const [isVisible, setIsVisible] = useState(true);
-  const [showDetails, setShowDetails] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  const [showErrorIndicator, setShowErrorIndicator] = useState(false);
 
-  // Efeito para tornar visível quando salvar começar e esconder após 3s
+  // Quando termina de salvar (isSaving muda de true → false), mostra "Salvo" por 3s
   useEffect(() => {
-    // Cancelar timeout anterior
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-    if (isSaving) {
-      setIsVisible(true);
-    } else {
-      // Quando terminar de salvar, esperar 3s para esconder
-      timeoutRef.current = setTimeout(() => {
-        setIsVisible(false);
-      }, 3000);
+    if (!isSaving && lastSaved) {
+      setShowSavedIndicator(true);
+      const timer = setTimeout(() => setShowSavedIndicator(false), 3000);
+      return () => clearTimeout(timer);
     }
+  }, [isSaving, lastSaved]);
 
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [isSaving]);
-
-  // Garantir que o indicador fique visível se houver erro
+  // Quando surge um erro, mostra por 5s
   useEffect(() => {
     if (error) {
-      setIsVisible(true);
-      const timer = setTimeout(() => setIsVisible(false), 5000);
+      setShowErrorIndicator(true);
+      const timer = setTimeout(() => setShowErrorIndicator(false), 5000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
+  // O indicador fica visível se:
+  // - estiver salvando agora, ou
+  // - acabou de salvar (showSavedIndicator), ou
+  // - há erro ativo, ou
+  // - acabou de aparecer um erro (showErrorIndicator)
+  const isVisible =
+    isSaving || showSavedIndicator || !!error || showErrorIndicator;
+
   const getStatusConfig = () => {
-    if (error) {
+    if (error || showErrorIndicator) {
       return {
         icon: AlertCircle,
-        text: "Erro ao salvar",
+        text: error || "Erro ao salvar",
         color: "text-rose-400",
         bg: "bg-rose-500/10",
         border: "border-rose-500/30",
@@ -68,7 +65,7 @@ export function AutoSaveIndicator({
         glow: "shadow-blue-500/20",
       };
     }
-    if (lastSaved) {
+    if (showSavedIndicator || lastSaved) {
       return {
         icon: CheckCircle2,
         text: "Salvo",
@@ -102,7 +99,7 @@ export function AutoSaveIndicator({
 
   return (
     <AnimatePresence>
-      {(isVisible || isSaving || error) && (
+      {isVisible && (
         <motion.div
           initial={{ opacity: 0, x: 50, y: 20 }}
           animate={{ opacity: 1, x: 0, y: 0 }}
@@ -117,9 +114,7 @@ export function AutoSaveIndicator({
               backdrop-blur-sm shadow-lg cursor-pointer
               transition-all duration-300 hover:scale-105
             `}
-            onClick={() => setShowDetails(!showDetails)}
-            onMouseEnter={() => setShowDetails(true)}
-            onMouseLeave={() => setShowDetails(false)}
+            onMouseEnter={() => setShowErrorIndicator(false)} // opcional: esconder tooltip ao passar mouse
           >
             {/* Ícone animado */}
             <motion.div
@@ -135,7 +130,7 @@ export function AutoSaveIndicator({
 
             <span className="text-xs font-medium text-slate-300">
               {config.text}
-              {!isSaving && lastSaved && !error && (
+              {!isSaving && lastSaved && !error && showSavedIndicator && (
                 <span className="text-[10px] text-slate-500 ml-1">
                   {formatLastSaved()}
                 </span>
@@ -151,15 +146,10 @@ export function AutoSaveIndicator({
               />
             )}
 
-            {/* Tooltip de detalhes */}
-            <AnimatePresence>
-              {showDetails && (
-                <motion.div
-                  initial={{ opacity: 0, y: 5, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 5, scale: 0.9 }}
-                  className="absolute bottom-full right-0 mb-2 px-3 py-2 rounded-lg bg-slate-900 border border-white/10 shadow-xl whitespace-nowrap z-30"
-                >
+            {/* Tooltip de detalhes - mantido igual */}
+            <div className="group relative">
+              <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block">
+                <div className="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 shadow-xl whitespace-nowrap">
                   <p className="text-xs text-slate-300">
                     {error ? (
                       <span className="text-rose-400">❌ {error}</span>
@@ -172,9 +162,9 @@ export function AutoSaveIndicator({
                     )}
                   </p>
                   <div className="absolute -bottom-1 right-3 w-2 h-2 rotate-45 bg-slate-900 border-r border-b border-white/10" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
       )}

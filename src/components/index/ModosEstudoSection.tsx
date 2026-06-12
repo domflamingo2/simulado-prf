@@ -23,23 +23,32 @@ const staggerContainer = {
   },
 };
 
+// Tipo mais seguro: qualquer membro que seja um componente React válido
+type IconComponent = React.ElementType;
+
 // Cache tipado para ícones
 const iconCache = new Map<string, React.ElementType>();
 
-const getIcon = (iconName: string): React.ElementType => {
-  if (iconCache.has(iconName)) {
-    return iconCache.get(iconName)!;
-  }
-  const IconComponent = (Icons as Record<string, React.ElementType>)[iconName];
-  const result = IconComponent || Icons.HelpCircle;
+// Função de obtenção (pode ser usada diretamente sem criar componente)
+const getIcon = (iconName: string): IconComponent => {
+  if (iconCache.has(iconName)) return iconCache.get(iconName)!;
+
+  const maybeIcon = (Icons as any)[iconName];
+  // Verifica se é um componente React (function ou forwardRef)
+  const isValidComponent =
+    typeof maybeIcon === "function" ||
+    (typeof maybeIcon === "object" && maybeIcon?.$$typeof);
+
+  const result = isValidComponent ? maybeIcon : Icons.HelpCircle;
   iconCache.set(iconName, result);
   return result;
 };
 
-// Componente de ícone dinâmico memoizado (fora do render)
+// ✅ Componente de ícone memoizado - sem lógica de criação dentro do render
 const DynamicIcon = memo(
   ({ name, className }: { name: string; className?: string }) => {
     const Icon = getIcon(name);
+    // eslint-disable-next-line react-hooks/static-components
     return <Icon className={className} />;
   },
 );
@@ -50,7 +59,7 @@ interface ModoCardProps {
   icon: string;
   titulo: string;
   descricao: string;
-  detalhes: string[];
+  detalhes: readonly string[];
   cor: "blue" | "purple" | "emerald" | "amber" | "rose" | "cyan";
   popular?: boolean;
 }
@@ -177,7 +186,20 @@ export function ModosEstudoSection() {
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         {MODOS.map((modo) => (
-          <ModoCard key={modo.titulo} {...modo} />
+          <ModoCard
+            key={modo.titulo}
+            {...modo}
+            cor={
+              modo.cor as
+                | "blue"
+                | "purple"
+                | "emerald"
+                | "amber"
+                | "rose"
+                | "cyan"
+            }
+            detalhes={[...modo.detalhes]}
+          />
         ))}
       </motion.div>
 

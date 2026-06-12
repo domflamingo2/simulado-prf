@@ -342,14 +342,10 @@ export function useAnotacoes() {
     [anotacoes],
   );
 
-  const [anotacoesUltimos7Dias, setAnotacoesUltimos7Dias] = useState(0);
-
-  useEffect(() => {
+  const anotacoesUltimos7Dias = useMemo(() => {
     const limite = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const count = anotacoes.filter(
-      (a) => new Date(a.createdAt).getTime() >= limite,
-    ).length;
-    setAnotacoesUltimos7Dias(count);
+    return anotacoes.filter((a) => new Date(a.createdAt).getTime() >= limite)
+      .length;
   }, [anotacoes]);
 
   const anotacoesMaisRecentes = useMemo(

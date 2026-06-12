@@ -178,6 +178,7 @@ export function useGamificacao(): UseGamificacaoReturn {
 
   // ── adicionarXP ───────────────────────────────────────────────────────────
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const adicionarXP = useCallback((quantidade: number, _motivo?: string) => {
     // FIX: guard contra XP negativo que subtrairia do total
     const xpEfetivo = Math.max(0, quantidade);

@@ -14,7 +14,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type BadgeType =
   | "primeiro"
@@ -249,13 +249,18 @@ const BADGE_DATABASE: Record<BadgeType, BadgeConfig> = {
 
 // Componente de partículas para badges lendários
 function BadgeParticles({ count, color }: { count: number; color: string }) {
-  // Gera posições fixas para cada partícula uma única vez
-  const particles = useMemo(() => {
-    return Array.from({ length: count }).map(() => ({
+  const [particles, setParticles] = useState<Array<{ x: number; y: number }>>(
+    [],
+  );
+
+  useEffect(() => {
+    // Gera posições fixas APÓS a montagem (fora da renderização)
+    const positions = Array.from({ length: count }).map(() => ({
       x: (Math.random() - 0.5) * 60,
       y: (Math.random() - 0.5) * 60,
     }));
-  }, [count]);
+    setParticles(positions);
+  }, [count]); // Recria se count mudar (raro, mas seguro)
 
   return (
     <AnimatePresence>

@@ -11,7 +11,6 @@ import {
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { DISCIPLINAS_NOME } from "@/constants/disciplinas";
-1;
 
 import { DisciplinaBar } from "./DisciplinaBar";
 

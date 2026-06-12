@@ -79,7 +79,6 @@ export default function ProgressRing({
   progress,
   size = "md",
   strokeWidth: customStrokeWidth,
-  color: customColor,
   gradient: customGradient,
   children,
   label,

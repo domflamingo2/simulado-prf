@@ -24,8 +24,7 @@ const staggerContainer = {
   },
 };
 
-// Mapeamento estático de nomes de ícones para componentes
-type IconName = keyof typeof Icons;
+// Mapeamento estático de nomes de ícones para componentes React
 const ICON_COMPONENTS: Record<string, React.ElementType> = {};
 
 // Preenche o cache com todos os ícones disponíveis

@@ -46,7 +46,13 @@ export default function TreinoSimuladoPage() {
   const [isFinalizing, setIsFinalizing] = useState(false);
 
   // Usar ref para tempo de início (não causa re-render e é impuro apenas uma vez)
-  const tempoInicioRef = useRef(Date.now());
+  const tempoInicioRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (tempoInicioRef.current === null) {
+      tempoInicioRef.current = Date.now();
+    }
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("prf_treino_atual");
@@ -82,7 +88,9 @@ export default function TreinoSimuladoPage() {
 
     const total = treino?.questoes.length || 0;
     const percentual = total > 0 ? (acertos / total) * 100 : 0;
-    const tempoTotal = Math.floor((Date.now() - tempoInicioRef.current) / 1000);
+    const tempoTotal = Math.floor(
+      (Date.now() - (tempoInicioRef.current ?? Date.now())) / 1000,
+    );
     // minutos e segundos não usados – removidos
     // const minutos = Math.floor(tempoTotal / 60);
     // const segundos = tempoTotal % 60;

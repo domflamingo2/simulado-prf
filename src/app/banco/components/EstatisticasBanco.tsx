@@ -20,7 +20,7 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";
 
 import type { StatsData } from "@/data/questoes";
@@ -356,10 +356,8 @@ export function EstatisticasBanco({
   const [activeBanca, setActiveBanca] = useState<string | null>(null);
   const [activeAno, setActiveAno] = useState<string | null>(null);
 
-  const toastRef = useRef<string | number | null>(null);
   const showToast = useCallback((msg: string) => {
-    if (toastRef.current) toast.dismiss(toastRef.current);
-    toastRef.current = toast.info(msg, { duration: 2000 });
+    toast.info(msg, { duration: 2000 });
   }, []);
 
   const handleDificuldade = useCallback(

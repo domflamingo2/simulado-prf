@@ -364,9 +364,11 @@ export function VideoPlayerPro({
   const togglePlay = useCallback(() => {
     if (!playerRef.current) return;
     try {
-      isPlaying
-        ? playerRef.current?.pauseVideo()
-        : playerRef.current?.playVideo();
+      if (isPlaying) {
+        playerRef.current?.pauseVideo();
+      } else {
+        playerRef.current?.playVideo();
+      }
     } catch {
       /* ok */
     }

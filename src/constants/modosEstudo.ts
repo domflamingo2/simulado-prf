@@ -1,4 +1,5 @@
 // src/constants/modosEstudo.ts
+
 export const MODOS = [
   {
     icon: "Play",
@@ -10,7 +11,7 @@ export const MODOS = [
       "Mesma distribuição CEBRASPE",
       "Ambiente de prova real",
     ],
-    cor: "bg-blue-500",
+    cor: "blue", // ✅ agora é "blue", não "bg-blue-500"
     popular: true,
   },
   {
@@ -23,7 +24,7 @@ export const MODOS = [
       "Todas as disciplinas",
       "Foco em velocidade",
     ],
-    cor: "bg-orange-500",
+    cor: "orange", // ✅ "orange" – será mapeado para laranja no ModoCard
   },
   {
     icon: "BookOpen",
@@ -35,7 +36,7 @@ export const MODOS = [
       "Sem limite de tempo",
       "Aprendizado dirigido",
     ],
-    cor: "bg-emerald-500",
+    cor: "emerald",
   },
   {
     icon: "XCircle",
@@ -47,7 +48,7 @@ export const MODOS = [
       "Foco em pontos fracos",
       "Remoção após acerto",
     ],
-    cor: "bg-rose-500",
+    cor: "rose",
   },
   {
     icon: "Brain",
@@ -59,7 +60,7 @@ export const MODOS = [
       "Maior probabilidade de erros",
       "Evolução contínua",
     ],
-    cor: "bg-purple-500",
+    cor: "purple",
   },
   {
     icon: "BarChart3",
@@ -71,6 +72,6 @@ export const MODOS = [
       "Heatmap de estudos",
       "Comparativo temporal",
     ],
-    cor: "bg-cyan-500",
+    cor: "cyan",
   },
 ];

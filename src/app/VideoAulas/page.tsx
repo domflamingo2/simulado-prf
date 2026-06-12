@@ -114,11 +114,7 @@ export default function VideoAulasPage() {
     [marcarAssistido],
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleCompleteCategoria = useCallback(
-    (_categoriaNome: string) => {},
-    [],
-  );
+  const handleCompleteCategoria = useCallback(() => {}, []);
 
   useEffect(() => {
     if (selectedVideo) {
