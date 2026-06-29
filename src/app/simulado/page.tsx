@@ -266,22 +266,6 @@ export default function SimuladoPage() {
   }, [state, tempoMaximo, handleFinalizar]);
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Auto save
-  // ───────────────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!state) return;
-
-    const interval = setInterval(() => {
-      salvarProgresso(stateRef.current);
-      setLastSaved(new Date());
-      toast.info("💾 Progresso salvo automaticamente", { duration: 2000 });
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [state, salvarProgresso, stateRef]);
-
-  // ───────────────────────────────────────────────────────────────────────────
   // Keyboard shortcuts
   // ───────────────────────────────────────────────────────────────────────────
 

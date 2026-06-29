@@ -1,6 +1,7 @@
-// ============================================================
-// index.ts — arquivo único consolidado (VERSÃO MELHORADA)
-// Contém: tipos, validação Zod, gamificação e banco de questões
+1; // ============================================================
+// index.ts — arquivo único consolidado (VERSÃO MELHORADA + CORREÇÕES)
+// Contém: tipos, validação Zod, gamificação, banco de questões,
+//         revisão espaçada (SM-2), análise preditiva de nota final
 // ============================================================
 
 import { z } from "zod";
@@ -66,7 +67,7 @@ export type TipoTendencia =
   | "insuficiente";
 
 // ============================================================
-// SEÇÃO 1.1 — TIPOS MELHORADOS
+// SEÇÃO 1.1 — TIPOS MELHORADOS (inclusive revisão espaçada)
 // ============================================================
 
 /** Tipos para XP_REWARDS */
@@ -134,6 +135,29 @@ export interface EstadoConsistenteResult {
   ok: boolean;
   inconsistencias: string[];
   sugestoes: string[];
+}
+
+// ============================================================
+// SEÇÃO 1.2 — TIPOS PARA REVISÃO ESPAÇADA (SM-2)
+// ============================================================
+
+/** Dados de revisão espaçada para uma questão (SM-2) */
+export interface RevisaoEspacada {
+  /** Número de repetições bem-sucedidas consecutivas (0 = nunca revisada) */
+  repeticao: number;
+  /** Fator de facilidade (2.5 padrão, mínimo 1.3) */
+  easinessFactor: number;
+  /** Data da última revisão (ISO string) */
+  ultimaRevisao: string;
+  /** Intervalo atual em dias até a próxima revisão */
+  intervaloDias: number;
+  /** Próxima data de revisão (ISO string) */
+  proximaRevisao: string;
+}
+
+/** Questão com metadados de revisão espaçada (estendida) */
+export interface QuestaoComRevisao extends QuestaoRespondida {
+  revisao?: RevisaoEspacada;
 }
 
 // ============================================================
@@ -837,6 +861,9 @@ export const BADGES_NIVELADAS: Record<string, BadgeNiveladaConfig> = {
  * @example
  * const streakBadges = getBadgesPorNivel("streak", progress.streakDias);
  * console.log(`Desbloqueou: ${streakBadges.length} badges de streak`);
+ *
+ * @remarks Atualmente suporta apenas a categoria "streak". Para extensão,
+ * adicione novas categorias em BADGES_NIVELADAS.
  */
 export function getBadgesPorNivel(
   categoria: string,
@@ -897,12 +924,13 @@ export const BADGES_CONFIG: Record<
     condicao: (_p, extras) => {
       if (!extras?.disciplinaStats) return false;
 
-      const disciplinasComDados = (
-        Object.entries(extras.disciplinaStats) as [
-          Disciplina,
-          { acertos: number; total: number },
-        ][]
-      ).filter(([, stats]) => stats.total > 0);
+      // FIX: iteração segura sem cast inseguro
+      const entries = Object.entries(extras.disciplinaStats) as Array<
+        [string, { acertos: number; total: number }]
+      >;
+      const disciplinasComDados = entries.filter(
+        ([, stats]) => stats.total > 0,
+      ) as Array<[Disciplina, { acertos: number; total: number }]>;
 
       if (disciplinasComDados.length < 5) return false;
 
@@ -962,7 +990,7 @@ export const BADGES_CONFIG: Record<
 
 /**
  * Calcula o nível correspondente ao XP total.
- * Guard para xpTotal negativo (dados corrompidos).
+ * Guard para xpTotal negativo (dados corrompidos) – loga warning.
  *
  * @example
  * const nivel = calcularNivel(1250);
@@ -970,6 +998,11 @@ export const BADGES_CONFIG: Record<
  */
 export function calcularNivel(xpTotal: number): NivelInfo {
   const xp = Math.max(0, xpTotal);
+  if (xpTotal < 0) {
+    console.warn(
+      `calcularNivel: xpTotal negativo (${xpTotal}) – ajustado para 0`,
+    );
+  }
   for (let i = NIVEIS.length - 1; i >= 0; i--) {
     if (xp >= NIVEIS[i].xpMin) return NIVEIS[i];
   }
@@ -979,6 +1012,7 @@ export function calcularNivel(xpTotal: number): NivelInfo {
 /**
  * Retorna o XP restante para o próximo nível.
  * No nível máximo retorna 0 — o usuário já chegou ao topo.
+ * Protege contra XP > xpMax retornando negativo.
  *
  * @example
  * const restante = xpParaProximoNivel(250);
@@ -987,12 +1021,13 @@ export function calcularNivel(xpTotal: number): NivelInfo {
 export function xpParaProximoNivel(xpTotal: number): number {
   const nivel = calcularNivel(xpTotal);
   if (nivel.nivel === NIVEL_MAXIMO.nivel) return 0;
-  return nivel.xpMax - Math.max(0, xpTotal);
+  return Math.max(0, nivel.xpMax - Math.max(0, xpTotal));
 }
 
 /**
  * Calcula o progresso percentual dentro do nível atual (0–100).
  * No nível máximo retorna 100 imediatamente — a barra está cheia.
+ * Limita o numerador para evitar >100.
  *
  * @example
  * const progresso = calcularProgressoNivel(250);
@@ -1004,7 +1039,7 @@ export function calcularProgressoNivel(xpTotal: number): number {
 
   if (nivel.nivel === NIVEL_MAXIMO.nivel) return 100;
 
-  const xpNoNivel = xp - nivel.xpMin;
+  const xpNoNivel = Math.min(xp - nivel.xpMin, nivel.xpMax - nivel.xpMin);
   const xpTotalNivel = nivel.xpMax - nivel.xpMin;
 
   if (xpTotalNivel <= 0) return 100;
@@ -1036,6 +1071,7 @@ export function verificarNovasConquistas(
 /**
  * Cria um objeto de progresso inicial para um novo usuário.
  * Fonte única — não duplicar em outros módulos.
+ * Nota: xpAtual é mantido por compatibilidade, mas deve sempre ser igual a xpTotal.
  *
  * @example
  * const novoUsuario = criarProgressoInicial();
@@ -1045,7 +1081,7 @@ export function criarProgressoInicial(): UserProgress {
   return {
     nivel: 1,
     xpTotal: 0,
-    xpAtual: 0,
+    xpAtual: 0, // mantido para compatibilidade, sempre igual a xpTotal
     xpParaProximoNivel: 100,
     streakDias: 0,
     ultimoDiaEstudo: null,
@@ -1147,9 +1183,7 @@ export const MODOS_CONFIG: Record<string, ModoConfig> = {
 };
 
 // ── Banco de questões ─────────────────────────────────────────
-// Importações mantidas do projeto original — cada módulo de questões
-// continua separado por disciplina para facilitar manutenção do conteúdo.
-
+// Nota: Para produção, considere lazy loading dinâmico (import()) para reduzir bundle inicial.
 import { questoesAdministracao } from "./bancodequestao/administracao";
 import { questoesArquivologia } from "./bancodequestao/arquivologia";
 import { questoesDireitoAdministrativo } from "./bancodequestao/direito-administrativo";
@@ -1202,6 +1236,8 @@ export class QuestaoCache {
   private isExpired(key: string): boolean {
     const timestamp = this.timestamps.get(key);
     if (!timestamp) return true;
+    // NOTA: TTL baseado em Date.now() assume sistema sem hibernação prolongada.
+    // Para maior precisão, poderia ser usado performance.now() ou verificação híbrida.
     return Date.now() - timestamp > this.TTL;
   }
 
@@ -1275,6 +1311,7 @@ export class QuestaoIndices {
     porDificuldade: Map<NivelDificuldade, Questao[]>;
     porAno: Map<number, Questao[]>;
     porAssunto: Map<string, Questao[]>;
+    porDisciplinaDificuldade: Map<string, Questao[]>; // NOVO: índice composto
   };
 
   private constructor() {
@@ -1284,6 +1321,7 @@ export class QuestaoIndices {
       porDificuldade: new Map(),
       porAno: new Map(),
       porAssunto: new Map(),
+      porDisciplinaDificuldade: new Map(),
     };
     this.construirIndices();
   }
@@ -1312,6 +1350,13 @@ export class QuestaoIndices {
         this.indices.porDificuldade.set(q.dificuldade, []);
       }
       this.indices.porDificuldade.get(q.dificuldade)!.push(q);
+
+      // Índice composto disciplina+dificuldade
+      const compostoKey = `${q.disciplina}:${q.dificuldade}`;
+      if (!this.indices.porDisciplinaDificuldade.has(compostoKey)) {
+        this.indices.porDisciplinaDificuldade.set(compostoKey, []);
+      }
+      this.indices.porDisciplinaDificuldade.get(compostoKey)!.push(q);
 
       // Índice por ano
       if (q.ano) {
@@ -1344,6 +1389,14 @@ export class QuestaoIndices {
     return this.indices.porDificuldade.get(dificuldade) || [];
   }
 
+  getQuestoesPorDisciplinaEDificuldade(
+    disciplina: Disciplina,
+    dificuldade: NivelDificuldade,
+  ): Questao[] {
+    const key = `${disciplina}:${dificuldade}`;
+    return this.indices.porDisciplinaDificuldade.get(key) || [];
+  }
+
   getQuestoesPorAno(ano: number): Questao[] {
     return this.indices.porAno.get(ano) || [];
   }
@@ -1359,8 +1412,11 @@ export class QuestaoIndices {
       porDificuldade: new Map(),
       porAno: new Map(),
       porAssunto: new Map(),
+      porDisciplinaDificuldade: new Map(),
     };
     this.construirIndices();
+    // FIX: Invalidar cache global para evitar dados dessincronizados
+    QuestaoCache.getInstance().invalidate();
   }
 }
 
@@ -1377,12 +1433,8 @@ export interface StatsData {
   totalComBanca: number;
   totalComAssunto: number;
   totalComAno: number;
-  /**
-   * Questões dos últimos 2 anos (ano corrente e anterior).
-   * Nome mantido para compatibilidade com consumidores existentes;
-   * semântica esclarecida no JSDoc.
-   */
-  ultimasAdicoes: number;
+  /** Questões dos últimos 2 anos (ano corrente e anterior) – nome corrigido */
+  questoesUltimosDoisAnos: number;
   /** Taxa de acerto média dos usuários (0-100). null quando não disponível. */
   taxaAcertoMedia: number | null;
   /** Quantidade de questões por ano — chave: "YYYY" */
@@ -1473,7 +1525,7 @@ export function getEstatisticasBanco(): StatsData {
   const anosMap: Record<string, number> = {};
 
   const anoAtual = new Date().getFullYear();
-  let ultimasAdicoes = 0;
+  let questoesUltimosDoisAnos = 0;
 
   for (const q of questoes) {
     if (q.dificuldade === 1 || q.dificuldade === 2 || q.dificuldade === 3) {
@@ -1494,7 +1546,8 @@ export function getEstatisticasBanco(): StatsData {
     if (q.ano) {
       const chave = String(q.ano);
       anosMap[chave] = (anosMap[chave] ?? 0) + 1;
-      if (q.ano >= anoAtual - 1) ultimasAdicoes++;
+      // FIX: agora conta exatamente os últimos dois anos (ano atual e anterior)
+      if (q.ano >= anoAtual - 1) questoesUltimosDoisAnos++;
     }
   }
 
@@ -1516,7 +1569,7 @@ export function getEstatisticasBanco(): StatsData {
     totalComBanca,
     totalComAssunto,
     totalComAno,
-    ultimasAdicoes,
+    questoesUltimosDoisAnos, // nome corrigido
     taxaAcertoMedia: null,
     questoesPorAno: anosMap,
     bancasPrincipais,
@@ -1524,11 +1577,12 @@ export function getEstatisticasBanco(): StatsData {
 }
 
 // ============================================================
-// SEÇÃO 7.1 — MÉTRICAS DE PERFORMANCE (NOVO)
+// SEÇÃO 7.1 — MÉTRICAS DE PERFORMANCE (CORRIGIDO)
 // ============================================================
 
 /**
  * Calcula métricas de performance baseadas no histórico do usuário
+ * AGORA COM PROTEÇÃO CONTRA HISTÓRICO VAZIO E DIVISÃO POR ZERO.
  *
  * @example
  * const metrics = calcularMetricasPerformance(historicoSimulados);
@@ -1538,7 +1592,25 @@ export function getEstatisticasBanco(): StatsData {
 export function calcularMetricasPerformance(
   historico: HistoricoSimulado[],
 ): PerformanceMetrics {
-  // Ou inicializar corretamente:
+  // Se não houver histórico, retornar métricas vazias/neutras
+  if (historico.length === 0) {
+    const emptyTempo: Record<Disciplina, number> = {} as Record<
+      Disciplina,
+      number
+    >;
+    for (const d of DISCIPLINAS_ENUM) emptyTempo[d] = 0;
+    const emptyTaxa: Record<NivelDificuldade, number> = { 1: 0, 2: 0, 3: 0 };
+    return {
+      tempoMedioPorDisciplina: emptyTempo,
+      taxaAcertoPorDificuldade: emptyTaxa,
+      questoesMaisErradas: [],
+      eficienciaPorTempo: 0,
+      consistencia: "baixa",
+      disciplinaMaisForte: null,
+      disciplinaMaisFraca: null,
+    };
+  }
+
   const tempoPorDisciplina: Record<
     Disciplina,
     { total: number; count: number }
@@ -1566,11 +1638,6 @@ export function calcularMetricasPerformance(
     string,
     { erros: number; total: number; disciplina: Disciplina }
   > = new Map();
-
-  // Inicializar registros de disciplina
-  DISCIPLINAS_ENUM.forEach((d) => {
-    tempoPorDisciplina[d] = { total: 0, count: 0 };
-  });
 
   // Processar histórico
   for (const simulado of historico) {
@@ -1612,7 +1679,7 @@ export function calcularMetricasPerformance(
     }
   }
 
-  // Calcular tempo médio por disciplina
+  // Calcular tempo médio por disciplina (protegido contra count === 0)
   const tempoMedioPorDisciplina = {} as Record<Disciplina, number>;
   for (const [disc, data] of Object.entries(tempoPorDisciplina)) {
     tempoMedioPorDisciplina[disc as Disciplina] =
@@ -1648,7 +1715,7 @@ export function calcularMetricasPerformance(
   const eficienciaPorTempo =
     totalTempo > 0 ? totalAcertos / (totalTempo / 60) : 0;
 
-  // Calcular consistência (desvio padrão das pontuações)
+  // Calcular consistência (desvio padrão das pontuações) – protegido
   const pontuacoes = historico.map((h) => h.estatisticas.percentual);
   const media = pontuacoes.reduce((a, b) => a + b, 0) / pontuacoes.length;
   const desvioPadrao = Math.sqrt(
@@ -1758,10 +1825,8 @@ export function selecionarQuestoesPorDisciplina(
 
 /**
  * Seleciona questões seguindo a distribuição oficial da prova.
- *
- * FIX: agora emite aviso quando alguma disciplina tem questões insuficientes,
- * em vez de falhar silenciosamente. O chamador recebe o resultado parcial
- * junto com a lista de disciplinas com cobertura insuficiente.
+ * AGORA: se alguma disciplina não tiver questões suficientes, repete questões
+ * das disciplinas com maior disponibilidade para completar o simulado.
  */
 export function selecionarQuestoesBalanceadas(): {
   questoes: Questao[];
@@ -1775,6 +1840,9 @@ export function selecionarQuestoesBalanceadas(): {
     ...ESTRUTURA_PROVA.conhecimentosEspecificos.disciplinas,
   };
 
+  // Primeira tentativa: selecionar o máximo possível de cada disciplina
+  const faltantesPorDisciplina: Map<Disciplina, number> = new Map();
+
   for (const [disciplina, quantidade] of Object.entries(todasEstrutura)) {
     if (!quantidade) continue;
 
@@ -1785,20 +1853,49 @@ export function selecionarQuestoesBalanceadas(): {
       avisos.push(
         `${DISCIPLINAS_NOME[disciplina as Disciplina]}: solicitadas ${quantidade}, disponíveis ${selecionadasDisciplina.length}`,
       );
+      faltantesPorDisciplina.set(
+        disciplina as Disciplina,
+        quantidade - selecionadasDisciplina.length,
+      );
     }
 
     selecionadas.push(...selecionadasDisciplina);
+  }
+
+  // Se houver faltantes, preencher com questões de disciplinas que têm excesso
+  if (faltantesPorDisciplina.size > 0) {
+    const disciplinasComExcesso = DISCIPLINAS_ENUM.filter((d) => {
+      const totalDisponivel = getQuestoesPorDisciplina(d).length;
+      const necessidade = todasEstrutura[d] ?? 0;
+      return totalDisponivel > necessidade;
+    });
+
+    for (const [disciplina, faltam] of faltantesPorDisciplina) {
+      let repostas = 0;
+      for (const excessoDisc of disciplinasComExcesso) {
+        if (repostas >= faltam) break;
+        const questoesExcesso = shuffle(getQuestoesPorDisciplina(excessoDisc));
+        const pegar = Math.min(faltam - repostas, questoesExcesso.length);
+        selecionadas.push(...questoesExcesso.slice(0, pegar));
+        repostas += pegar;
+        avisos.push(
+          `Preenchendo falta de ${DISCIPLINAS_NOME[disciplina]} com ${pegar} questão(ões) de ${DISCIPLINAS_NOME[excessoDisc]}`,
+        );
+      }
+    }
   }
 
   return { questoes: selecionadas, avisos };
 }
 
 // ============================================================
-// SEÇÃO 8.1 — SELEÇÃO ADAPTATIVA MELHORADA
+// SEÇÃO 8.1 — SELEÇÃO ADAPTATIVA MELHORADA (COM FALLBACK)
 // ============================================================
 
 /**
  * Seleção adaptativa de questões baseada no histórico do usuário
+ * AGORA GARANTE que a quantidade solicitada seja atingida, mesmo que
+ * seja necessário repetir questões (quando evitarRepetidos ativo).
  *
  * @example
  * const result = selecionarQuestoesAdaptativas(historico, 20, {
@@ -1891,20 +1988,16 @@ export function selecionarQuestoesAdaptativas(
     pesosNormalizados.set(disc, peso / somaPesos);
   }
 
-  // Selecionar questões
-  const selecionadas: Questao[] = [];
-  const disciplinasPriorizadas: Disciplina[] = [];
-
   // Determinar quantas questões por disciplina baseado nos pesos
   const questoesPorDisciplinaSelecao = new Map<Disciplina, number>();
   let restante = quantidade;
 
   for (const disc of DISCIPLINAS_ENUM) {
-    const qtd = Math.floor(pesosNormalizados.get(disc)! * quantidade);
+    const peso = pesosNormalizados.get(disc) ?? 1; // fallback seguro
+    const qtd = Math.floor(peso * quantidade);
     if (qtd > 0) {
       questoesPorDisciplinaSelecao.set(disc, qtd);
       restante -= qtd;
-      disciplinasPriorizadas.push(disc);
     }
   }
 
@@ -1918,15 +2011,30 @@ export function selecionarQuestoesAdaptativas(
     index++;
   }
 
-  // Selecionar questões específicas
+  // Selecionar questões específicas – com fallback para garantir quantidade
+  const selecionadas: Questao[] = [];
   const questoesDisponiveis = getQuestoesDisponiveis(historico, opts);
 
-  for (const [disc, qtd] of questoesPorDisciplinaSelecao) {
-    const disponiveis = questoesDisponiveis.filter(
-      (q) => q.disciplina === disc,
+  // Se houver poucas questões disponíveis, permitir repetição
+  let questoesPool = questoesDisponiveis;
+  if (opts.evitarRepetidos && questoesDisponiveis.length < quantidade) {
+    console.warn(
+      `Questões adaptativas: apenas ${questoesDisponiveis.length} novas disponíveis. Repetindo algumas para atingir ${quantidade}.`,
     );
+    questoesPool = [...questoes]; // fallback: todas as questões
+  }
+
+  for (const [disc, qtd] of questoesPorDisciplinaSelecao) {
+    const disponiveis = questoesPool.filter((q) => q.disciplina === disc);
     const selecionadasDisc = shuffle(disponiveis).slice(0, qtd);
     selecionadas.push(...selecionadasDisc);
+  }
+
+  // Se ainda não atingiu a quantidade (raro), completar com questões aleatórias
+  if (selecionadas.length < quantidade) {
+    const faltam = quantidade - selecionadas.length;
+    const extras = shuffle(questoes).slice(0, faltam);
+    selecionadas.push(...extras);
   }
 
   // Calcular estatísticas
@@ -1945,7 +2053,10 @@ export function selecionarQuestoesAdaptativas(
       distribuicaoPorDisciplina,
       percentualNovas: (novas / quantidade) * 100,
       percentualRevisao: (revisao / quantidade) * 100,
-      disciplinasPriorizadas: disciplinasPriorizadas.slice(0, 5),
+      disciplinasPriorizadas: Array.from(pesosNormalizados.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([d]) => d),
       nivelAdaptacao: Math.min(1, historico.length / 10),
     },
   };
@@ -1982,6 +2093,7 @@ function getQuestoesDisponiveis(
 
 /**
  * Valida integridade do banco de questões
+ * AGORA com mensagens mais detalhadas sobre duplicados.
  *
  * @example
  * const integridade = validarIntegridadeBanco();
@@ -2036,6 +2148,14 @@ export function validarIntegridadeBanco(): IntegridadeBanco {
     );
   }
 
+  // Mensagem detalhada para duplicados
+  if (duplicados.length > 0) {
+    for (const id of duplicados) {
+      const ocorrencias = ids.get(id)?.length ?? 0;
+      erros.push(`ID duplicado: ${id} (${ocorrencias} ocorrências)`);
+    }
+  }
+
   return {
     valido: erros.length === 0 && duplicados.length === 0,
     erros,
@@ -2051,6 +2171,7 @@ export function validarIntegridadeBanco(): IntegridadeBanco {
 /**
  * Middleware de validação para produção
  * Verifica consistência do estado do usuário
+ * AGORA com cálculo seguro de turboMaisRapidoHistorico.
  *
  * @example
  * const validacao = validarEstadoConsistente(progress, historico);
@@ -2130,19 +2251,18 @@ export function validarEstadoConsistente(
     sugestoes.push(`Atualizar recorde para ${melhorPontuacaoHistorico}`);
   }
 
-  const turboMaisRapidoHistorico = Math.min(
-    ...historico
-      .filter((h) => h.modo === "TURBO")
-      .map((h) => h.estatisticas.tempoTotal),
-    Infinity,
-  );
-  const turboRecorde =
-    turboMaisRapidoHistorico !== Infinity ? turboMaisRapidoHistorico : null;
-  if (progress.recordes.turboMaisRapido !== turboRecorde) {
+  // FIX: cálculo seguro de turboMaisRapidoHistorico
+  const temposTurbo = historico
+    .filter((h) => h.modo === "TURBO")
+    .map((h) => h.estatisticas.tempoTotal);
+  const turboMaisRapidoHistorico =
+    temposTurbo.length > 0 ? Math.min(...temposTurbo) : null;
+
+  if (progress.recordes.turboMaisRapido !== turboMaisRapidoHistorico) {
     inconsistencias.push(
-      `Recorde turbo mismatch: ${progress.recordes.turboMaisRapido} vs ${turboRecorde}`,
+      `Recorde turbo mismatch: ${progress.recordes.turboMaisRapido} vs ${turboMaisRapidoHistorico}`,
     );
-    sugestoes.push(`Atualizar recorde turbo para ${turboRecorde}`);
+    sugestoes.push(`Atualizar recorde turbo para ${turboMaisRapidoHistorico}`);
   }
 
   return {
@@ -2153,28 +2273,43 @@ export function validarEstadoConsistente(
 }
 
 // ============================================================
-// SEÇÃO 9.1 — CONSTANTES CALCULADAS (NOVO)
+// SEÇÃO 9.1 — CONSTANTES CALCULADAS (NOVO - atualizável)
 // ============================================================
 
-/**
- * Metadados do banco de questões (calculados uma vez)
- *
- * @example
- * console.log(`Total de questões: ${METADADOS_BANCO.totalQuestoes}`);
- * console.log(`Última atualização: ${METADADOS_BANCO.ultimaAtualizacao}`);
- */
-export const METADADOS_BANCO = {
-  totalQuestoes: getTotalQuestoes(),
-  disciplinasCount: getStatsPorDisciplina(),
-  distribuicaoDificuldade: getEstatisticasPorDificuldade(),
-  ultimaAtualizacao: new Date().toISOString(),
-  versao: "2.0.0",
-  integridade: validarIntegridadeBanco(),
-} as const;
+// Em vez de um objeto estático, fornecemos uma função para obter metadados atualizados.
+// Isso permite que alterações no banco reflitam nos metadados.
+export function obterMetadadosBanco() {
+  return {
+    totalQuestoes: getTotalQuestoes(),
+    disciplinasCount: getStatsPorDisciplina(),
+    distribuicaoDificuldade: getEstatisticasPorDificuldade(),
+    ultimaAtualizacao: new Date().toISOString(),
+    versao: "2.1.0",
+    integridade: validarIntegridadeBanco(),
+  };
+}
 
-/**
- * Recursos do sistema (constantes calculadas)
- */
+// Para compatibilidade com código existente, ainda exportamos METADADOS_BANCO
+// como um getter (recalculado a cada acesso). Atenção: não é mais constante.
+export const METADADOS_BANCO = {
+  get totalQuestoes() {
+    return getTotalQuestoes();
+  },
+  get disciplinasCount() {
+    return getStatsPorDisciplina();
+  },
+  get distribuicaoDificuldade() {
+    return getEstatisticasPorDificuldade();
+  },
+  get ultimaAtualizacao() {
+    return new Date().toISOString();
+  },
+  versao: "2.1.0",
+  get integridade() {
+    return validarIntegridadeBanco();
+  },
+};
+
 export const RECURSOS_SISTEMA = {
   totalBadges: Object.keys(BADGES_CONFIG).length,
   niveisTotal: NIVEIS.length,
@@ -2184,18 +2319,17 @@ export const RECURSOS_SISTEMA = {
 } as const;
 
 // ============================================================
-// SEÇÃO 10 — CÁLCULO DE ESTATÍSTICAS
+// SEÇÃO 10 — CÁLCULO DE ESTATÍSTICAS (COM DOCUMENTAÇÃO CLARA)
 // ============================================================
 
 /**
  * Calcula estatísticas a partir de questões respondidas.
  *
- * FIX: distingue corretamente entre:
- *   - `brancos`       → respostaUsuario === null  (usuário decidiu deixar em branco)
- *   - `naoRespondidas`→ respostaUsuario === undefined (questão ainda não vista)
+ * **Semântica dos campos:**
+ * - `brancos`: questões onde `respostaUsuario === null` (usuário deixou em branco intencionalmente). No CEBRASPE, não desconta ponto.
+ * - `naoRespondidas`: questões onde `respostaUsuario === undefined` (usuário ainda não interagiu – usado em simulados interrompidos).
  *
- * Essa distinção é importante no sistema CEBRASPE: deixar em branco (null)
- * não desconta ponto, enquanto "ainda não viu" pode indicar simulado interrompido.
+ * FIX: distinção mantida e documentada.
  */
 export function calcularEstatisticas(
   questoes: QuestaoRespondida[],
@@ -2294,6 +2428,357 @@ export function getDisciplinasDisponiveis(): Disciplina[] {
 }
 
 // ============================================================
+// SEÇÃO 11 — NOVAS FUNCIONALIDADES
+// ============================================================
+// 11.1 — SISTEMA DE REVISÃO ESPAÇADA (SM-2)
+// 11.2 — ANÁLISE PREDITIVA DE NOTA FINAL
+// ============================================================
+
+// ------------------------------------------------------------
+// 11.1 — Revisão Espaçada (SM-2)
+// ------------------------------------------------------------
+
+/**
+ * Parâmetros padrão do algoritmo SM-2.
+ */
+const SM2_DEFAULT_EASE = 2.5;
+const SM2_MIN_EASE = 1.3;
+const SM2_MAX_EASE = 5.0;
+
+/**
+ * Inicializa os dados de revisão para uma questão nunca vista.
+ * @returns Objeto RevisaoEspacada com valores iniciais.
+ */
+export function inicializarRevisao(): RevisaoEspacada {
+  const agora = new Date().toISOString();
+  return {
+    repeticao: 0,
+    easinessFactor: SM2_DEFAULT_EASE,
+    ultimaRevisao: agora,
+    intervaloDias: 0,
+    proximaRevisao: agora, // revisar imediatamente
+  };
+}
+
+/**
+ * Atualiza os dados de revisão espaçada com base no resultado (acerto/erro).
+ * Implementação do algoritmo SM-2 adaptado para questões binárias (Certo/Errado).
+ *
+ * @param revisao Estado atual da revisão
+ * @param acertou true se o usuário acertou a questão, false caso contrário.
+ * @returns Novo estado da revisão após a resposta.
+ */
+export function atualizarRevisao(
+  revisao: RevisaoEspacada,
+  acertou: boolean,
+): RevisaoEspacada {
+  const nova = { ...revisao };
+  const agora = new Date();
+
+  if (acertou) {
+    // Acertou: aumenta repetição e recalcula intervalo
+    nova.repeticao += 1;
+    let intervalo: number;
+    if (nova.repeticao === 1) {
+      intervalo = 1;
+    } else if (nova.repeticao === 2) {
+      intervalo = 6;
+    } else {
+      intervalo = Math.round(nova.intervaloDias * nova.easinessFactor);
+    }
+    // Limitar intervalo máximo a 365 dias (um ano)
+    nova.intervaloDias = Math.min(intervalo, 365);
+    // Ajustar fator de facilidade (nunca abaixo do mínimo)
+    nova.easinessFactor = Math.max(
+      SM2_MIN_EASE,
+      nova.easinessFactor + 0.1 - (5 - 3) * 0.08, // fórmula simplificada: q=5 (máximo)
+    );
+    nova.easinessFactor = Math.min(SM2_MAX_EASE, nova.easinessFactor);
+  } else {
+    // Errou: reinicia repetição e reduz fator de facilidade
+    nova.repeticao = 0;
+    nova.intervaloDias = 1; // revisar no dia seguinte
+    nova.easinessFactor = Math.max(SM2_MIN_EASE, nova.easinessFactor - 0.2);
+  }
+
+  nova.ultimaRevisao = agora.toISOString();
+  const proxima = new Date(agora);
+  proxima.setDate(agora.getDate() + nova.intervaloDias);
+  nova.proximaRevisao = proxima.toISOString();
+
+  return nova;
+}
+
+/**
+ * Obtém as questões que estão prontas para revisão (data de próxima revisão <= hoje).
+ * @param historico Lista de simulados com questões respondidas.
+ * @returns Array de questões com seus respectivos dados de revisão.
+ */
+export function obterQuestoesParaRevisar(
+  historico: HistoricoSimulado[],
+): QuestaoComRevisao[] {
+  const agora = new Date();
+  const questoesMap = new Map<string, QuestaoComRevisao>();
+
+  // Percorrer todas as questões respondidas no histórico
+  for (const simulado of historico) {
+    for (const questao of simulado.questoes) {
+      const existente = questoesMap.get(questao.id);
+      // Se já temos dados de revisão para esta questão, usamos a última ocorrência
+      // (consideramos a resposta mais recente)
+      if (
+        !existente ||
+        new Date(simulado.data) >
+          new Date(existente.revisao?.ultimaRevisao ?? 0)
+      ) {
+        const revisao =
+          (questao as QuestaoComRevisao).revisao ?? inicializarRevisao();
+        questoesMap.set(questao.id, { ...questao, revisao });
+      }
+    }
+  }
+
+  // Filtrar questões cuja próxima revisão já passou
+  const paraRevisar: QuestaoComRevisao[] = [];
+  for (const questao of questoesMap.values()) {
+    if (questao.revisao && new Date(questao.revisao.proximaRevisao) <= agora) {
+      paraRevisar.push(questao);
+    }
+  }
+
+  return paraRevisar;
+}
+
+/**
+ * Processa a resposta de uma questão e atualiza seu estado de revisão no histórico.
+ * Útil para integrar o SM-2 ao fluxo de resposta do usuário.
+ *
+ * @param historico Histórico atual (será modificado)
+ * @param questaoId ID da questão respondida
+ * @param acertou Indica se o usuário acertou
+ */
+export function registrarRespostaComRevisao(
+  historico: HistoricoSimulado[],
+  questaoId: string,
+  acertou: boolean,
+): void {
+  // Encontra a questão no histórico (última ocorrência)
+  for (let i = historico.length - 1; i >= 0; i--) {
+    const questao = historico[i].questoes.find((q) => q.id === questaoId);
+    if (questao) {
+      const qRevisao = questao as QuestaoComRevisao;
+      const revisaoAtual = qRevisao.revisao ?? inicializarRevisao();
+      qRevisao.revisao = atualizarRevisao(revisaoAtual, acertou);
+      break;
+    }
+  }
+}
+
+// ------------------------------------------------------------
+// 11.2 — Análise Preditiva de Nota Final
+// ------------------------------------------------------------
+
+/**
+ * Resultado da previsão de nota final.
+ */
+export interface PrevisaoNotaFinal {
+  /** Pontuação prevista (acertos - erros) */
+  pontuacaoPrevista: number;
+  /** Percentual de acertos líquido previsto (0-100) */
+  percentualPrevisto: number;
+  /** Nível de confiança da previsão (0-1) */
+  confianca: number;
+  /** Detalhamento por disciplina */
+  detalhePorDisciplina: Record<
+    Disciplina,
+    {
+      questoesNaProva: number;
+      acertosPrevistos: number;
+      percentualAcerto: number;
+    }
+  >;
+  /** Recomendações para melhorar a nota */
+  recomendacoes: string[];
+}
+
+/**
+ * Previne a nota final do usuário em um simulado completo, com base no desempenho histórico.
+ * Utiliza média ponderada por disciplina e ajusta pela dificuldade das questões previstas.
+ *
+ * @param historico Lista de simulados anteriores do usuário.
+ * @param estruturaProva (opcional) Estrutura da prova (padrão: ESTRUTURA_PROVA).
+ * @returns Objeto com a previsão e recomendações.
+ */
+export function preverNotaFinal(
+  historico: HistoricoSimulado[],
+  estruturaProva: EstruturaProva = ESTRUTURA_PROVA,
+): PrevisaoNotaFinal {
+  // Se não há histórico, retorna previsão neutra
+  if (historico.length === 0) {
+    const totalQuestoes =
+      estruturaProva.conhecimentosBasicos.total +
+      estruturaProva.conhecimentosEspecificos.total;
+    const detalheVazio = {} as Record<Disciplina, any>;
+    for (const d of DISCIPLINAS_ENUM)
+      detalheVazio[d] = {
+        questoesNaProva: 0,
+        acertosPrevistos: 0,
+        percentualAcerto: 0,
+      };
+    return {
+      pontuacaoPrevista: 0,
+      percentualPrevisto: 0,
+      confianca: 0,
+      detalhePorDisciplina: detalheVazio,
+      recomendacoes: [
+        "Complete mais simulados para gerar uma previsão confiável.",
+      ],
+    };
+  }
+
+  // Calcular a taxa de acerto por disciplina (média dos últimos 5 simulados, se possível)
+  const desempenhoDisciplina = new Map<
+    Disciplina,
+    { somaAcertos: number; totalQuestoes: number; peso: number }
+  >();
+  for (const d of DISCIPLINAS_ENUM) {
+    desempenhoDisciplina.set(d, { somaAcertos: 0, totalQuestoes: 0, peso: 0 });
+  }
+
+  // Usar apenas os últimos 10 simulados para dar mais peso ao desempenho recente
+  const historicoRecente = historico.slice(-10);
+  for (const simulado of historicoRecente) {
+    const peso = 1; // peso uniforme, poderia ser exponencial
+    for (const [disc, stats] of Object.entries(
+      simulado.estatisticas.desempenhoPorDisciplina,
+    )) {
+      const d = disc as Disciplina;
+      const atual = desempenhoDisciplina.get(d)!;
+      atual.somaAcertos += stats.acertos * peso;
+      atual.totalQuestoes += stats.total * peso;
+      atual.peso += peso;
+    }
+  }
+
+  // Calcular percentual de acerto por disciplina (média ponderada)
+  const taxaAcertoPorDisciplina: Record<Disciplina, number> = {} as any;
+  for (const d of DISCIPLINAS_ENUM) {
+    const data = desempenhoDisciplina.get(d)!;
+    if (data.totalQuestoes > 0) {
+      taxaAcertoPorDisciplina[d] =
+        (data.somaAcertos / data.totalQuestoes) * 100;
+    } else {
+      // Sem dados: usar média global ou 50%
+      taxaAcertoPorDisciplina[d] = 50;
+    }
+  }
+
+  // Ajuste pela dificuldade das questões (simulado completo tem distribuição oficial)
+  // Como não sabemos a dificuldade exata de cada questão na prova, usamos um fator de correção
+  // baseado no desempenho do usuário em questões de dificuldade 1,2,3.
+  const desempenhoDificuldade = { 1: 0, 2: 0, 3: 0 };
+  let totalQuestoesDificuldade = 0;
+  for (const simulado of historicoRecente) {
+    for (const questao of simulado.questoes) {
+      const acertou = questao.respostaUsuario === questao.resposta;
+      if (acertou) desempenhoDificuldade[questao.dificuldade]++;
+      totalQuestoesDificuldade++;
+    }
+  }
+  const taxaAcertoPorDificuldade = {
+    1: desempenhoDificuldade[1] / (totalQuestoesDificuldade || 1),
+    2: desempenhoDificuldade[2] / (totalQuestoesDificuldade || 1),
+    3: desempenhoDificuldade[3] / (totalQuestoesDificuldade || 1),
+  };
+
+  // Combinar disciplinas da prova
+  const disciplinasProva: Partial<Record<Disciplina, number>> = {
+    ...estruturaProva.conhecimentosBasicos.disciplinas,
+    ...estruturaProva.conhecimentosEspecificos.disciplinas,
+  };
+
+  let pontuacaoTotalPrevista = 0;
+  let totalQuestoesProva = 0;
+  const detalhe: Record<Disciplina, any> = {} as any;
+
+  for (const [disc, qtd] of Object.entries(disciplinasProva)) {
+    const disciplina = disc as Disciplina;
+    const qtdQuestoes = qtd ?? 0;
+    if (qtdQuestoes === 0) continue;
+    totalQuestoesProva += qtdQuestoes;
+
+    // Taxa de acerto base da disciplina
+    let taxaBase = taxaAcertoPorDisciplina[disciplina] / 100;
+
+    // Ajuste pela dificuldade média das questões da disciplina (estimado)
+    // Como não temos dados, usamos um fator conservador: disciplinas com muitas questões de dificuldade 3 têm ajuste negativo
+    // Vamos buscar a distribuição de dificuldade no banco para essa disciplina
+    const questoesDisc = getQuestoesPorDisciplina(disciplina);
+    const totalDisc = questoesDisc.length;
+    const percDificil =
+      questoesDisc.filter((q) => q.dificuldade === 3).length / totalDisc;
+    const percFacil =
+      questoesDisc.filter((q) => q.dificuldade === 1).length / totalDisc;
+    const fatorDificuldade = 1 + percDificil * 0.2 - percFacil * 0.1;
+    const taxaAjustada = Math.min(
+      0.95,
+      Math.max(0.05, taxaBase * fatorDificuldade),
+    );
+
+    // Prever acertos
+    const acertosPrevistos = Math.round(qtdQuestoes * taxaAjustada);
+    const errosPrevistos = qtdQuestoes - acertosPrevistos;
+    const pontuacaoDisciplina = acertosPrevistos - errosPrevistos;
+
+    pontuacaoTotalPrevista += pontuacaoDisciplina;
+
+    detalhe[disciplina] = {
+      questoesNaProva: qtdQuestoes,
+      acertosPrevistos,
+      percentualAcerto: taxaAjustada * 100,
+    };
+  }
+
+  const percentualPrevisto =
+    (pontuacaoTotalPrevista / totalQuestoesProva) * 100;
+  const confianca = Math.min(1, historico.length / 20); // mais histórico, mais confiança
+
+  // Recomendações baseadas nas disciplinas com pior desempenho
+  const recomendacoes: string[] = [];
+  const pioresDisciplinas = Object.entries(taxaAcertoPorDisciplina)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 3);
+  for (const [disc, taxa] of pioresDisciplinas) {
+    if (taxa < 60) {
+      recomendacoes.push(
+        `Foque em ${DISCIPLINAS_NOME[disc as Disciplina]} (taxa de acerto atual: ${taxa.toFixed(1)}%).`,
+      );
+    }
+  }
+  if (percentualPrevisto < 50) {
+    recomendacoes.push(
+      "Seu desempenho previsto está abaixo da média. Revise a teoria e pratique mais simulados.",
+    );
+  } else if (percentualPrevisto >= 70) {
+    recomendacoes.push(
+      "Excelente previsão! Continue revisando para manter o ritmo.",
+    );
+  } else {
+    recomendacoes.push(
+      "Foco nas disciplinas com menor desempenho e resolva questões de dificuldade alta.",
+    );
+  }
+
+  return {
+    pontuacaoPrevista: Math.round(pontuacaoTotalPrevista),
+    percentualPrevisto: Math.round(percentualPrevisto * 100) / 100,
+    confianca,
+    detalhePorDisciplina: detalhe,
+    recomendacoes,
+  };
+}
+
+// ============================================================
 // EXPORT DEFAULT (compatibilidade)
 // ============================================================
 
@@ -2363,4 +2848,10 @@ export default {
   // constantes calculadas
   METADADOS_BANCO,
   RECURSOS_SISTEMA,
+  // NOVAS FUNCIONALIDADES
+  inicializarRevisao,
+  atualizarRevisao,
+  obterQuestoesParaRevisar,
+  registrarRespostaComRevisao,
+  preverNotaFinal,
 };

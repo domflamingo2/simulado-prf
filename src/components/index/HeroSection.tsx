@@ -1,155 +1,176 @@
-// src/components/como-funciona/HeroSection.tsx
 "use client";
 
-import { useContadorConcurso } from "@/hooks/useContadorConcurso";
-import { motion, useReducedMotion } from "framer-motion";
+import { type Easing, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Clock, Sparkles, Target } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+interface TempoRestante {
+  dias: number;
+  horas: number;
+  minutos: number;
+  segundos: number;
+}
 
 interface HeroSectionProps {
   prefersReducedMotion?: boolean;
 }
 
-export function HeroSection({
-  prefersReducedMotion: propPrefersReducedMotion,
-}: HeroSectionProps) {
-  const hookPrefersReducedMotion = useReducedMotion();
-  const prefersReducedMotion =
-    propPrefersReducedMotion ?? hookPrefersReducedMotion;
-
-  const { dias, horas, minutos, segundos, expirado } = useContadorConcurso({
-    dataConcurso: "2026-10-25T09:00:00",
-    onExpirado: () => console.log("🔥 Expirou"),
+function useContador(dataConcurso: string) {
+  const [tempo, setTempo] = useState<TempoRestante>({
+    dias: 0,
+    horas: 0,
+    minutos: 0,
+    segundos: 0,
   });
+  const [expirado, setExpirado] = useState(false);
+
+  useEffect(() => {
+    const alvo = new Date(dataConcurso).getTime();
+
+    const tick = () => {
+      const diff = alvo - Date.now();
+      if (diff <= 0) {
+        setExpirado(true);
+        return;
+      }
+      setTempo({
+        dias: Math.floor(diff / 86_400_000),
+        horas: Math.floor((diff % 86_400_000) / 3_600_000),
+        minutos: Math.floor((diff % 3_600_000) / 60_000),
+        segundos: Math.floor((diff % 60_000) / 1_000),
+      });
+    };
+
+    tick();
+    const id = setInterval(tick, 1_000);
+    return () => clearInterval(id);
+  }, [dataConcurso]);
+
+  return { ...tempo, expirado };
+}
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+const UNIDADES = [
+  { chave: "dias" as const, label: "Dias", classe: "text-blue-400" },
+  { chave: "horas" as const, label: "Horas", classe: "text-slate-300" },
+  { chave: "minutos" as const, label: "Min", classe: "text-slate-300" },
+  { chave: "segundos" as const, label: "Seg", classe: "text-slate-500" },
+] as const;
+
+export function HeroSection({
+  prefersReducedMotion: propPref,
+}: HeroSectionProps) {
+  const hookPref = useReducedMotion();
+  const reduced = propPref ?? hookPref ?? false;
+
+  const { dias, horas, minutos, segundos, expirado } = useContador(
+    "2026-10-25T09:00:00",
+  );
+
+  const fadeUp = (delay: number) =>
+    reduced
+      ? {}
+      : {
+          initial: { opacity: 0, y: 16 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.45, delay, ease: "easeOut" as Easing },
+        };
 
   return (
-    <motion.div
-      initial={prefersReducedMotion ? {} : { opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, type: "spring" }}
-      className="relative text-center overflow-hidden py-8"
-    >
-      {/* Efeito de glow de fundo */}
-      <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-
+    <section className="relative text-center py-12 px-4 overflow-hidden">
       {/* Badge */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1, type: "spring" }}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 text-blue-400 text-sm mb-6 shadow-lg"
-      >
-        <Sparkles className="w-4 h-4" />
-        <span className="font-medium">
+      <motion.div {...fadeUp(0)}>
+        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-6">
+          <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
           Plataforma completa para aprovação na PRF
         </span>
       </motion.div>
 
-      {/* Title */}
+      {/* Título */}
       <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-5 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent"
+        {...fadeUp(0.08)}
+        className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-4 text-white"
       >
-        Como Funciona
+        Como <span className="text-blue-400">Funciona</span>
       </motion.h1>
 
-      {/* Description */}
+      {/* Subtítulo */}
       <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
+        {...fadeUp(0.16)}
+        className="text-base sm:text-lg text-slate-400 max-w-xl mx-auto leading-relaxed mb-8"
       >
         Simulados realistas da banca CEBRASPE, estatísticas detalhadas, IA
-        adaptativa e gamificação para maximizar sua aprovação na
-        <span className="text-white font-semibold">
-          {" "}
+        adaptativa e gamificação para maximizar sua aprovação na{" "}
+        <span className="text-white font-medium">
           Polícia Rodoviária Federal
         </span>
         .
       </motion.p>
 
-      {/* CONTADOR */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mt-8"
-      >
+      {/* Contador */}
+      <motion.div {...fadeUp(0.24)} className="mb-8">
         {!expirado ? (
-          <div className="inline-flex flex-col items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-blue-500/15 to-purple-500/15 border border-blue-500/30 backdrop-blur-sm shadow-xl">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-400" />
-              <span className="text-sm font-medium text-slate-300">
-                ⏰ Próximo Concurso PRF:
-              </span>
+          <div className="inline-flex flex-col items-center gap-3 px-6 py-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-widest">
+              <Clock className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" />
+              Próximo concurso PRF
             </div>
 
-            <div className="flex gap-4 sm:gap-6">
-              {[
-                { label: "DIAS", value: dias, color: "text-blue-400" },
-                { label: "HORAS", value: horas, color: "text-cyan-400" },
-                { label: "MINUTOS", value: minutos, color: "text-purple-400" },
-                { label: "SEGUNDOS", value: segundos, color: "text-pink-400" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="text-center min-w-[60px] sm:min-w-[70px]"
-                >
-                  <motion.div
-                    key={item.value}
-                    initial={{ scale: 1.2 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                    className={`text-2xl sm:text-3xl font-bold ${item.color} tabular-nums`}
-                  >
-                    {String(item.value).padStart(2, "0")}
-                  </motion.div>
-                  <div className="text-[9px] sm:text-[10px] text-slate-500 tracking-wider font-medium">
-                    {item.label}
+            <div className="flex items-start gap-4 sm:gap-6">
+              {UNIDADES.map((u, i) => (
+                <div key={u.chave} className="flex items-start">
+                  <div className="flex flex-col items-center min-w-[52px]">
+                    <span
+                      className={`text-3xl sm:text-4xl font-bold tabular-nums leading-none ${u.classe}`}
+                    >
+                      {u.chave === "dias"
+                        ? dias
+                        : pad({ horas, minutos, segundos }[u.chave])}
+                    </span>
+                    <span className="text-[10px] text-slate-600 tracking-widest mt-1.5">
+                      {u.label}
+                    </span>
                   </div>
+                  {i < UNIDADES.length - 1 && (
+                    <span className="text-2xl text-slate-700 font-bold leading-none mt-0.5 ml-4 sm:ml-6">
+                      :
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
-
-            <div className="flex items-center gap-1 text-[10px] text-slate-500">
-              <Sparkles className="w-3 h-3 text-yellow-500" />
-              <span>Prepare-se com antecedência!</span>
-            </div>
           </div>
         ) : (
-          <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-amber-500/20 border border-amber-500/30 backdrop-blur-sm">
-            <span className="text-amber-400">🎉</span>
-            <span className="text-sm font-medium text-slate-200">
-              Concurso em andamento! Boa sorte!
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+            <span className="text-amber-400 font-medium text-sm">
+              🎉 Concurso em andamento — boa sorte!
             </span>
           </div>
         )}
       </motion.div>
 
-      {/* CTA Button */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.5, type: "spring" }}
-        className="mt-8"
-      >
+      {/* CTA */}
+      <motion.div {...fadeUp(0.32)}>
         <Link
           href="/dashboard"
-          className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-base transition-all hover:shadow-2xl hover:shadow-blue-500/30 hover:scale-105 overflow-hidden"
+          className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-base transition-colors duration-200"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-          <Target className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          <span>Começar Agora</span>
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <Target className="w-5 h-5" aria-hidden="true" />
+          Começar agora
+          <ArrowRight
+            className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
         </Link>
-        <p className="text-[10px] text-slate-500 mt-3">
-          ✅ Gratuito • Sem compromisso • Acesso imediato
+
+        <p className="text-xs text-slate-600 mt-3">
+          Gratuito · Sem compromisso · Acesso imediato
         </p>
       </motion.div>
-    </motion.div>
+    </section>
   );
 }
