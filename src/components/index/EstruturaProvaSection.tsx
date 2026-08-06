@@ -4,15 +4,17 @@
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ESTRUTURA_PROVA } from "@/constants/estruturaProva";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Award,
   BarChart3,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
   Clock,
   GraduationCap,
   HelpCircle,
+  ListChecks,
   PieChart,
   Sparkles,
   Target,
@@ -40,23 +42,26 @@ const staggerContainer = {
   },
 };
 
-// Componente de disciplina
+// Componente de disciplina (expansível, com nome sempre completo — nunca cortado)
 const DisciplinaItem = memo(
   ({
     nome,
     qtd,
     total,
+    topicos,
     cor,
     index,
   }: {
     nome: string;
     qtd: number;
     total: number;
+    topicos: string[];
     cor: "blue" | "purple";
     index: number;
   }) => {
     const percentage = (qtd / total) * 100;
     const [isHovered, setIsHovered] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
     const corClasses = {
       blue: {
@@ -65,6 +70,7 @@ const DisciplinaItem = memo(
         light: "bg-blue-500/10",
         border: "border-blue-500/30",
         gradient: "from-blue-500 to-blue-600",
+        marker: "text-blue-400",
       },
       purple: {
         bg: "bg-purple-500",
@@ -72,58 +78,127 @@ const DisciplinaItem = memo(
         light: "bg-purple-500/10",
         border: "border-purple-500/30",
         gradient: "from-purple-500 to-purple-600",
+        marker: "text-purple-400",
       },
     };
 
     const colors = corClasses[cor];
+    const hasTopicos = topicos && topicos.length > 0;
 
     return (
-      <motion.li
-        variants={fadeInUp}
-        custom={index}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
+      <motion.li variants={fadeInUp} custom={index}>
         <div className="group relative">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 transition-all duration-300 gap-2 border border-slate-700/50 hover:border-slate-600">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => hasTopicos && setIsOpen((prev) => !prev)}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            aria-expanded={isOpen}
+            className={`w-full text-left p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 transition-all duration-300 border ${
+              isOpen ? colors.border : "border-slate-700/50"
+            } hover:border-slate-600 ${hasTopicos ? "cursor-pointer" : "cursor-default"}`}
+          >
+            {/* Linha 1: nome completo da disciplina + contador de assuntos + chevron */}
+            <div className="flex items-center gap-2.5">
               <motion.div
                 animate={{ scale: isHovered ? 1.2 : 1 }}
-                className={`w-1.5 h-1.5 rounded-full ${colors.bg} ${isHovered ? "shadow-lg shadow-blue-500/50" : ""}`}
+                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors.bg} ${isHovered ? "shadow-lg shadow-blue-500/50" : ""}`}
               />
-              <span className="text-slate-300 text-sm font-medium truncate">
+              <span className="text-slate-200 text-sm font-semibold leading-snug break-words flex-1 min-w-0">
                 {nome}
               </span>
+              {hasTopicos && (
+                <>
+                  <span className="text-[10px] text-slate-500 flex-shrink-0 hidden sm:inline">
+                    {topicos.length} assuntos
+                  </span>
+                  <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-shrink-0"
+                  >
+                    <ChevronDown className={`w-4 h-4 ${colors.text}`} />
+                  </motion.div>
+                </>
+              )}
             </div>
 
-            <div className="flex items-center gap-4 flex-shrink-0">
-              <div className="flex items-center gap-3 min-w-[140px] justify-end">
-                <span className={`font-bold text-sm ${colors.text}`}>
-                  {qtd} questões
-                </span>
-                <div className="w-28 bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentage}%` }}
-                    transition={{ duration: 0.8, delay: index * 0.05 }}
-                    className={`h-full rounded-full bg-gradient-to-r ${colors.gradient} relative`}
-                  >
-                    {isHovered && (
-                      <motion.div
-                        initial={{ opacity: 0, x: "-100%" }}
-                        animate={{ opacity: 1, x: "100%" }}
-                        transition={{ duration: 0.6, repeat: Infinity }}
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      />
-                    )}
-                  </motion.div>
-                </div>
+            {/* Linha 2: quantidade de questões, barra de progresso e percentual */}
+            <div className="flex items-center gap-3 mt-2.5 pl-4">
+              <span
+                className={`text-xs font-bold whitespace-nowrap ${colors.text}`}
+              >
+                {qtd} questões
+              </span>
+              <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden min-w-[40px]">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percentage}%` }}
+                  transition={{ duration: 0.8, delay: index * 0.05 }}
+                  className={`h-full rounded-full bg-gradient-to-r ${colors.gradient} relative`}
+                >
+                  {isHovered && (
+                    <motion.div
+                      initial={{ opacity: 0, x: "-100%" }}
+                      animate={{ opacity: 1, x: "100%" }}
+                      transition={{ duration: 0.6, repeat: Infinity }}
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                    />
+                  )}
+                </motion.div>
               </div>
-              <span className="text-xs text-slate-500 min-w-[48px] text-right font-mono">
+              <span className="text-xs text-slate-500 whitespace-nowrap font-mono flex-shrink-0">
                 {percentage.toFixed(0)}%
               </span>
+              {hasTopicos && (
+                <span className="text-[10px] text-slate-500 whitespace-nowrap sm:hidden flex-shrink-0">
+                  {topicos.length} assuntos
+                </span>
+              )}
             </div>
-          </div>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {isOpen && hasTopicos && (
+              <motion.div
+                key="content"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div
+                  className={`mt-2 ml-2 p-3 rounded-lg ${colors.light} border ${colors.border}`}
+                >
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <ListChecks className={`w-3 h-3 ${colors.marker}`} />
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                      Assuntos do edital
+                    </span>
+                  </div>
+                  <ol className="space-y-1.5">
+                    {topicos.map((topico, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.02 }}
+                        className="flex items-start gap-2 text-xs text-slate-300 leading-relaxed"
+                      >
+                        <span
+                          className={`flex-shrink-0 font-mono font-bold ${colors.marker} mt-[1px]`}
+                        >
+                          {i + 1}.
+                        </span>
+                        <span className="break-words">{topico}</span>
+                      </motion.li>
+                    ))}
+                  </ol>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.li>
     );
@@ -162,11 +237,13 @@ const StatCard = memo(
           <div className="p-2 rounded-lg bg-white/10 group-hover:scale-110 transition-transform">
             <Icon className="w-4 h-4 text-white" />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <p className="text-2xl font-bold text-white">{value}</p>
             <p className="text-xs text-slate-300 mt-0.5">{label}</p>
             {description && (
-              <p className="text-[10px] text-slate-400 mt-1">{description}</p>
+              <p className="text-[10px] text-slate-400 mt-1 break-words">
+                {description}
+              </p>
             )}
           </div>
         </div>
@@ -237,7 +314,7 @@ export function EstruturaProvaSection() {
         <SectionTitle
           icon={BookOpen}
           title="Estrutura da Prova PRF"
-          subtitle="Distribuição oficial de questões por disciplina"
+          subtitle="Distribuição oficial de questões por disciplina — clique em uma disciplina para ver os assuntos do edital"
         />
       </div>
 
@@ -250,7 +327,7 @@ export function EstruturaProvaSection() {
           icon={Target}
           label="Total de Questões"
           value="60"
-          description="24 básicas + 36 específicas"
+          description={`${ESTRUTURA_PROVA.conhecimentosBasicos.total} básicas + ${ESTRUTURA_PROVA.conhecimentosEspecificos.total} específicas`}
           gradient="from-blue-600/90 to-blue-800/90"
           delay={0}
         />
@@ -350,11 +427,12 @@ export function EstruturaProvaSection() {
             </div>
 
             <ul className="space-y-2 flex-1">
-              {basicas.map(([nome, qtd], index) => (
+              {basicas.map(([nome, disciplina], index) => (
                 <DisciplinaItem
                   key={nome}
                   nome={nome}
-                  qtd={qtd}
+                  qtd={disciplina.qtd}
+                  topicos={disciplina.topicos}
                   total={ESTRUTURA_PROVA.conhecimentosBasicos.total}
                   cor="blue"
                   index={index}
@@ -392,11 +470,12 @@ export function EstruturaProvaSection() {
             </div>
 
             <ul className="space-y-2 flex-1">
-              {especificas.map(([nome, qtd], index) => (
+              {especificas.map(([nome, disciplina], index) => (
                 <DisciplinaItem
                   key={nome}
                   nome={nome}
-                  qtd={qtd}
+                  qtd={disciplina.qtd}
+                  topicos={disciplina.topicos}
                   total={ESTRUTURA_PROVA.conhecimentosEspecificos.total}
                   cor="purple"
                   index={index}
@@ -430,7 +509,7 @@ export function EstruturaProvaSection() {
                 Você tem cerca de{" "}
                 <span className="text-amber-400 font-bold">
                   {tempoPorQuestao.toFixed(0)} minutos
-                </span>
+                </span>{" "}
                 por questão. Não fique travado em uma única questão!
               </p>
             </div>
@@ -474,18 +553,21 @@ export function EstruturaProvaSection() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[...basicas, ...especificas].map(([nome, qtd], idx) => {
-            const percentual = (qtd / totalQuestoes) * 100;
+          {[...basicas, ...especificas].map(([nome, disciplina], idx) => {
+            const percentual = (disciplina.qtd / totalQuestoes) * 100;
             return (
               <motion.div
                 key={nome}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.02 }}
-                className="text-center p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300"
+                className="text-center p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300"
               >
-                <p className="text-[11px] text-slate-400 truncate" title={nome}>
-                  {nome.split(" ")[0]}
+                <p
+                  className="text-[11px] text-slate-400 leading-tight break-words min-h-[2rem] flex items-center justify-center"
+                  title={nome}
+                >
+                  {nome}
                 </p>
                 <p className="text-lg font-bold text-blue-400 mt-1">
                   {percentual.toFixed(0)}%
